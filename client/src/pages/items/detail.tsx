@@ -1,5 +1,5 @@
 import { useParams } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { ArrowLeft, Heart, MessageCircle, Share, Eye, MapPin } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { Item } from "@shared/schema";
 
 export default function ItemDetail() {
@@ -40,13 +42,52 @@ export default function ItemDetail() {
     return colors[category as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
 
+  const { toast } = useToast();
+
+  const createChatRoomMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("/api/chat/rooms", {
+        method: "POST",
+        body: JSON.stringify({ itemId: id }),
+        headers: { "Content-Type": "application/json" }
+      });
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "채팅방 생성됨",
+        description: "판매자와의 채팅방이 생성되었습니다."
+      });
+      navigate(`/chat/${data.id}`);
+    },
+    onError: (error: any) => {
+      console.error("Chat room creation error:", error);
+      toast({
+        title: "채팅방 생성 실패",
+        description: "채팅방을 생성할 수 없습니다. 다시 시도해주세요.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleChatStart = () => {
     if (!user) {
       navigate("/auth/login");
       return;
     }
-    // TODO: Create chat room and navigate to it
-    navigate("/chat");
+    
+    if (!item) return;
+    
+    // 자신의 상품인 경우 채팅을 시작할 수 없음
+    if (item.sellerId === user.id) {
+      toast({
+        title: "알림",
+        description: "자신의 상품에는 채팅을 시작할 수 없습니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    createChatRoomMutation.mutate();
   };
 
   if (isLoading) {
@@ -202,9 +243,10 @@ export default function ItemDetail() {
             size="lg"
             className="flex-1 h-12 marketplace-button-primary"
             onClick={handleChatStart}
+            disabled={createChatRoomMutation.isPending}
           >
             <MessageCircle className="w-5 h-5 mr-2" />
-            채팅하기
+            {createChatRoomMutation.isPending ? "채팅방 생성 중..." : "채팅하기"}
           </Button>
         </div>
       </div>
