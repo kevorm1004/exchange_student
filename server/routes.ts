@@ -28,7 +28,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 // Middleware to verify JWT token
-const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+const authenticateToken = async (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -36,13 +36,17 @@ const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextF
     return res.status(401).json({ error: 'Access token required' });
   }
 
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid token' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const user = await storage.getUser(decoded.id);
+    if (!user) {
+      return res.status(403).json({ error: 'User not found' });
     }
     req.user = user;
     next();
-  });
+  } catch (error) {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -130,7 +134,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         school: validatedData.school,
         country: validatedData.country,
         profileImage: validatedData.profileImage || null,
-        preferredCurrency: validatedData.preferredCurrency || "USD"
+        preferredCurrency: validatedData.preferredCurrency || "USD",
+        role: "user",
+        status: "active"
       });
 
       // Generate JWT
@@ -491,6 +497,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Get favorites error:', error);
       res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  // Admin API endpoints
+  app.get("/api/admin/stats", authenticateToken, async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const stats = await storage.getAdminStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching admin stats:", error);
+      res.status(500).json({ error: "Failed to fetch admin stats" });
+    }
+  });
+
+  app.get("/api/admin/items", authenticateToken, async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const search = req.query.search as string;
+      const items = await storage.getAdminItems(search);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching admin items:", error);
+      res.status(500).json({ error: "Failed to fetch admin items" });
+    }
+  });
+
+  app.delete("/api/admin/items/:id", authenticateToken, async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const itemId = req.params.id;
+      await storage.deleteItem(itemId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      res.status(500).json({ error: "Failed to delete item" });
+    }
+  });
+
+  app.get("/api/admin/users", authenticateToken, async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const search = req.query.search as string;
+      const users = await storage.getAdminUsers(search);
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching admin users:", error);
+      res.status(500).json({ error: "Failed to fetch admin users" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id/status", authenticateToken, async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const userId = req.params.id;
+      const { status } = req.body;
+      
+      await storage.updateUserStatus(userId, status);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating user status:", error);
+      res.status(500).json({ error: "Failed to update user status" });
     }
   });
 

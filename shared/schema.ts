@@ -13,6 +13,8 @@ export const users = pgTable("users", {
   country: text("country").notNull(),
   profileImage: text("profile_image"),
   preferredCurrency: text("preferred_currency").default("USD").notNull(),
+  role: text("role").default("user").notNull(),
+  status: text("status").default("active").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

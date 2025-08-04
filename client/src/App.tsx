@@ -17,6 +17,7 @@ import ItemDetail from "@/pages/items/detail";
 import SearchPage from "@/pages/search";
 import SearchResults from "@/pages/search-results";
 import NotFound from "@/pages/not-found";
+import AdminDashboard from "@/pages/admin/dashboard";
 
 import BottomNav from "@/components/layout/bottom-nav";
 
@@ -26,9 +27,10 @@ function Router() {
   const isItemDetailPage = location.startsWith('/items/') && location !== '/items/create';
   const isSearchPage = location === '/search' || location.startsWith('/search/');
   const isProfilePage = location === '/profile';
+  const isAdminPage = location.startsWith('/admin');
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen relative">
+    <div className={isAdminPage ? "bg-gray-50 min-h-screen" : "max-w-md mx-auto bg-white min-h-screen relative"}>
       <Switch>
         <Route path="/auth/login" component={Login} />
         <Route path="/auth/register" component={Register} />
@@ -41,10 +43,11 @@ function Router() {
         <Route path="/profile" component={Profile} />
         <Route path="/items/create" component={CreateItem} />
         <Route path="/items/:id" component={ItemDetail} />
+        <Route path="/admin" component={AdminDashboard} />
         <Route component={NotFound} />
       </Switch>
       
-      {!isAuthPage && !isItemDetailPage && !isSearchPage && !isProfilePage && <BottomNav />}
+      {!isAuthPage && !isItemDetailPage && !isSearchPage && !isProfilePage && !isAdminPage && <BottomNav />}
     </div>
   );
 }

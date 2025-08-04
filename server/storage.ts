@@ -52,6 +52,19 @@ export interface IStorage {
   addFavorite(favorite: InsertFavorite): Promise<Favorite>;
   removeFavorite(userId: string, itemId: string): Promise<boolean>;
   isFavorite(userId: string, itemId: string): Promise<boolean>;
+  
+  // Admin methods
+  getAdminStats(): Promise<{
+    totalUsers: number;
+    totalItems: number;
+    totalMessages: number;
+    activeUsers: number;
+    recentItems: number;
+    popularCategories: { category: string; count: number }[];
+  }>;
+  getAdminItems(search?: string): Promise<Item[]>;
+  getAdminUsers(search?: string): Promise<User[]>;
+  updateUserStatus(userId: string, status: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -69,6 +82,23 @@ export class MemStorage implements IStorage {
   }
 
   private initializeData() {
+    // Create admin user
+    const adminUser: User = {
+      id: "admin1",
+      username: "admin",
+      email: "admin@example.com",
+      password: "$2b$10$vI8aWY2X3B.DEQ.KhKnZme6HxsI2Lc5r3vY9U7h.4EEo7zQ8QxE5O", // "admin123"
+      fullName: "관리자",
+      school: "ExchangeMart",
+      country: "Korea",
+      profileImage: null,
+      preferredCurrency: "USD",
+      role: "admin",
+      status: "active",
+      createdAt: new Date()
+    };
+    this.users.set(adminUser.id, adminUser);
+
     // This is just for demo - in production this would be empty
     const sampleUser: User = {
       id: "user1",
@@ -80,6 +110,8 @@ export class MemStorage implements IStorage {
       country: "South Korea",
       profileImage: null,
       preferredCurrency: "USD",
+      role: "user",
+      status: "active",
       createdAt: new Date(),
     };
     this.users.set(sampleUser.id, sampleUser);
@@ -95,6 +127,8 @@ export class MemStorage implements IStorage {
       country: "South Korea",
       profileImage: null,
       preferredCurrency: "USD",
+      role: "user",
+      status: "active",
       createdAt: new Date(),
     };
     this.users.set(testUser.id, testUser);
@@ -332,6 +366,8 @@ export class MemStorage implements IStorage {
       id, 
       profileImage: insertUser.profileImage || null,
       preferredCurrency: insertUser.preferredCurrency || "USD",
+      role: insertUser.role || "user",
+      status: insertUser.status || "active",
       createdAt: new Date() 
     };
     this.users.set(id, user);
@@ -549,6 +585,74 @@ export class MemStorage implements IStorage {
   async isFavorite(userId: string, itemId: string): Promise<boolean> {
     const key = `${userId}-${itemId}`;
     return this.favorites.has(key);
+  }
+
+  // Admin methods
+  async getAdminStats() {
+    const totalUsers = this.users.size;
+    const totalItems = this.items.size;
+    const totalMessages = this.messages.size;
+    const activeUsers = this.users.size; // In real implementation, filter by recent activity
+    const recentItems = Array.from(this.items.values()).filter(
+      item => new Date(item.createdAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
+    ).length;
+
+    const categoryCounts = new Map<string, number>();
+    Array.from(this.items.values()).forEach(item => {
+      categoryCounts.set(item.category, (categoryCounts.get(item.category) || 0) + 1);
+    });
+
+    const popularCategories = Array.from(categoryCounts.entries())
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    return {
+      totalUsers,
+      totalItems,
+      totalMessages,
+      activeUsers,
+      recentItems,
+      popularCategories
+    };
+  }
+
+  async getAdminItems(search?: string): Promise<Item[]> {
+    let items = Array.from(this.items.values());
+    
+    if (search) {
+      const searchLower = search.toLowerCase();
+      items = items.filter(item => 
+        item.title.toLowerCase().includes(searchLower) ||
+        item.description.toLowerCase().includes(searchLower) ||
+        item.category.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async getAdminUsers(search?: string): Promise<User[]> {
+    let users = Array.from(this.users.values());
+    
+    if (search) {
+      const searchLower = search.toLowerCase();
+      users = users.filter(user => 
+        user.username.toLowerCase().includes(searchLower) ||
+        user.email.toLowerCase().includes(searchLower) ||
+        user.school.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return users.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async updateUserStatus(userId: string, status: string): Promise<void> {
+    const user = this.users.get(userId);
+    if (user) {
+      user.status = status;
+      this.users.set(userId, user);
+    }
   }
 }
 
