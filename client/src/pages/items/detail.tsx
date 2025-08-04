@@ -83,11 +83,24 @@ export default function ItemDetail() {
             뒤로
           </Button>
           <div className="flex space-x-2">
-            <Button variant="ghost" size="sm" className="text-gray-600">
-              <Share className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="sm" className="text-gray-600">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+              onClick={() => {
+                // TODO: Toggle favorite functionality
+                console.log('Toggle favorite');
+              }}
+            >
               <Heart className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+              onClick={handleChatStart}
+            >
+              <MessageCircle className="h-5 w-5" />
             </Button>
           </div>
         </div>
