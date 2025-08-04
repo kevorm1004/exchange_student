@@ -11,6 +11,7 @@ import type { Item } from "@shared/schema";
 
 export default function Home() {
   const [filter, setFilter] = useState("all");
+  const [selectedCountry, setSelectedCountry] = useState("all");
   const [, navigate] = useLocation();
   const { user } = useAuth();
 
@@ -22,11 +23,11 @@ export default function Home() {
     isLoading,
     isError,
   } = useInfiniteQuery({
-    queryKey: ["/api/items", filter, user?.school, user?.country],
+    queryKey: ["/api/items", filter, user?.school, selectedCountry],
     queryFn: async ({ pageParam = 0 }) => {
       const params = new URLSearchParams();
       if (filter === "school" && user?.school) params.append("school", user.school);
-      if (filter === "country" && user?.country) params.append("country", user.country);
+      if (filter === "country" && selectedCountry !== "all") params.append("country", selectedCountry);
       params.append("page", pageParam.toString());
       params.append("limit", "10");
       
@@ -110,7 +111,12 @@ export default function Home() {
   return (
     <>
       <Header title="ExchangeMart" />
-      <FilterBar activeFilter={filter} onFilterChange={setFilter} />
+      <FilterBar 
+        activeFilter={filter} 
+        onFilterChange={setFilter}
+        selectedCountry={selectedCountry}
+        onCountryChange={setSelectedCountry}
+      />
       
       <main className="pb-20 pt-4">
         {items.length === 0 ? (
