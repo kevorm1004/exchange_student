@@ -23,6 +23,7 @@ export default function ChatRoomPage() {
   const [match, params] = useRoute("/chat/:roomId");
   const roomId = params?.roomId;
   const [message, setMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -50,22 +51,15 @@ export default function ChatRoomPage() {
       if (!response.ok) throw new Error("Failed to send message");
       return response.json();
     },
-    onSuccess: (newMessage) => {
-      // WebSocket으로 실시간 업데이트되므로 즉시 쿼리 무효화하지 않음
+    onMutate: () => {
+      setIsSending(true);
+    },
+    onSuccess: () => {
       setMessage("");
-      
-      // 낙관적 업데이트로 메시지를 즉시 표시
-      queryClient.setQueryData(
-        ["/api/chat/rooms", roomId, "messages"],
-        (oldMessages: Message[] = []) => {
-          // 이미 있는 메시지인지 확인
-          const exists = oldMessages.some(msg => msg.id === newMessage.id);
-          if (exists) return oldMessages;
-          return [...oldMessages, newMessage];
-        }
-      );
+      setIsSending(false);
     },
     onError: () => {
+      setIsSending(false);
       toast({
         title: "오류",
         description: "메시지 전송에 실패했습니다.",
@@ -124,14 +118,16 @@ export default function ChatRoomPage() {
   }, [messages]);
 
   const handleSendMessage = () => {
-    if (!message.trim() || sendMessageMutation.isPending) return;
+    if (!message.trim() || isSending || sendMessageMutation.isPending) return;
     sendMessageMutation.mutate(message.trim());
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      if (!isSending && !sendMessageMutation.isPending) {
+        handleSendMessage();
+      }
     }
   };
 
@@ -347,13 +343,13 @@ export default function ChatRoomPage() {
               onKeyDown={handleKeyPress}
               placeholder="메시지를 입력하세요"
               className="w-full rounded-full border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
-              disabled={sendMessageMutation.isPending}
+              disabled={isSending || sendMessageMutation.isPending}
             />
           </div>
           
           <Button
             onClick={handleSendMessage}
-            disabled={!message.trim() || sendMessageMutation.isPending}
+            disabled={!message.trim() || isSending || sendMessageMutation.isPending}
             size="sm"
             className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full shrink-0"
           >
