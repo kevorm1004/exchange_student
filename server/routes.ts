@@ -252,6 +252,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Search items endpoint
+  app.get('/api/items/search', async (req, res) => {
+    try {
+      const { q } = req.query;
+      
+      if (!q || typeof q !== 'string' || q.trim() === '') {
+        return res.json([]);
+      }
+
+      const searchQuery = q.trim().toLowerCase();
+      const allItems = await storage.getItems({});
+      
+      // Filter items based on search query
+      const searchResults = allItems.filter(item => 
+        item.title.toLowerCase().includes(searchQuery) ||
+        item.description.toLowerCase().includes(searchQuery) ||
+        (item.category && item.category.toLowerCase().includes(searchQuery))
+      );
+
+      res.json(searchResults);
+    } catch (error) {
+      console.error('Search error:', error);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
   app.get('/api/items/:id', async (req, res) => {
     try {
       const item = await storage.getItem(req.params.id);

@@ -50,10 +50,8 @@ function SearchPage() {
       
       setSearchHistory(updatedHistory);
 
-      // TODO: Navigate to search results or perform search
-      console.log("Searching for:", searchQuery);
-      // For now, just go back to home with search query
-      navigate(`/?search=${encodeURIComponent(searchQuery)}`);
+      // Navigate to search results page
+      navigate(`/search/${encodeURIComponent(searchQuery)}`);
     }
   };
 
