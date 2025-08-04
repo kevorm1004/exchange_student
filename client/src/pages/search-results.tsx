@@ -150,71 +150,68 @@ function SearchResults() {
         </div>
       </header>
 
-      {/* Search results */}
-      <div className="p-4 pb-24">
-        {/* Search query display */}
-        <div className="mb-4">
-          <p className="text-sm text-gray-600">
-            '<span className="font-medium text-gray-900">{query}</span>' 검색 결과
-          </p>
+      {/* Search query display */}
+      <div className="px-4 py-3 bg-white border-b border-gray-200">
+        <p className="text-sm text-gray-600">
+          '<span className="font-medium text-gray-900">{query}</span>' 검색 결과
+        </p>
+      </div>
+
+      {/* Loading state */}
+      {isLoading && (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="text-gray-500 text-sm mt-4">검색 중...</p>
         </div>
+      )}
 
-        {/* Loading state */}
-        {isLoading && (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="text-gray-500 text-sm mt-4">검색 중...</p>
-          </div>
-        )}
+      {/* Error state */}
+      {isError && (
+        <div className="text-center py-12">
+          <p className="text-red-500 text-sm">검색 중 오류가 발생했습니다.</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="mt-4"
+          >
+            다시 시도
+          </Button>
+        </div>
+      )}
 
-        {/* Error state */}
-        {isError && (
-          <div className="text-center py-12">
-            <p className="text-red-500 text-sm">검색 중 오류가 발생했습니다.</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              className="mt-4"
-            >
-              다시 시도
-            </Button>
-          </div>
-        )}
-
-        {/* Results */}
-        {!isLoading && !isError && (
-          <>
-            {items.length > 0 ? (
-              <>
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600">
-                    총 {items.length}개의 상품을 찾았습니다
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-4 pb-20">
-                  {items.map((item: Item) => (
-                    <ItemCard
-                      key={item.id}
-                      item={item}
-                      variant="grid"
-                      onToggleFavorite={handleToggleFavorite}
-                    />
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-12">
-                <Search className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 text-sm">검색 결과가 없습니다</p>
-                <p className="text-gray-400 text-xs mt-1">
-                  다른 검색어로 시도해보세요
+      {/* Results */}
+      {!isLoading && !isError && (
+        <>
+          {items.length > 0 ? (
+            <>
+              <div className="px-4 py-3 bg-gray-50">
+                <p className="text-sm text-gray-600">
+                  총 {items.length}개의 상품을 찾았습니다
                 </p>
               </div>
-            )}
-          </>
-        )}
-      </div>
+              <div className="pb-20">
+                {items.map((item: Item) => (
+                  <ItemCard
+                    key={item.id}
+                    item={item}
+                    variant="default"
+                    onToggleFavorite={handleToggleFavorite}
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <Search className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 text-sm">검색 결과가 없습니다</p>
+              <p className="text-gray-400 text-xs mt-1">
+                다른 검색어로 시도해보세요
+              </p>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
