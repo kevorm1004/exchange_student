@@ -163,7 +163,12 @@ export default function CreateItem() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/items"] });
+      // Invalidate all items queries with all possible filter combinations
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/items"], 
+        exact: false 
+      });
+      
       toast({
         title: "상품 등록 성공",
         description: "상품이 성공적으로 등록되었습니다.",
