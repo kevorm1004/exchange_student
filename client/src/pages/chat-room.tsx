@@ -29,12 +29,30 @@ export default function ChatRoomPage() {
   const { toast } = useToast();
 
   const { data: chatRoom } = useQuery<ChatRoomWithDetails>({
-    queryKey: ["/api/chat/rooms", roomId, user?.id],
+    queryKey: ["/api/chat/rooms", roomId],
+    queryFn: async () => {
+      const response = await fetch(`/api/chat/rooms/${roomId}`, {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch chat room");
+      return response.json();
+    },
     enabled: !!roomId && !!user,
   });
 
   const { data: messages = [] } = useQuery<Message[]>({
-    queryKey: ["/api/chat/rooms", roomId, "messages", user?.id],
+    queryKey: ["/api/chat/rooms", roomId, "messages"],
+    queryFn: async () => {
+      const response = await fetch(`/api/chat/rooms/${roomId}/messages`, {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch messages");
+      return response.json();
+    },
     enabled: !!roomId && !!user,
   });
 
@@ -84,7 +102,7 @@ export default function ChatRoomPage() {
           const data = JSON.parse(event.data);
           if (data.type === "new_message") {
             queryClient.setQueryData(
-              ["/api/chat/rooms", roomId, "messages", user?.id],
+              ["/api/chat/rooms", roomId, "messages"],
               (oldMessages: Message[] = []) => {
                 // 중복 메시지 방지
                 const exists = oldMessages.some(msg => msg.id === data.message.id);

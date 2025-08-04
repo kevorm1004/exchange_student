@@ -18,7 +18,16 @@ export default function Chat() {
   const { user, isLoading: authLoading } = useRequireAuth();
 
   const { data: chatRooms = [], isLoading } = useQuery<ChatRoomWithDetails[]>({
-    queryKey: ["/api/chat/rooms", user?.id],
+    queryKey: ["/api/chat/rooms"],
+    queryFn: async () => {
+      const response = await fetch("/api/chat/rooms", {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch chat rooms");
+      return response.json();
+    },
     enabled: !!user,
   });
 
