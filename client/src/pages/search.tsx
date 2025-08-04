@@ -113,7 +113,7 @@ function SearchPage() {
       </header>
 
       {/* Search History */}
-      <div className="p-4">
+      <div className="p-4 pb-8 min-h-[calc(100vh-80px)]">
         {searchHistory.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
@@ -159,7 +159,7 @@ function SearchPage() {
         )}
 
         {searchHistory.length === 0 && (
-          <div className="text-center py-12">
+          <div className="text-center py-16">
             <Search className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 text-sm">최근 검색 기록이 없습니다</p>
             <p className="text-gray-400 text-xs mt-1">원하는 상품을 검색해보세요</p>

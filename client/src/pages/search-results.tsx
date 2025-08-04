@@ -85,7 +85,7 @@ function SearchResults() {
       </header>
 
       {/* Search results */}
-      <div className="p-4">
+      <div className="p-4 pb-8">
         {/* Search query display */}
         <div className="mb-4">
           <p className="text-sm text-gray-600">
@@ -118,7 +118,7 @@ function SearchResults() {
 
         {/* Results */}
         {!isLoading && !isError && (
-          <>
+          <div className="min-h-[calc(100vh-200px)]">
             {items.length > 0 ? (
               <>
                 <div className="mb-4">
@@ -126,7 +126,7 @@ function SearchResults() {
                     총 {items.length}개의 상품을 찾았습니다
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4 pb-6">
                   {items.map((item: Item) => (
                     <ItemCard
                       key={item.id}
@@ -145,7 +145,7 @@ function SearchResults() {
                 </p>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
