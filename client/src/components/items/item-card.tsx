@@ -13,6 +13,7 @@ interface ItemCardProps {
   isFavorite?: boolean;
   onToggleFavorite?: (itemId: string) => void;
   variant?: "default" | "grid"; // grid variant for search results
+  onItemClick?: () => void;
 }
 
 const getCategoryColor = (category: string) => {
@@ -52,7 +53,15 @@ const calculateDistance = (userSchool: string, itemSchool: string) => {
   return distances[itemSchool] || "7.2km";
 };
 
-export default function ItemCard({ item, isFavorite = false, onToggleFavorite, variant = "default" }: ItemCardProps) {
+interface ItemCardProps {
+  item: Item;
+  isFavorite?: boolean;
+  onToggleFavorite?: (itemId: string) => void;
+  variant?: "default" | "grid";
+  onItemClick?: () => void;
+}
+
+export default function ItemCard({ item, isFavorite = false, onToggleFavorite, variant = "default", onItemClick }: ItemCardProps) {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   
@@ -61,6 +70,7 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
   const displayPrice = formatPrice(parseFloat(item.price), userCurrency);
 
   const handleCardClick = () => {
+    onItemClick?.();
     navigate(`/items/${item.id}`);
   };
 

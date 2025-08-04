@@ -43,6 +43,22 @@ export default function Home() {
 
   const items = data?.pages.flat() || [];
 
+  // 스크롤 위치 저장 및 복원
+  useEffect(() => {
+    const savedScrollPosition = sessionStorage.getItem('homeScrollPosition');
+    if (savedScrollPosition) {
+      setTimeout(() => {
+        window.scrollTo(0, parseInt(savedScrollPosition));
+        sessionStorage.removeItem('homeScrollPosition');
+      }, 100);
+    }
+  }, []);
+
+  // 스크롤 위치 저장
+  const saveScrollPosition = () => {
+    sessionStorage.setItem('homeScrollPosition', window.scrollY.toString());
+  };
+
   // Infinite scroll implementation
   const handleScroll = useCallback(() => {
     if (
@@ -133,6 +149,7 @@ export default function Home() {
                 key={item.id}
                 item={item}
                 onToggleFavorite={handleToggleFavorite}
+                onItemClick={saveScrollPosition}
               />
             ))}
             
