@@ -10,7 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { authApi } from "@/lib/auth";
-import { loginSchema, type LoginData } from "@shared/schema";
+import { type LoginData } from "@shared/schema";
+import { z } from "zod";
+
+// Custom login schema for client that doesn't require email format
+const clientLoginSchema = z.object({
+  email: z.string().min(1, "이메일 또는 사용자명을 입력하세요"),
+  password: z.string().min(1, "비밀번호를 입력하세요"),
+});
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -20,7 +27,7 @@ export default function Login() {
   const { login } = useAuth();
 
   const form = useForm<LoginData>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(clientLoginSchema),
     defaultValues: {
       email: "",
       password: "",
