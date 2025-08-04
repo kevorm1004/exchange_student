@@ -9,7 +9,7 @@ export default function AdminHeader() {
 
   const handleLogout = () => {
     logout();
-    navigate("/");
+    navigate("/admin");
   };
 
   const goToMainSite = () => {

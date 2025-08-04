@@ -17,6 +17,7 @@ import ItemDetail from "@/pages/items/detail";
 import SearchPage from "@/pages/search";
 import SearchResults from "@/pages/search-results";
 import NotFound from "@/pages/not-found";
+import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
 
 import BottomNav from "@/components/layout/bottom-nav";
@@ -43,7 +44,8 @@ function Router() {
         <Route path="/profile" component={Profile} />
         <Route path="/items/create" component={CreateItem} />
         <Route path="/items/:id" component={ItemDetail} />
-        <Route path="/admin" component={AdminDashboard} />
+        <Route path="/admin" component={AdminLogin} />
+        <Route path="/admin/dashboard" component={AdminDashboard} />
         <Route component={NotFound} />
       </Switch>
       

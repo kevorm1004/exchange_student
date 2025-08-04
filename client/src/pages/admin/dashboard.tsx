@@ -27,7 +27,11 @@ export default function AdminDashboard() {
 
   // 관리자 권한 확인
   useEffect(() => {
-    if (!user || user.role !== "admin") {
+    if (!user) {
+      navigate("/admin");
+      return;
+    }
+    if (user.role !== "admin") {
       navigate("/");
     }
   }, [user, navigate]);

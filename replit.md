@@ -2,6 +2,14 @@
 
 This is a modern mobile-first marketplace web application designed for students to buy and sell items within their school communities. The platform combines e-commerce functionality with social features, allowing users to browse items, engage in real-time chat, and participate in community discussions. Built as a Progressive Web App (PWA) with a mobile-first design approach, it targets the student market with location-based filtering by school and country.
 
+## Recent Changes (January 2025)
+- Added comprehensive admin dashboard with separate authentication flow
+- Implemented scroll position restoration for improved navigation experience
+- Enhanced mobile UI with larger product images and optimized text sizing
+- Added country-specific filtering with dropdown selection
+- Created admin management system with user and item controls
+- Admin access via dedicated login page at /admin route
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
