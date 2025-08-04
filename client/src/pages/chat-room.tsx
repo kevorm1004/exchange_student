@@ -29,13 +29,13 @@ export default function ChatRoomPage() {
   const { toast } = useToast();
 
   const { data: chatRoom } = useQuery<ChatRoomWithDetails>({
-    queryKey: ["/api/chat/rooms", roomId],
-    enabled: !!roomId,
+    queryKey: ["/api/chat/rooms", roomId, user?.id],
+    enabled: !!roomId && !!user,
   });
 
   const { data: messages = [] } = useQuery<Message[]>({
-    queryKey: ["/api/chat/rooms", roomId, "messages"],
-    enabled: !!roomId,
+    queryKey: ["/api/chat/rooms", roomId, "messages", user?.id],
+    enabled: !!roomId && !!user,
   });
 
   const sendMessageMutation = useMutation({
@@ -84,7 +84,7 @@ export default function ChatRoomPage() {
           const data = JSON.parse(event.data);
           if (data.type === "new_message") {
             queryClient.setQueryData(
-              ["/api/chat/rooms", roomId, "messages"],
+              ["/api/chat/rooms", roomId, "messages", user?.id],
               (oldMessages: Message[] = []) => {
                 // 중복 메시지 방지
                 const exists = oldMessages.some(msg => msg.id === data.message.id);
@@ -264,6 +264,38 @@ export default function ChatRoomPage() {
         </p>
       </div>
 
+      {/* 상품 정보 표시 */}
+      {chatRoom.item && (
+        <div className="mx-4 mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+              {chatRoom.item.images && chatRoom.item.images.length > 0 ? (
+                <img 
+                  src={chatRoom.item.images[0]} 
+                  alt={chatRoom.item.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-300 flex items-center justify-center">
+                  <span className="text-xs text-gray-500">📦</span>
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {chatRoom.item.title}
+              </p>
+              <p className="text-sm text-blue-600 font-semibold">
+                ₩{chatRoom.item.price.toLocaleString()}
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            이 상품에 대해 채팅 중입니다
+          </p>
+        </div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-2 pb-20">
         {groupedMessages.map((group, groupIndex) => (
@@ -279,6 +311,19 @@ export default function ChatRoomPage() {
             
             {/* 메시지들 */}
             {group.messages.map((msg) => {
+              // 시스템 메시지 처리
+              if (msg.messageType === 'system') {
+                return (
+                  <div key={msg.id} className="flex justify-center mb-4">
+                    <div className="bg-yellow-100 border border-yellow-200 px-4 py-2 rounded-lg">
+                      <p className="text-sm text-yellow-800 text-center">
+                        {msg.content}
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+              
               const isMe = msg.senderId === user.id;
               return (
                 <div

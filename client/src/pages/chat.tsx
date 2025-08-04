@@ -18,7 +18,7 @@ export default function Chat() {
   const { user, isLoading: authLoading } = useRequireAuth();
 
   const { data: chatRooms = [], isLoading } = useQuery<ChatRoomWithDetails[]>({
-    queryKey: ["/api/chat/rooms"],
+    queryKey: ["/api/chat/rooms", user?.id],
     enabled: !!user,
   });
 

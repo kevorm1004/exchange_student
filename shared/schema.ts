@@ -47,9 +47,9 @@ export const chatRooms = pgTable("chat_rooms", {
 export const messages = pgTable("messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   roomId: text("room_id").notNull().references(() => chatRooms.id),
-  senderId: text("sender_id").notNull().references(() => users.id),
+  senderId: text("sender_id").notNull(),
   content: text("content").notNull(),
-  messageType: text("message_type").default("text").notNull(),
+  messageType: text("message_type").default("user").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

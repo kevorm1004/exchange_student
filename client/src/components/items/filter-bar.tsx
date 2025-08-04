@@ -26,20 +26,19 @@ export default function FilterBar({
   const filters = [
     { id: "all", label: "전체" },
     { id: "school", label: "내 학교" },
-    { id: "category", label: "카테고리" },
   ];
 
   const countries = [
     { id: "all", label: "모든 국가" },
-    { id: "KR", label: "한국" },
-    { id: "US", label: "미국" },
-    { id: "JP", label: "일본" },
-    { id: "CN", label: "중국" },
-    { id: "CA", label: "캐나다" },
-    { id: "AU", label: "호주" },
+    { id: "Korea", label: "한국" },
+    { id: "USA", label: "미국" },
+    { id: "Japan", label: "일본" },
+    { id: "China", label: "중국" },
+    { id: "Canada", label: "캐나다" },
+    { id: "Australia", label: "호주" },
     { id: "UK", label: "영국" },
-    { id: "DE", label: "독일" },
-    { id: "FR", label: "프랑스" },
+    { id: "Germany", label: "독일" },
+    { id: "France", label: "프랑스" },
   ];
 
   return (
