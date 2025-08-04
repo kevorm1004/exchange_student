@@ -14,7 +14,7 @@ export default function FilterBar({ activeFilter, onFilterChange }: FilterBarPro
   ];
 
   return (
-    <div className="bg-white px-4 py-3 border-b border-gray-200 sticky top-16 z-40 -mt-px">
+    <div className="bg-white px-4 py-3 border-b border-gray-200 sticky top-16 z-40 border-t-0">
       <div className="flex gap-2 overflow-x-auto scrollbar-hide">
         {filters.map((filter) => (
           <button
