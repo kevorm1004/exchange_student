@@ -5,12 +5,18 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { 
-  loginSchema, 
   registerSchema,
   insertItemSchema,
   insertCommunityPostSchema,
   insertCommentSchema 
 } from "@shared/schema";
+import { z } from "zod";
+
+// Custom login schema for server that doesn't require email format
+const serverLoginSchema = z.object({
+  email: z.string().min(1, "이메일 또는 사용자명을 입력하세요"),
+  password: z.string().min(1, "비밀번호를 입력하세요"),
+});
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -153,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/auth/login', async (req, res) => {
     try {
-      const validatedData = loginSchema.parse(req.body);
+      const validatedData = serverLoginSchema.parse(req.body);
       
       // Find user by email first, then by username
       let user = await storage.getUserByEmail(validatedData.email);
