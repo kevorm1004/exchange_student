@@ -87,7 +87,7 @@ export class MemStorage implements IStorage {
       id: "test_user",
       username: "test123",
       email: "test@student.com",
-      password: "$2a$10$YourHashedPasswordHere", // password: "test123"
+      password: "$2a$10$N9qo8uLOickgx2ZMRZoMye/.IH32qhR5tqq/1LnQO3hAXS5EfMo5C", // password: "test123"
       fullName: "테스트 사용자",
       school: "Seoul National University",
       country: "South Korea",

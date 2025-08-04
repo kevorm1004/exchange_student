@@ -64,11 +64,10 @@ export default function Login() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>이메일</FormLabel>
+                    <FormLabel>이메일 또는 사용자명</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="이메일을 입력하세요"
-                        type="email"
+                        placeholder="이메일 또는 사용자명을 입력하세요"
                         {...field} 
                       />
                     </FormControl>

@@ -120,7 +120,7 @@ export const insertFavoriteSchema = createInsertSchema(favorites).omit({
 
 // Auth schemas
 export const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().min(1, "이메일 또는 사용자명을 입력하세요"),
   password: z.string().min(6),
 });
 
