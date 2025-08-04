@@ -47,6 +47,7 @@ export interface IStorage {
   
   // Message methods
   getChatRoomMessages(roomId: string): Promise<Message[]>;
+  getChatMessages(roomId: string): Promise<Message[]>;
   createMessage(insertMessage: InsertMessage): Promise<Message>;
   
   // Chat room methods
@@ -194,6 +195,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(messages)
       .where(eq(messages.roomId, roomId))
       .orderBy(messages.createdAt);
+  }
+
+  async getChatMessages(roomId: string): Promise<Message[]> {
+    return await this.getChatRoomMessages(roomId);
   }
 
   async createMessage(insertMessage: InsertMessage): Promise<Message> {

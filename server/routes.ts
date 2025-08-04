@@ -573,13 +573,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const room = await storage.findOrCreateChatRoom(itemId, req.user!.id, item.sellerId);
       
       // Create initial system message about the item if this is a new room
-      const existingMessages = await storage.getChatMessages(room.id);
+      const existingMessages = await storage.getChatRoomMessages(room.id);
       if (existingMessages.length === 0) {
         await storage.createMessage({
           roomId: room.id,
           senderId: 'system',
-          content: `${item.title} 상품에 대한 채팅을 시작합니다.`,
-          messageType: 'system'
+          content: `${item.title} 상품에 대한 채팅을 시작합니다.`
         });
       }
       
