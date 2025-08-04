@@ -71,10 +71,9 @@ export default function AdminLogin() {
           description: "관리자 대시보드로 이동합니다.",
         });
 
-        // 토스트 표시 후 잠시 대기 후 이동
-        setTimeout(() => {
-          window.location.href = "/admin/dashboard";
-        }, 1000);
+        // 즉시 리디렉션 (토스트는 자동으로 사라짐)
+        console.log("Redirecting to /admin/dashboard now...");
+        window.location.href = "/admin/dashboard";
       } else {
         console.log("Login failed:", response.status, result);
         toast({

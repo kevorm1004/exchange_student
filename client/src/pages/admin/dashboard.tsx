@@ -33,7 +33,34 @@ export default function AdminDashboard() {
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    if (!user || user.role !== "admin") {
+    // 토큰과 사용자 정보가 로컬스토리지에 있는지 먼저 확인
+    const token = localStorage.getItem("token");
+    const userData = localStorage.getItem("user");
+    
+    console.log("Dashboard - checking auth:", { token: !!token, userData: !!userData, user });
+    
+    if (!token || !userData) {
+      console.log("No token or user data, redirecting to admin login");
+      navigate("/admin");
+      return;
+    }
+    
+    try {
+      const parsedUser = JSON.parse(userData);
+      if (parsedUser.role !== "admin") {
+        console.log("User is not admin, redirecting to home");
+        navigate("/");
+        return;
+      }
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+      navigate("/admin");
+      return;
+    }
+    
+    // 인증 컨텍스트의 사용자가 로드되지 않았다면 기다림
+    if (user && user.role !== "admin") {
+      console.log("Auth context user is not admin, redirecting to home");
       navigate("/");
     }
   }, [user, navigate]);
@@ -112,7 +139,22 @@ export default function AdminDashboard() {
     }
   };
 
-  if (!user || user.role !== "admin") {
+  // 로컬스토리지에서 사용자 정보 확인
+  const token = localStorage.getItem("token");
+  const userData = localStorage.getItem("user");
+  
+  if (!token || !userData) {
+    return null;
+  }
+  
+  let parsedUser;
+  try {
+    parsedUser = JSON.parse(userData);
+  } catch {
+    return null;
+  }
+  
+  if (parsedUser.role !== "admin") {
     return null;
   }
 
