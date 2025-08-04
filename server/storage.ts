@@ -81,6 +81,65 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
     };
     this.users.set(sampleUser.id, sampleUser);
+
+    // Add some sample items for demo
+    const sampleItems: Item[] = [
+      {
+        id: "item1",
+        title: "MacBook Pro 13인치 (2020)",
+        description: "거의 새 상품입니다. 학업용으로 사용했고 보호필름과 케이스를 항상 사용했습니다.",
+        price: "1200.00",
+        category: "전자기기",
+        condition: "거의 새 것",
+        images: ["https://images.unsplash.com/photo-1541807084-5c52b6b3adef?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
+        sellerId: "user1",
+        school: "Yonsei University",
+        country: "South Korea",
+        location: "신촌역 근처",
+        isAvailable: true,
+        views: 45,
+        likes: 8,
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
+      },
+      {
+        id: "item2", 
+        title: "IKEA 책상과 의자 세트",
+        description: "이사로 인해 판매합니다. 상태 양호하고 조립 설명서도 있습니다.",
+        price: "80.00",
+        category: "가구",
+        condition: "양호",
+        images: ["https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
+        sellerId: "user1",
+        school: "Korea University",
+        country: "South Korea", 
+        location: "안암동",
+        isAvailable: true,
+        views: 23,
+        likes: 3,
+        createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000) // 6 hours ago
+      },
+      {
+        id: "item3",
+        title: "경제학 원론 교재",
+        description: "수업에서 사용했던 교재입니다. 깨끗한 상태이고 필기는 연필로만 했습니다.",
+        price: "25.00",
+        category: "도서",
+        condition: "양호",
+        images: ["https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
+        sellerId: "user1",
+        school: "Ewha Womans University",
+        country: "South Korea",
+        location: "이대역 앞",
+        isAvailable: true,
+        views: 12,
+        likes: 2,
+        createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000) // 12 hours ago
+      }
+    ];
+
+    sampleItems.forEach(item => {
+      this.items.set(item.id, item);
+    });
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -100,6 +159,7 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...insertUser, 
       id, 
+      profileImage: insertUser.profileImage || null,
       createdAt: new Date() 
     };
     this.users.set(id, user);
@@ -138,6 +198,7 @@ export class MemStorage implements IStorage {
     const newItem: Item = { 
       ...item, 
       id, 
+      images: item.images || [],
       isAvailable: true,
       views: 0,
       likes: 0,

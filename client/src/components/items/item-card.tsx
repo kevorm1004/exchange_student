@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 import type { Item } from "@shared/schema";
 import { cn } from "@/lib/utils";
 
@@ -33,8 +34,25 @@ const formatTimeAgo = (date: Date) => {
   return `${Math.floor(diffInHours / 168)}주 전`;
 };
 
+const calculateDistance = (userSchool: string, itemSchool: string) => {
+  // TODO: 실제로는 지리적 거리 계산 API를 사용해야 합니다
+  // 지금은 간단한 더미 데이터로 처리
+  if (userSchool === itemSchool) return "0km";
+  
+  const distances: { [key: string]: string } = {
+    "Seoul National University": "2.5km",
+    "Yonsei University": "3.2km", 
+    "Korea University": "4.1km",
+    "Ewha Womans University": "1.8km",
+    "Hongik University": "5.3km"
+  };
+  
+  return distances[itemSchool] || "7.2km";
+};
+
 export default function ItemCard({ item, isFavorite = false, onToggleFavorite }: ItemCardProps) {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
 
   const handleCardClick = () => {
     navigate(`/items/${item.id}`);
@@ -45,54 +63,69 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite }:
     onToggleFavorite?.(item.id);
   };
 
+  const distance = user ? calculateDistance(user.school, item.school) : "알 수 없음";
+
   return (
-    <div className="px-4 mb-4">
-      <Card className="marketplace-card cursor-pointer" onClick={handleCardClick}>
-        <div className="relative">
-          <img
-            src={item.images[0] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"}
-            alt={item.title}
-            className="w-full h-48 object-cover"
-          />
-          <div className="absolute top-3 right-3 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full">
-            <Camera className="inline w-3 h-3 mr-1" />
-            {item.images.length}
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute top-3 left-3 text-white hover:text-red-500 p-1"
-            onClick={handleFavoriteClick}
-          >
-            <Heart 
-              className={cn(
-                "h-5 w-5",
-                isFavorite ? "fill-red-500 text-red-500" : "fill-none"
-              )} 
-            />
-          </Button>
-        </div>
+    <div className="px-4 mb-3">
+      <Card className="marketplace-card cursor-pointer hover:shadow-md transition-shadow" onClick={handleCardClick}>
         <div className="p-4">
-          <h3 className="font-semibold text-gray-900 text-lg mb-2">{item.title}</h3>
-          <p className="text-2xl font-bold text-primary mb-3">${item.price}</p>
-          <div className="flex items-center text-gray-600 text-sm mb-2">
-            <MapPin className="w-3 h-3 mr-1" />
-            <span>{item.location}</span>
-            <span className="mx-2">•</span>
-            <span>{formatTimeAgo(new Date(item.createdAt))}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4 text-gray-500 text-sm">
-              <span className="flex items-center">
-                <Eye className="w-3 h-3 mr-1" />
-                {item.views}
-              </span>
-              <span className="flex items-center">
-                <Heart className="w-3 h-3 mr-1" />
-                {item.likes}
-              </span>
+          <div className="flex space-x-4">
+            {/* 왼쪽 이미지 */}
+            <div className="relative flex-shrink-0">
+              <img
+                src={item.images[0] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200"}
+                alt={item.title}
+                className="w-20 h-20 object-cover rounded-lg"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute -top-2 -right-2 text-gray-600 hover:text-red-500 p-1 bg-white rounded-full shadow-sm"
+                onClick={handleFavoriteClick}
+              >
+                <Heart 
+                  className={cn(
+                    "h-4 w-4",
+                    isFavorite ? "fill-red-500 text-red-500" : "fill-none"
+                  )} 
+                />
+              </Button>
             </div>
-            <Badge className={getCategoryColor(item.category)}>{item.category}</Badge>
+
+            {/* 오른쪽 정보 */}
+            <div className="flex-1 min-w-0">
+              {/* 제목 */}
+              <h3 className="font-semibold text-gray-900 text-base mb-1 truncate">{item.title}</h3>
+              
+              {/* 거리와 대학교 */}
+              <div className="flex items-center text-sm text-gray-600 mb-1">
+                <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                <span className="text-primary font-medium">{distance}</span>
+                <span className="mx-2">•</span>
+                <span className="truncate">{item.school}</span>
+              </div>
+              
+              {/* 가격 */}
+              <p className="text-xl font-bold text-gray-900 mb-2">${item.price}</p>
+              
+              {/* 하단 메타 정보 */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3 text-gray-500 text-xs">
+                  <span className="flex items-center">
+                    <Eye className="w-3 h-3 mr-1" />
+                    {item.views}
+                  </span>
+                  <span className="flex items-center">
+                    <Heart className="w-3 h-3 mr-1" />
+                    {item.likes}
+                  </span>
+                  <span>{formatTimeAgo(new Date(item.createdAt))}</span>
+                </div>
+                <Badge className={`${getCategoryColor(item.category)} text-xs px-2 py-1`}>
+                  {item.category}
+                </Badge>
+              </div>
+            </div>
           </div>
         </div>
       </Card>

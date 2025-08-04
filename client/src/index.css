@@ -81,7 +81,7 @@
 
   /* Marketplace specific utilities */
   .marketplace-card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow;
+    @apply bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow;
   }
 
   .marketplace-button-primary {
