@@ -71,7 +71,10 @@ export default function CreateItem() {
       category: "",
       condition: "",
       images: [],
-      location: "",
+      school: user?.school || "",
+      country: user?.country || "",
+      location: user?.school || "",
+      isAvailable: true,
     },
   });
 
@@ -204,7 +207,9 @@ export default function CreateItem() {
         ...data,
         images,
         price: form.getValues('price'),
-        location: user?.school || "",
+        school: user?.school || "",
+        country: user?.country || "",
+        location: data.location || user?.school || "",
       };
       console.log('Submitting item data:', submitData);
       createItemMutation.mutate(submitData);
@@ -565,6 +570,7 @@ export default function CreateItem() {
                     console.log('Button clicked');
                     console.log('Form values:', form.getValues());
                     console.log('Form valid:', form.formState.isValid);
+                    console.log('Form errors:', form.formState.errors);
                   }}
                 >
                   {isLoading || createItemMutation.isPending ? "등록 중..." : "상품 등록"}
