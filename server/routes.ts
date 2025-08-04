@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import jwt from "jsonwebtoken";
@@ -20,7 +20,7 @@ const serverLoginSchema = z.object({
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-interface AuthenticatedRequest extends Express.Request {
+interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
@@ -28,7 +28,7 @@ interface AuthenticatedRequest extends Express.Request {
 }
 
 // Middleware to verify JWT token
-const authenticateToken = (req: AuthenticatedRequest, res: Express.Response, next: Express.NextFunction) => {
+const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -252,7 +252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search items endpoint
+  // Search items endpoint - must be before /:id route
   app.get('/api/items/search', async (req, res) => {
     try {
       const { q } = req.query;
