@@ -522,6 +522,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/daily-stats", authenticateToken, async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const dailyStats = await storage.getDailyStats();
+      res.json(dailyStats);
+    } catch (error) {
+      console.error("Error fetching daily stats:", error);
+      res.status(500).json({ error: "Failed to fetch daily stats" });
+    }
+  });
+
+  app.get("/api/admin/export/users", authenticateToken, async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const users = await storage.getAdminUsers();
+      
+      // CSV 헤더
+      const headers = ['ID', '사용자명', '이메일', '전체이름', '학교', '국가', '상태', '역할', '가입일'];
+      
+      // CSV 데이터
+      const csvData = users.map(user => [
+        user.id,
+        user.username,
+        user.email,
+        user.fullName,
+        user.school,
+        user.country,
+        user.status,
+        user.role,
+        user.createdAt.toISOString().split('T')[0]
+      ]);
+      
+      // CSV 문자열 생성
+      const csvContent = [headers, ...csvData]
+        .map(row => row.map(field => `"${field}"`).join(','))
+        .join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="users.csv"');
+      res.send('\uFEFF' + csvContent); // BOM for Excel compatibility
+    } catch (error) {
+      console.error("Error exporting users:", error);
+      res.status(500).json({ error: "Failed to export users" });
+    }
+  });
+
+  app.get("/api/admin/export/items", authenticateToken, async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const items = await storage.getAdminItems();
+      
+      // CSV 헤더
+      const headers = ['ID', '제목', '설명', '가격', '카테고리', '상태', '위치', '학교', '국가', '판매자ID', '조회수', '좋아요', '등록일'];
+      
+      // CSV 데이터
+      const csvData = items.map(item => [
+        item.id,
+        item.title,
+        item.description,
+        item.price,
+        item.category,
+        item.condition,
+        item.location,
+        item.school,
+        item.country,
+        item.sellerId,
+        item.views,
+        item.likes,
+        item.createdAt.toISOString().split('T')[0]
+      ]);
+      
+      // CSV 문자열 생성
+      const csvContent = [headers, ...csvData]
+        .map(row => row.map(field => `"${field}"`).join(','))
+        .join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="items.csv"');
+      res.send('\uFEFF' + csvContent); // BOM for Excel compatibility
+    } catch (error) {
+      console.error("Error exporting items:", error);
+      res.status(500).json({ error: "Failed to export items" });
+    }
+  });
+
   app.get("/api/admin/items", authenticateToken, async (req, res) => {
     try {
       const user = req.user as any;
