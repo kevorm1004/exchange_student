@@ -151,7 +151,7 @@ function SearchResults() {
       </header>
 
       {/* Search results */}
-      <div className="p-4 pb-8">
+      <div className="p-4 pb-24">
         {/* Search query display */}
         <div className="mb-4">
           <p className="text-sm text-gray-600">
@@ -197,6 +197,7 @@ function SearchResults() {
                     <ItemCard
                       key={item.id}
                       item={item}
+                      variant="grid"
                       onToggleFavorite={handleToggleFavorite}
                     />
                   ))}

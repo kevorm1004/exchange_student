@@ -11,6 +11,7 @@ interface ItemCardProps {
   item: Item;
   isFavorite?: boolean;
   onToggleFavorite?: (itemId: string) => void;
+  variant?: "default" | "grid"; // grid variant for search results
 }
 
 const getCategoryColor = (category: string) => {
@@ -50,7 +51,7 @@ const calculateDistance = (userSchool: string, itemSchool: string) => {
   return distances[itemSchool] || "7.2km";
 };
 
-export default function ItemCard({ item, isFavorite = false, onToggleFavorite }: ItemCardProps) {
+export default function ItemCard({ item, isFavorite = false, onToggleFavorite, variant = "default" }: ItemCardProps) {
   const [, navigate] = useLocation();
   const { user } = useAuth();
 
@@ -65,6 +66,70 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite }:
 
   const distance = user ? calculateDistance(user.school, item.school) : "알 수 없음";
 
+  // Grid variant for search results
+  if (variant === "grid") {
+    return (
+      <Card className="marketplace-card cursor-pointer hover:shadow-md transition-shadow" onClick={handleCardClick}>
+        <div className="p-3">
+          {/* 상단 이미지 */}
+          <div className="relative mb-3">
+            <img
+              src={item.images[0] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200"}
+              alt={item.title}
+              className="w-full h-32 object-cover rounded-lg"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute top-2 right-2 text-gray-600 hover:text-red-500 p-1 bg-white rounded-full shadow-sm"
+              onClick={handleFavoriteClick}
+            >
+              <Heart 
+                className={cn(
+                  "h-4 w-4",
+                  isFavorite ? "fill-red-500 text-red-500" : "fill-none"
+                )} 
+              />
+            </Button>
+          </div>
+
+          {/* 하단 정보 */}
+          <div>
+            {/* 제목 */}
+            <h3 className="font-semibold text-gray-900 text-sm mb-1 truncate">{item.title}</h3>
+            
+            {/* 가격 */}
+            <p className="text-lg font-bold text-gray-900 mb-2">${item.price}</p>
+            
+            {/* 위치 정보 */}
+            <div className="flex items-center text-xs text-gray-600 mb-2">
+              <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+              <span className="text-primary font-medium">{distance}</span>
+            </div>
+            
+            {/* 메타 정보 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-gray-500 text-xs">
+                <span className="flex items-center">
+                  <Eye className="w-3 h-3 mr-1" />
+                  {item.views}
+                </span>
+                <span className="flex items-center">
+                  <Heart className="w-3 h-3 mr-1" />
+                  {item.likes}
+                </span>
+              </div>
+              <Badge className={`${getCategoryColor(item.category)} text-xs px-2 py-1`}>
+                {item.category}
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // Default variant for home page
   return (
     <div className="px-4 mb-3">
       <Card className="marketplace-card cursor-pointer hover:shadow-md transition-shadow" onClick={handleCardClick}>
