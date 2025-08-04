@@ -46,11 +46,8 @@ export default function ItemDetail() {
 
   const createChatRoomMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("/api/chat/rooms", {
-        method: "POST",
-        body: JSON.stringify({ itemId: id }),
-        headers: { "Content-Type": "application/json" }
-      });
+      const response = await apiRequest("POST", "/api/chat/rooms", { itemId: id });
+      return response.json();
     },
     onSuccess: (data: any) => {
       toast({
