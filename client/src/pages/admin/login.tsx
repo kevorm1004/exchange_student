@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
 const adminLoginSchema = z.object({
-  email: z.string().email("유효한 이메일을 입력하세요"),
+  email: z.string().min(1, "이메일을 입력하세요"),
   password: z.string().min(1, "비밀번호를 입력하세요"),
 });
 

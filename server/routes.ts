@@ -156,7 +156,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           school: user.school,
           country: user.country,
           profileImage: user.profileImage,
-          preferredCurrency: user.preferredCurrency
+          preferredCurrency: user.preferredCurrency,
+          role: user.role,
+          status: user.status
         } 
       });
     } catch (error) {
@@ -202,7 +204,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           school: user.school,
           country: user.country,
           profileImage: user.profileImage,
-          preferredCurrency: user.preferredCurrency
+          preferredCurrency: user.preferredCurrency,
+          role: user.role,
+          status: user.status
         } 
       });
     } catch (error) {
@@ -227,7 +231,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           school: user.school,
           country: user.country,
           profileImage: user.profileImage,
-          preferredCurrency: user.preferredCurrency
+          preferredCurrency: user.preferredCurrency,
+          role: user.role,
+          status: user.status
         } 
       });
     } catch (error) {

@@ -82,12 +82,12 @@ export class MemStorage implements IStorage {
   }
 
   private initializeData() {
-    // Create admin user
+    // Create admin user with correct password hash
     const adminUser: User = {
       id: "admin1",
       username: "admin",
       email: "admin@example.com",
-      password: "$2b$10$vI8aWY2X3B.DEQ.KhKnZme6HxsI2Lc5r3vY9U7h.4EEo7zQ8QxE5O", // "admin123"
+      password: "$2b$10$Z7QXAOwLwdUiAjRTGao4KuoQOUpzIW48o4DEcuhxgrzOV0ayAoeKy", // "admin123"
       fullName: "관리자",
       school: "ExchangeMart",
       country: "Korea",
