@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
+import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 
 // 프로필 업데이트 스키마 (비밀번호 제외)
 const updateProfileSchema = insertUserSchema.omit({ password: true }).extend({
@@ -24,6 +25,7 @@ const updateProfileSchema = insertUserSchema.omit({ password: true }).extend({
     .optional()
     .or(z.literal("")),
   confirmPassword: z.string().optional().or(z.literal("")),
+  preferredCurrency: z.string().default("USD"),
 }).refine((data) => {
   if (data.newPassword && data.newPassword !== data.confirmPassword) {
     return false;
@@ -68,6 +70,7 @@ export default function Profile() {
       fullName: user.fullName,
       school: user.school,
       country: user.country,
+      preferredCurrency: user.preferredCurrency || "USD",
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
@@ -82,6 +85,7 @@ export default function Profile() {
         fullName: data.fullName,
         school: data.school,
         country: data.country,
+        preferredCurrency: data.preferredCurrency,
       };
       
       if (data.newPassword) {
@@ -272,6 +276,31 @@ export default function Profile() {
                             className="bg-white"
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="preferredCurrency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>선호 통화</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="통화를 선택하세요" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {SUPPORTED_CURRENCIES.map((currency) => (
+                              <SelectItem key={currency.code} value={currency.code}>
+                                {currency.symbol} {currency.name} ({currency.code})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}

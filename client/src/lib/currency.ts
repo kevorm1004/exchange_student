@@ -99,3 +99,16 @@ export function convertCurrency(
   const usdAmount = convertToUSD(amount, fromCurrency);
   return convertFromUSD(usdAmount, toCurrency);
 }
+
+// 통화 코드로 Currency 객체 가져오기
+export function getCurrencyByCode(currencyCode: string): Currency {
+  const currency = Object.values(CURRENCIES).find(c => c.code === currencyCode);
+  return currency || CURRENCIES.US; // 기본값은 USD
+}
+
+// 지원하는 모든 통화 목록 (프로필 설정용)
+export const SUPPORTED_CURRENCIES = Object.values(CURRENCIES).map(currency => ({
+  code: currency.code,
+  name: currency.name,
+  symbol: currency.symbol,
+}));

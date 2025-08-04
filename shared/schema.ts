@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   school: text("school").notNull(),
   country: text("country").notNull(),
   profileImage: text("profile_image"),
+  preferredCurrency: text("preferred_currency").default("USD").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

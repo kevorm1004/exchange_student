@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import type { Item } from "@shared/schema";
 import { cn } from "@/lib/utils";
-import { getCurrencyForCountry, formatPrice } from "@/lib/currency";
+import { getCurrencyByCode, formatPrice } from "@/lib/currency";
 
 interface ItemCardProps {
   item: Item;
@@ -56,8 +56,8 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
   const [, navigate] = useLocation();
   const { user } = useAuth();
   
-  // 사용자의 국가에 맞는 통화로 가격 표시
-  const userCurrency = user ? getCurrencyForCountry(user.country) : getCurrencyForCountry("US");
+  // 사용자의 선호 통화로 가격 표시
+  const userCurrency = user ? getCurrencyByCode(user.preferredCurrency || "USD") : getCurrencyByCode("USD");
   const displayPrice = formatPrice(parseFloat(item.price), userCurrency);
 
   const handleCardClick = () => {

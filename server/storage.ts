@@ -79,6 +79,7 @@ export class MemStorage implements IStorage {
       school: "Seoul National University",
       country: "South Korea",
       profileImage: null,
+      preferredCurrency: "USD",
       createdAt: new Date(),
     };
     this.users.set(sampleUser.id, sampleUser);
@@ -93,6 +94,7 @@ export class MemStorage implements IStorage {
       school: "Seoul National University",
       country: "South Korea",
       profileImage: null,
+      preferredCurrency: "USD",
       createdAt: new Date(),
     };
     this.users.set(testUser.id, testUser);
@@ -329,6 +331,7 @@ export class MemStorage implements IStorage {
       ...insertUser, 
       id, 
       profileImage: insertUser.profileImage || null,
+      preferredCurrency: insertUser.preferredCurrency || "USD",
       createdAt: new Date() 
     };
     this.users.set(id, user);

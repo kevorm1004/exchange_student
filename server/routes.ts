@@ -129,7 +129,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fullName: validatedData.fullName,
         school: validatedData.school,
         country: validatedData.country,
-        profileImage: validatedData.profileImage || null
+        profileImage: validatedData.profileImage || null,
+        preferredCurrency: validatedData.preferredCurrency || "USD"
       });
 
       // Generate JWT
@@ -148,7 +149,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fullName: user.fullName,
           school: user.school,
           country: user.country,
-          profileImage: user.profileImage
+          profileImage: user.profileImage,
+          preferredCurrency: user.preferredCurrency
         } 
       });
     } catch (error) {
@@ -193,7 +195,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fullName: user.fullName,
           school: user.school,
           country: user.country,
-          profileImage: user.profileImage
+          profileImage: user.profileImage,
+          preferredCurrency: user.preferredCurrency
         } 
       });
     } catch (error) {
@@ -217,7 +220,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fullName: user.fullName,
           school: user.school,
           country: user.country,
-          profileImage: user.profileImage
+          profileImage: user.profileImage,
+          preferredCurrency: user.preferredCurrency
         } 
       });
     } catch (error) {
