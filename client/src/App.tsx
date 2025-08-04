@@ -4,9 +4,11 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./hooks/use-auth";
+import { WebSocketProvider } from "./hooks/use-websocket";
 
 import Home from "@/pages/home";
 import Chat from "@/pages/chat";
+import ChatRoom from "@/pages/chat-room";
 import Community from "@/pages/community";
 import MyPage from "@/pages/my";
 import Profile from "@/pages/profile";
@@ -39,6 +41,7 @@ function Router() {
         <Route path="/search" component={SearchPage} />
         <Route path="/search/:query" component={SearchResults} />
         <Route path="/chat" component={Chat} />
+        <Route path="/chat/:roomId" component={ChatRoom} />
         <Route path="/community" component={Community} />
         <Route path="/my" component={MyPage} />
         <Route path="/profile" component={Profile} />
@@ -59,8 +62,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <Toaster />
-          <Router />
+          <WebSocketProvider>
+            <Toaster />
+            <Router />
+          </WebSocketProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

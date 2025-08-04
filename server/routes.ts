@@ -72,6 +72,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } catch (error) {
             ws.send(JSON.stringify({ type: 'auth_error', error: 'Invalid token' }));
           }
+        } else if (message.type === 'join_room') {
+          // Join a chat room
+          const roomId = message.roomId;
+          // Store room association for this client
+          (ws as any).roomId = roomId;
+        } else if (message.type === 'leave_room') {
+          // Leave a chat room
+          delete (ws as any).roomId;
         } else if (message.type === 'chat_message') {
           // Handle chat message
           const newMessage = await storage.createMessage({
@@ -395,53 +403,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/chat/rooms', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const rooms = await storage.getChatRooms(req.user!.id);
-      res.json(rooms);
+      
+      // Get detailed room info with user and item data
+      const detailedRooms = await Promise.all(
+        rooms.map(async (room) => {
+          const [item, buyer, seller] = await Promise.all([
+            storage.getItem(room.itemId),
+            storage.getUser(room.buyerId),
+            storage.getUser(room.sellerId)
+          ]);
+          
+          return {
+            ...room,
+            item,
+            buyer,
+            seller
+          };
+        })
+      );
+      
+      res.json(detailedRooms);
     } catch (error) {
-      console.error('Get chat rooms error:', error);
-      res.status(500).json({ error: 'Server error' });
+      console.error('Error fetching chat rooms:', error);
+      res.status(500).json({ error: 'Failed to fetch chat rooms' });
+    }
+  });
+
+  app.get('/api/chat/rooms/:roomId', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { roomId } = req.params;
+      const room = await storage.getChatRoom(roomId);
+      
+      if (!room) {
+        return res.status(404).json({ error: 'Chat room not found' });
+      }
+      
+      // Check if user is participant
+      if (room.buyerId !== req.user!.id && room.sellerId !== req.user!.id) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      
+      // Get detailed room info
+      const [item, buyer, seller] = await Promise.all([
+        storage.getItem(room.itemId),
+        storage.getUser(room.buyerId),
+        storage.getUser(room.sellerId)
+      ]);
+      
+      res.json({
+        ...room,
+        item,
+        buyer,
+        seller
+      });
+    } catch (error) {
+      console.error('Error fetching chat room:', error);
+      res.status(500).json({ error: 'Failed to fetch chat room' });
+    }
+  });
+
+  app.get('/api/chat/rooms/:roomId/messages', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { roomId } = req.params;
+      const room = await storage.getChatRoom(roomId);
+      
+      if (!room) {
+        return res.status(404).json({ error: 'Chat room not found' });
+      }
+      
+      // Check if user is participant
+      if (room.buyerId !== req.user!.id && room.sellerId !== req.user!.id) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      
+      const messages = await storage.getChatRoomMessages(roomId);
+      res.json(messages);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      res.status(500).json({ error: 'Failed to fetch messages' });
+    }
+  });
+
+  app.post('/api/chat/rooms/:roomId/messages', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { roomId } = req.params;
+      const { content } = req.body;
+      
+      if (!content || !content.trim()) {
+        return res.status(400).json({ error: 'Message content is required' });
+      }
+      
+      const room = await storage.getChatRoom(roomId);
+      if (!room) {
+        return res.status(404).json({ error: 'Chat room not found' });
+      }
+      
+      // Check if user is participant
+      if (room.buyerId !== req.user!.id && room.sellerId !== req.user!.id) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      
+      const message = await storage.createMessage({
+        roomId,
+        senderId: req.user!.id,
+        content: content.trim(),
+        messageType: 'text'
+      });
+      
+      res.json(message);
+    } catch (error) {
+      console.error('Error creating message:', error);
+      res.status(500).json({ error: 'Failed to create message' });
     }
   });
 
   app.post('/api/chat/rooms', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { itemId, sellerId } = req.body;
+      const { itemId } = req.body;
       
-      const room = await storage.createChatRoom({
-        itemId,
-        buyerId: req.user!.id,
-        sellerId
+      if (!itemId) {
+        return res.status(400).json({ error: 'Item ID is required' });
+      }
+      
+      const item = await storage.getItem(itemId);
+      if (!item) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+      
+      // Cannot create chat room with yourself
+      if (item.sellerId === req.user!.id) {
+        return res.status(400).json({ error: 'Cannot chat with yourself' });
+      }
+      
+      // Find or create chat room
+      const room = await storage.findOrCreateChatRoom(itemId, req.user!.id, item.sellerId);
+      
+      // Get detailed room info
+      const [roomItem, buyer, seller] = await Promise.all([
+        storage.getItem(room.itemId),
+        storage.getUser(room.buyerId),
+        storage.getUser(room.sellerId)
+      ]);
+      
+      res.json({
+        ...room,
+        item: roomItem,
+        buyer,
+        seller
       });
-
-      res.status(201).json(room);
     } catch (error) {
-      console.error('Create chat room error:', error);
-      res.status(400).json({ error: 'Failed to create chat room' });
-    }
-  });
-
-  app.get('/api/chat/rooms/:id/messages', authenticateToken, async (req: AuthenticatedRequest, res) => {
-    try {
-      const messages = await storage.getMessages(req.params.id);
-      res.json(messages);
-    } catch (error) {
-      console.error('Get messages error:', error);
-      res.status(500).json({ error: 'Server error' });
+      console.error('Error creating chat room:', error);
+      res.status(500).json({ error: 'Failed to create chat room' });
     }
   });
 
   // Community routes
   app.get('/api/community/posts', async (req, res) => {
     try {
-      const { school, country } = req.query;
-      const posts = await storage.getCommunityPosts({
-        school: school as string,
-        country: country as string
-      });
-
+      const { school, country, filter } = req.query;
+      let posts;
+      
+      if (filter === 'school' && school) {
+        posts = await storage.getCommunityPostsBySchool(school as string);
+      } else if (filter === 'country' && country) {
+        posts = await storage.getCommunityPostsByCountry(country as string);
+      } else {
+        posts = await storage.getCommunityPosts();
+      }
+      
       res.json(posts);
     } catch (error) {
-      console.error('Get community posts error:', error);
-      res.status(500).json({ error: 'Server error' });
+      console.error('Error fetching community posts:', error);
+      res.status(500).json({ error: 'Failed to fetch community posts' });
     }
   });
 
@@ -455,7 +588,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const post = await storage.createCommunityPost({
-        ...validatedData,
+        title: validatedData.title,
+        content: validatedData.content,
         authorId: user.id,
         school: user.school,
         country: user.country

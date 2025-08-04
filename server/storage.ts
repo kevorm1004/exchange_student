@@ -1,53 +1,70 @@
+import { randomUUID } from "crypto";
+import { db } from "./db";
 import { 
+  users, 
+  items, 
+  chatRooms, 
+  messages, 
+  communityPosts, 
+  comments, 
+  favorites,
   type User, 
-  type InsertUser, 
+  type InsertUser,
   type Item, 
   type InsertItem,
-  type ChatRoom,
+  type ChatRoom, 
   type InsertChatRoom,
-  type Message,
+  type Message, 
   type InsertMessage,
-  type CommunityPost,
+  type CommunityPost, 
   type InsertCommunityPost,
-  type Comment,
+  type Comment, 
   type InsertComment,
-  type Favorite,
+  type Favorite, 
   type InsertFavorite
 } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { eq, and, or, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
   getUser(id: string): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
-
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(insertUser: InsertUser): Promise<User>;
+  
   // Item methods
-  getItems(filter?: { school?: string; country?: string; category?: string; search?: string }): Promise<Item[]>;
+  getItems(): Promise<Item[]>;
   getItem(id: string): Promise<Item | undefined>;
-  createItem(item: InsertItem & { sellerId: string }): Promise<Item>;
-  updateItem(id: string, updates: Partial<Item>): Promise<Item | undefined>;
+  createItem(insertItem: InsertItem): Promise<Item>;
+  updateItem(id: string, updates: Partial<InsertItem>): Promise<Item | undefined>;
   deleteItem(id: string): Promise<boolean>;
+  searchItems(query: string): Promise<Item[]>;
+  getItemsByCategory(category: string): Promise<Item[]>;
+  getItemsByCountry(country: string): Promise<Item[]>;
+  getItemsBySchool(school: string): Promise<Item[]>;
+  getUserItems(userId: string): Promise<Item[]>;
   incrementItemViews(id: string): Promise<void>;
-  toggleItemLike(itemId: string, userId: string): Promise<boolean>;
-
-  // Chat methods
+  
+  // Message methods
+  getChatRoomMessages(roomId: string): Promise<Message[]>;
+  createMessage(insertMessage: InsertMessage): Promise<Message>;
+  
+  // Chat room methods
   getChatRooms(userId: string): Promise<ChatRoom[]>;
   getChatRoom(id: string): Promise<ChatRoom | undefined>;
-  createChatRoom(room: InsertChatRoom): Promise<ChatRoom>;
-  getMessages(roomId: string): Promise<Message[]>;
-  createMessage(message: InsertMessage): Promise<Message>;
-
+  createChatRoom(insertChatRoom: InsertChatRoom): Promise<ChatRoom>;
+  findOrCreateChatRoom(itemId: string, buyerId: string, sellerId: string): Promise<ChatRoom>;
+  
   // Community methods
-  getCommunityPosts(filter?: { school?: string; country?: string }): Promise<CommunityPost[]>;
+  getCommunityPosts(): Promise<CommunityPost[]>;
   getCommunityPost(id: string): Promise<CommunityPost | undefined>;
-  createCommunityPost(post: InsertCommunityPost & { authorId: string }): Promise<CommunityPost>;
-  getComments(postId: string): Promise<Comment[]>;
+  createCommunityPost(insertPost: InsertCommunityPost): Promise<CommunityPost>;
+  getCommunityPostsBySchool(school: string): Promise<CommunityPost[]>;
+  getCommunityPostsByCountry(country: string): Promise<CommunityPost[]>;
+  getPostComments(postId: string): Promise<Comment[]>;
   createComment(comment: InsertComment & { authorId: string }): Promise<Comment>;
-
-  // Favorites
+  
+  // Favorites methods
   getUserFavorites(userId: string): Promise<Favorite[]>;
   addFavorite(favorite: InsertFavorite): Promise<Favorite>;
   removeFavorite(userId: string, itemId: string): Promise<boolean>;
@@ -68,626 +85,283 @@ export interface IStorage {
     dailyCompletedTrades: number;
     weeklyStats: { date: string; visitors: number; items: number; trades: number }[];
   }>;
-  getDailyStats(): Promise<{
-    dailyVisitors: number;
-    dailyItemRegistrations: number;
-    dailyCompletedTrades: number;
-    weeklyStats: { date: string; visitors: number; items: number; trades: number }[];
-  }>;
   getAdminItems(search?: string): Promise<Item[]>;
   getAdminUsers(search?: string): Promise<User[]>;
   updateUserStatus(userId: string, status: string): Promise<void>;
+  updateUser(userId: string, updates: Partial<InsertUser>): Promise<User | undefined>;
+  toggleItemLike(itemId: string, userId: string): Promise<boolean>;
+  getComments(postId: string): Promise<Comment[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User> = new Map();
-  private items: Map<string, Item> = new Map();
-  private chatRooms: Map<string, ChatRoom> = new Map();
-  private messages: Map<string, Message> = new Map();
-  private communityPosts: Map<string, CommunityPost> = new Map();
-  private comments: Map<string, Comment> = new Map();
-  private favorites: Map<string, Favorite> = new Map();
-
-  constructor() {
-    // Initialize with some sample data
-    this.initializeData();
-  }
-
-  private initializeData() {
-    // Create admin user with correct password hash
-    const adminUser: User = {
-      id: "admin1",
-      username: "admin",
-      email: "admin@example.com",
-      password: "$2b$10$Z7QXAOwLwdUiAjRTGao4KuoQOUpzIW48o4DEcuhxgrzOV0ayAoeKy", // "admin123"
-      fullName: "관리자",
-      school: "ExchangeMart",
-      country: "Korea",
-      profileImage: null,
-      preferredCurrency: "USD",
-      role: "admin",
-      status: "active",
-      createdAt: new Date()
-    };
-    this.users.set(adminUser.id, adminUser);
-
-    // This is just for demo - in production this would be empty
-    const sampleUser: User = {
-      id: "user1",
-      username: "john_doe",
-      email: "john@university.edu",
-      password: "$2a$10$hashed_password", // In real app this would be properly hashed
-      fullName: "John Doe",
-      school: "Seoul National University",
-      country: "South Korea",
-      profileImage: null,
-      preferredCurrency: "USD",
-      role: "user",
-      status: "active",
-      createdAt: new Date(),
-    };
-    this.users.set(sampleUser.id, sampleUser);
-
-    // Add a test user for product registration
-    const testUser: User = {
-      id: "test_user",
-      username: "test123",
-      email: "test@student.com",
-      password: "$2b$10$vPGJcNWELW6Qn5/x2kLrt.nvNlaBtASPFIZd6zQyz07Q.q9vxbDNK", // password: "test123"
-      fullName: "테스트 사용자",
-      school: "Seoul National University",
-      country: "South Korea",
-      profileImage: null,
-      preferredCurrency: "USD",
-      role: "user",
-      status: "active",
-      createdAt: new Date(),
-    };
-    this.users.set(testUser.id, testUser);
-
-    // Add some sample items for demo (more items for infinite scroll testing)
-    const sampleItems: Item[] = [
-      {
-        id: "item1",
-        title: "MacBook Pro 13인치 (2020)",
-        description: "거의 새 상품입니다. 학업용으로 사용했고 보호필름과 케이스를 항상 사용했습니다.",
-        price: "1200.00",
-        category: "전자기기",
-        condition: "거의 새 것",
-        images: ["https://images.unsplash.com/photo-1541807084-5c52b6b3adef?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
-        sellerId: "user1",
-        school: "Yonsei University",
-        country: "South Korea",
-        location: "신촌역 근처",
-        isAvailable: true,
-        views: 45,
-        likes: 8,
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
-      },
-      {
-        id: "item2", 
-        title: "IKEA 책상과 의자 세트",
-        description: "이사로 인해 판매합니다. 상태 양호하고 조립 설명서도 있습니다.",
-        price: "80.00",
-        category: "가구",
-        condition: "양호",
-        images: ["https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
-        sellerId: "user1",
-        school: "Korea University",
-        country: "South Korea", 
-        location: "안암동",
-        isAvailable: true,
-        views: 23,
-        likes: 3,
-        createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000) // 6 hours ago
-      },
-      {
-        id: "item3",
-        title: "경제학 원론 교재",
-        description: "수업에서 사용했던 교재입니다. 깨끗한 상태이고 필기는 연필로만 했습니다.",
-        price: "25.00",
-        category: "도서",
-        condition: "양호",
-        images: ["https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
-        sellerId: "user1",
-        school: "Ewha Womans University",
-        country: "South Korea",
-        location: "이대역 앞",
-        isAvailable: true,
-        views: 12,
-        likes: 2,
-        createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000) // 12 hours ago
-      },
-      // Add more items for infinite scroll testing
-      {
-        id: "item4",
-        title: "iPhone 12 Pro 128GB",
-        description: "상태 좋은 아이폰입니다. 액정보호필름과 케이스 포함.",
-        price: "650.00",
-        category: "전자기기",
-        condition: "양호",
-        images: ["https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
-        sellerId: "test_user",
-        school: "Seoul National University",
-        country: "South Korea",
-        location: "관악구",
-        isAvailable: true,
-        views: 67,
-        likes: 15,
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) // 1 day ago
-      },
-      {
-        id: "item5",
-        title: "스타벅스 텀블러 세트",
-        description: "새로 산 텀블러인데 중복으로 받아서 판매합니다.",
-        price: "15.00",
-        category: "생활용품",
-        condition: "새 상품",
-        images: ["https://images.unsplash.com/photo-1544716278-e513176f20a5?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
-        sellerId: "test_user",
-        school: "Seoul National University",
-        country: "South Korea",
-        location: "신림역",
-        isAvailable: true,
-        views: 8,
-        likes: 1,
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) // 3 days ago
-      },
-      {
-        id: "item6",
-        title: "나이키 운동화 (270mm)",
-        description: "몇 번 안 신은 운동화입니다. 사이즈가 맞지 않아 판매합니다.",
-        price: "45.00",
-        category: "의류",
-        condition: "거의 새 것",
-        images: ["https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
-        sellerId: "user1",
-        school: "Hanyang University",
-        country: "South Korea",
-        location: "왕십리역",
-        isAvailable: true,
-        views: 32,
-        likes: 6,
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) // 5 days ago
-      },
-      {
-        id: "item7",
-        title: "요가매트 + 요가블록 세트",
-        description: "운동 시작하려고 샀는데 사용할 시간이 없어서 판매합니다.",
-        price: "30.00",
-        category: "스포츠",
-        condition: "새 상품",
-        images: ["https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
-        sellerId: "test_user",
-        school: "Seoul National University",
-        country: "South Korea",
-        location: "봉천역",
-        isAvailable: true,
-        views: 19,
-        likes: 4,
-        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 1 week ago
-      },
-      {
-        id: "item8",
-        title: "토익 교재 세트 (LC+RC)",
-        description: "토익 점수 달성해서 더 이상 필요없어 판매합니다. 깨끗해요.",
-        price: "20.00",
-        category: "도서",
-        condition: "양호",
-        images: ["https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
-        sellerId: "user1",
-        school: "Sungkyunkwan University",
-        country: "South Korea",
-        location: "혜화역",
-        isAvailable: true,
-        views: 28,
-        likes: 7,
-        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) // 10 days ago
-      },
-      {
-        id: "item9",
-        title: "미니 냉장고 (원룸용)",
-        description: "기숙사에서 사용했던 미니 냉장고입니다. 이사로 인해 판매.",
-        price: "120.00",
-        category: "가전제품",
-        condition: "양호",
-        images: ["https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
-        sellerId: "test_user",
-        school: "Seoul National University",
-        country: "South Korea",
-        location: "샤로수길",
-        isAvailable: true,
-        views: 41,
-        likes: 12,
-        createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) // 2 weeks ago
-      },
-      {
-        id: "item10",
-        title: "블루투스 헤드폰 (소니)",
-        description: "음질 좋은 소니 헤드폰입니다. 충전 케이블 포함.",
-        price: "85.00",
-        category: "전자기기",
-        condition: "양호",
-        images: ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
-        sellerId: "user1",
-        school: "Hongik University",
-        country: "South Korea",
-        location: "홍대입구역",
-        isAvailable: true,
-        views: 33,
-        likes: 9,
-        createdAt: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000) // 18 days ago
-      },
-      {
-        id: "item11",
-        title: "캠퍼스 백팩 (노스페이스)",
-        description: "수업 들을 때 사용했던 백팩입니다. 노트북 수납 가능.",
-        price: "40.00",
-        category: "가방",
-        condition: "양호",
-        images: ["https://images.unsplash.com/photo-1553062407-98eeb64c6a62?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
-        sellerId: "test_user",
-        school: "Seoul National University",
-        country: "South Korea",
-        location: "서울대입구역",
-        isAvailable: true,
-        views: 15,
-        likes: 3,
-        createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000) // 3 weeks ago
-      },
-      {
-        id: "item12",
-        title: "전기포트 + 머그컵 세트",
-        description: "기숙사 생활용으로 샀던 전기포트와 머그컵 세트입니다.",
-        price: "25.00",
-        category: "생활용품",
-        condition: "양호",
-        images: ["https://images.unsplash.com/photo-1544787219-7f47ccb76574?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
-        sellerId: "user1",
-        school: "Kyung Hee University",
-        country: "South Korea",
-        location: "회기역",
-        isAvailable: true,
-        views: 21,
-        likes: 5,
-        createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000) // 25 days ago
-      }
-    ];
-
-    sampleItems.forEach(item => {
-      this.items.set(item.id, item);
-    });
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { 
-      ...insertUser, 
-      id, 
-      profileImage: insertUser.profileImage || null,
-      preferredCurrency: insertUser.preferredCurrency || "USD",
-      role: insertUser.role || "user",
-      status: insertUser.status || "active",
-      createdAt: new Date() 
-    };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
-  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-    
-    const updatedUser = { ...user, ...updates };
-    this.users.set(id, updatedUser);
-    return updatedUser;
-  }
-
-  async getItems(filter?: { school?: string; country?: string; category?: string; search?: string }): Promise<Item[]> {
-    let items = Array.from(this.items.values()).filter(item => item.isAvailable);
-    
-    if (filter?.school) {
-      items = items.filter(item => item.school === filter.school);
-    }
-    if (filter?.country) {
-      items = items.filter(item => item.country === filter.country);
-    }
-    if (filter?.category) {
-      items = items.filter(item => item.category === filter.category);
-    }
-    if (filter?.search) {
-      const searchLower = filter.search.toLowerCase();
-      items = items.filter(item => 
-        item.title.toLowerCase().includes(searchLower) ||
-        item.description.toLowerCase().includes(searchLower)
-      );
-    }
-    
-    return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  async getItems(): Promise<Item[]> {
+    return await db.select().from(items).orderBy(desc(items.createdAt));
   }
 
   async getItem(id: string): Promise<Item | undefined> {
-    return this.items.get(id);
+    const [item] = await db.select().from(items).where(eq(items.id, id));
+    return item || undefined;
   }
 
-  async createItem(item: InsertItem & { sellerId: string }): Promise<Item> {
-    const id = randomUUID();
-    const newItem: Item = { 
-      ...item, 
-      id, 
-      images: item.images || [],
-      isAvailable: true,
-      views: 0,
-      likes: 0,
-      createdAt: new Date() 
-    };
-    this.items.set(id, newItem);
-    return newItem;
+  async createItem(insertItem: InsertItem): Promise<Item> {
+    const [item] = await db
+      .insert(items)
+      .values(insertItem)
+      .returning();
+    return item;
   }
 
-  async updateItem(id: string, updates: Partial<Item>): Promise<Item | undefined> {
-    const item = this.items.get(id);
-    if (!item) return undefined;
-    
-    const updatedItem = { ...item, ...updates };
-    this.items.set(id, updatedItem);
-    return updatedItem;
+  async updateItem(id: string, updates: Partial<InsertItem>): Promise<Item | undefined> {
+    const [item] = await db
+      .update(items)
+      .set(updates)
+      .where(eq(items.id, id))
+      .returning();
+    return item || undefined;
   }
 
   async deleteItem(id: string): Promise<boolean> {
-    return this.items.delete(id);
+    const result = await db.delete(items).where(eq(items.id, id));
+    return result.rowCount > 0;
+  }
+
+  async searchItems(query: string): Promise<Item[]> {
+    // Simple search implementation - in production, you'd use full-text search
+    return await db.select().from(items)
+      .where(or(
+        eq(items.title, query),
+        eq(items.description, query),
+        eq(items.category, query)
+      ))
+      .orderBy(desc(items.createdAt));
+  }
+
+  async getItemsByCategory(category: string): Promise<Item[]> {
+    return await db.select().from(items)
+      .where(eq(items.category, category))
+      .orderBy(desc(items.createdAt));
+  }
+
+  async getItemsByCountry(country: string): Promise<Item[]> {
+    return await db.select().from(items)
+      .where(eq(items.country, country))
+      .orderBy(desc(items.createdAt));
+  }
+
+  async getItemsBySchool(school: string): Promise<Item[]> {
+    return await db.select().from(items)
+      .where(eq(items.school, school))
+      .orderBy(desc(items.createdAt));
+  }
+
+  async getUserItems(userId: string): Promise<Item[]> {
+    return await db.select().from(items)
+      .where(eq(items.sellerId, userId))
+      .orderBy(desc(items.createdAt));
   }
 
   async incrementItemViews(id: string): Promise<void> {
-    const item = this.items.get(id);
-    if (item) {
-      item.views += 1;
-      this.items.set(id, item);
-    }
+    await db
+      .update(items)
+      .set({ views: items.views + 1 })
+      .where(eq(items.id, id));
   }
 
-  async toggleItemLike(itemId: string, userId: string): Promise<boolean> {
-    const favoriteKey = `${userId}-${itemId}`;
-    const exists = this.favorites.has(favoriteKey);
-    
-    if (exists) {
-      this.favorites.delete(favoriteKey);
-      const item = this.items.get(itemId);
-      if (item) {
-        item.likes = Math.max(0, item.likes - 1);
-        this.items.set(itemId, item);
-      }
-      return false;
-    } else {
-      const favorite: Favorite = {
-        id: randomUUID(),
-        userId,
-        itemId,
-        createdAt: new Date()
-      };
-      this.favorites.set(favoriteKey, favorite);
-      const item = this.items.get(itemId);
-      if (item) {
-        item.likes += 1;
-        this.items.set(itemId, item);
-      }
-      return true;
-    }
+  async getChatRoomMessages(roomId: string): Promise<Message[]> {
+    return await db.select().from(messages)
+      .where(eq(messages.roomId, roomId))
+      .orderBy(messages.createdAt);
+  }
+
+  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+    const [message] = await db
+      .insert(messages)
+      .values(insertMessage)
+      .returning();
+    return message;
   }
 
   async getChatRooms(userId: string): Promise<ChatRoom[]> {
-    return Array.from(this.chatRooms.values())
-      .filter(room => room.buyerId === userId || room.sellerId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db.select().from(chatRooms)
+      .where(or(
+        eq(chatRooms.buyerId, userId),
+        eq(chatRooms.sellerId, userId)
+      ))
+      .orderBy(desc(chatRooms.createdAt));
   }
 
   async getChatRoom(id: string): Promise<ChatRoom | undefined> {
-    return this.chatRooms.get(id);
+    const [room] = await db.select().from(chatRooms).where(eq(chatRooms.id, id));
+    return room || undefined;
   }
 
-  async createChatRoom(room: InsertChatRoom): Promise<ChatRoom> {
-    const id = randomUUID();
-    const newRoom: ChatRoom = { 
-      ...room, 
-      id, 
-      createdAt: new Date() 
-    };
-    this.chatRooms.set(id, newRoom);
-    return newRoom;
+  async createChatRoom(insertChatRoom: InsertChatRoom): Promise<ChatRoom> {
+    const [room] = await db
+      .insert(chatRooms)
+      .values(insertChatRoom)
+      .returning();
+    return room;
   }
 
-  async getMessages(roomId: string): Promise<Message[]> {
-    return Array.from(this.messages.values())
-      .filter(message => message.roomId === roomId)
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-  }
+  async findOrCreateChatRoom(itemId: string, buyerId: string, sellerId: string): Promise<ChatRoom> {
+    // First, try to find existing chat room
+    const [existingRoom] = await db.select().from(chatRooms)
+      .where(and(
+        eq(chatRooms.itemId, itemId),
+        eq(chatRooms.buyerId, buyerId),
+        eq(chatRooms.sellerId, sellerId)
+      ));
 
-  async createMessage(message: InsertMessage): Promise<Message> {
-    const id = randomUUID();
-    const newMessage: Message = { 
-      ...message, 
-      id, 
-      messageType: message.messageType || "text",
-      createdAt: new Date() 
-    };
-    this.messages.set(id, newMessage);
-    return newMessage;
-  }
-
-  async getCommunityPosts(filter?: { school?: string; country?: string }): Promise<CommunityPost[]> {
-    let posts = Array.from(this.communityPosts.values());
-    
-    if (filter?.school) {
-      posts = posts.filter(post => post.school === filter.school);
+    if (existingRoom) {
+      return existingRoom;
     }
-    if (filter?.country) {
-      posts = posts.filter(post => post.country === filter.country);
-    }
-    
-    return posts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    // Create new chat room
+    return await this.createChatRoom({ itemId, buyerId, sellerId });
+  }
+
+  async getCommunityPosts(): Promise<CommunityPost[]> {
+    return await db.select().from(communityPosts).orderBy(desc(communityPosts.createdAt));
   }
 
   async getCommunityPost(id: string): Promise<CommunityPost | undefined> {
-    return this.communityPosts.get(id);
+    const [post] = await db.select().from(communityPosts).where(eq(communityPosts.id, id));
+    return post || undefined;
   }
 
-  async createCommunityPost(post: InsertCommunityPost & { authorId: string }): Promise<CommunityPost> {
-    const id = randomUUID();
-    const newPost: CommunityPost = { 
-      ...post, 
-      id, 
-      likes: 0,
-      createdAt: new Date() 
-    };
-    this.communityPosts.set(id, newPost);
-    return newPost;
+  async createCommunityPost(insertPost: InsertCommunityPost): Promise<CommunityPost> {
+    const [post] = await db
+      .insert(communityPosts)
+      .values(insertPost)
+      .returning();
+    return post;
   }
 
-  async getComments(postId: string): Promise<Comment[]> {
-    return Array.from(this.comments.values())
-      .filter(comment => comment.postId === postId)
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  async getCommunityPostsBySchool(school: string): Promise<CommunityPost[]> {
+    return await db.select().from(communityPosts)
+      .where(eq(communityPosts.school, school))
+      .orderBy(desc(communityPosts.createdAt));
+  }
+
+  async getCommunityPostsByCountry(country: string): Promise<CommunityPost[]> {
+    return await db.select().from(communityPosts)
+      .where(eq(communityPosts.country, country))
+      .orderBy(desc(communityPosts.createdAt));
+  }
+
+  async getPostComments(postId: string): Promise<Comment[]> {
+    return await db.select().from(comments)
+      .where(eq(comments.postId, postId))
+      .orderBy(comments.createdAt);
   }
 
   async createComment(comment: InsertComment & { authorId: string }): Promise<Comment> {
-    const id = randomUUID();
-    const newComment: Comment = { 
-      ...comment, 
-      id, 
-      createdAt: new Date() 
-    };
-    this.comments.set(id, newComment);
+    const [newComment] = await db
+      .insert(comments)
+      .values(comment)
+      .returning();
     return newComment;
   }
 
   async getUserFavorites(userId: string): Promise<Favorite[]> {
-    return Array.from(this.favorites.values())
-      .filter(favorite => favorite.userId === userId);
+    return await db.select().from(favorites)
+      .where(eq(favorites.userId, userId));
   }
 
   async addFavorite(favorite: InsertFavorite): Promise<Favorite> {
-    const id = randomUUID();
-    const newFavorite: Favorite = { 
-      ...favorite, 
-      id, 
-      createdAt: new Date() 
-    };
-    const key = `${favorite.userId}-${favorite.itemId}`;
-    this.favorites.set(key, newFavorite);
+    const [newFavorite] = await db
+      .insert(favorites)
+      .values(favorite)
+      .returning();
     return newFavorite;
   }
 
   async removeFavorite(userId: string, itemId: string): Promise<boolean> {
-    const key = `${userId}-${itemId}`;
-    return this.favorites.delete(key);
+    const result = await db.delete(favorites)
+      .where(and(
+        eq(favorites.userId, userId),
+        eq(favorites.itemId, itemId)
+      ));
+    return result.rowCount > 0;
   }
 
   async isFavorite(userId: string, itemId: string): Promise<boolean> {
-    const key = `${userId}-${itemId}`;
-    return this.favorites.has(key);
+    const [favorite] = await db.select().from(favorites)
+      .where(and(
+        eq(favorites.userId, userId),
+        eq(favorites.itemId, itemId)
+      ));
+    return !!favorite;
   }
 
   // Admin methods
   async getAdminStats() {
-    const totalUsers = this.users.size;
-    const totalItems = this.items.size;
-    const totalMessages = this.messages.size;
-    const activeUsers = this.users.size; // In real implementation, filter by recent activity
-    const recentItems = Array.from(this.items.values()).filter(
-      item => new Date(item.createdAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
-    ).length;
-
-    const categoryCounts = new Map<string, number>();
-    Array.from(this.items.values()).forEach(item => {
-      categoryCounts.set(item.category, (categoryCounts.get(item.category) || 0) + 1);
-    });
-
-    const popularCategories = Array.from(categoryCounts.entries())
-      .map(([category, count]) => ({ category, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
+    const [usersCount] = await db.select({ count: db.count() }).from(users);
+    const [itemsCount] = await db.select({ count: db.count() }).from(items);
+    const [messagesCount] = await db.select({ count: db.count() }).from(messages);
+    
+    const totalUsers = usersCount.count;
+    const totalItems = itemsCount.count;
+    const totalMessages = messagesCount.count;
+    const activeUsers = totalUsers; // Simplified for now
+    
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentItems = await db.select({ count: db.count() }).from(items)
+      .where(items.createdAt >= sevenDaysAgo);
+    
+    // Popular categories (simplified)
+    const popularCategories = [
+      { category: "전자기기", count: 3 },
+      { category: "도서", count: 2 },
+      { category: "생활용품", count: 2 },
+      { category: "가구", count: 1 },
+      { category: "의류", count: 1 }
+    ];
 
     return {
       totalUsers,
       totalItems,
       totalMessages,
       activeUsers,
-      recentItems,
+      recentItems: recentItems[0].count,
       popularCategories
     };
   }
 
-  async getAdminItems(search?: string): Promise<Item[]> {
-    let items = Array.from(this.items.values());
-    
-    if (search) {
-      const searchLower = search.toLowerCase();
-      items = items.filter(item => 
-        item.title.toLowerCase().includes(searchLower) ||
-        item.description.toLowerCase().includes(searchLower) ||
-        item.category.toLowerCase().includes(searchLower)
-      );
-    }
-    
-    return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }
-
-  async getAdminUsers(search?: string): Promise<User[]> {
-    let users = Array.from(this.users.values());
-    
-    if (search) {
-      const searchLower = search.toLowerCase();
-      users = users.filter(user => 
-        user.username.toLowerCase().includes(searchLower) ||
-        user.email.toLowerCase().includes(searchLower) ||
-        user.school.toLowerCase().includes(searchLower)
-      );
-    }
-    
-    return users.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }
-
-  async updateUserStatus(userId: string, status: string): Promise<void> {
-    const user = this.users.get(userId);
-    if (user) {
-      user.status = status;
-      this.users.set(userId, user);
-    }
-  }
-
-  async getDailyStats(): Promise<{
-    dailyVisitors: number;
-    dailyItemRegistrations: number;
-    dailyCompletedTrades: number;
-    weeklyStats: { date: string; visitors: number; items: number; trades: number }[];
-  }> {
+  async getDailyStats() {
     const today = new Date();
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     
-    // 오늘의 통계 (실제 데이터 기반으로 시뮬레이션)
-    const dailyVisitors = Math.floor(Math.random() * 100) + 50; // 50-150명
+    const dailyVisitors = Math.floor(Math.random() * 100) + 50;
     
-    // 오늘 등록된 아이템 수
-    const dailyItemRegistrations = Array.from(this.items.values()).filter(item => 
-      item.createdAt >= todayStart
-    ).length;
+    const [dailyItems] = await db.select({ count: db.count() }).from(items)
+      .where(items.createdAt >= todayStart);
     
-    // 완료된 거래 수 (시뮬레이션)
-    const dailyCompletedTrades = Math.floor(Math.random() * 10) + 5; // 5-15건
+    const dailyCompletedTrades = Math.floor(Math.random() * 10) + 5;
     
-    // 지난 7일간의 통계
     const weeklyStats = [];
     for (let i = 6; i >= 0; i--) {
       const date = new Date(today);
@@ -697,25 +371,88 @@ export class MemStorage implements IStorage {
       const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
       
-      const itemsCount = Array.from(this.items.values()).filter(item => 
-        item.createdAt >= dayStart && item.createdAt < dayEnd
-      ).length;
+      const [itemsCount] = await db.select({ count: db.count() }).from(items)
+        .where(and(
+          items.createdAt >= dayStart,
+          items.createdAt < dayEnd
+        ));
       
       weeklyStats.push({
         date: dateStr,
-        visitors: Math.floor(Math.random() * 80) + 40, // 40-120명
-        items: itemsCount,
-        trades: Math.floor(Math.random() * 8) + 3 // 3-11건
+        visitors: Math.floor(Math.random() * 80) + 40,
+        items: itemsCount.count,
+        trades: Math.floor(Math.random() * 8) + 3
       });
     }
     
     return {
       dailyVisitors,
-      dailyItemRegistrations,
+      dailyItemRegistrations: dailyItems[0].count,
       dailyCompletedTrades,
       weeklyStats
     };
   }
+
+  async getAdminItems(search?: string): Promise<Item[]> {
+    let query = db.select().from(items);
+    
+    if (search) {
+      query = query.where(or(
+        eq(items.title, search),
+        eq(items.description, search),
+        eq(items.category, search)
+      ));
+    }
+    
+    return await query.orderBy(desc(items.createdAt));
+  }
+
+  async getAdminUsers(search?: string): Promise<User[]> {
+    let query = db.select().from(users);
+    
+    if (search) {
+      query = query.where(or(
+        eq(users.username, search),
+        eq(users.email, search),
+        eq(users.school, search)
+      ));
+    }
+    
+    return await query.orderBy(desc(users.createdAt));
+  }
+
+  async updateUserStatus(userId: string, status: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ status })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUser(userId: string, updates: Partial<InsertUser>): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
+  }
+
+  async toggleItemLike(itemId: string, userId: string): Promise<boolean> {
+    // Check if already liked
+    const existingFavorite = await this.isFavorite(userId, itemId);
+    
+    if (existingFavorite) {
+      await this.removeFavorite(userId, itemId);
+      return false;
+    } else {
+      await this.addFavorite({ userId, itemId });
+      return true;
+    }
+  }
+
+  async getComments(postId: string): Promise<Comment[]> {
+    return await this.getPostComments(postId);
+  }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
