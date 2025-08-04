@@ -253,7 +253,7 @@ export default function ChatRoomPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-2">
+      <div className="flex-1 overflow-y-auto px-4 py-2 pb-20">
         {groupedMessages.map((group, groupIndex) => (
           <div key={groupIndex}>
             {/* 날짜 구분선 */}
@@ -317,20 +317,20 @@ export default function ChatRoomPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input */}
-      <div className="p-4 border-t bg-white">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="p-2">
-            <Plus className="h-5 w-5" />
+      {/* Message Input - Fixed positioning */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 border-t bg-white shadow-lg z-50">
+        <div className="max-w-md mx-auto flex items-center gap-2">
+          <Button variant="ghost" size="sm" className="p-2 shrink-0">
+            <Plus className="h-5 w-5 text-gray-600" />
           </Button>
           
           <div className="flex-1 relative">
             <Input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               placeholder="메시지를 입력하세요"
-              className="pr-12"
+              className="w-full rounded-full border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
               disabled={sendMessageMutation.isPending}
             />
           </div>
@@ -339,7 +339,7 @@ export default function ChatRoomPage() {
             onClick={handleSendMessage}
             disabled={!message.trim() || sendMessageMutation.isPending}
             size="sm"
-            className="px-4"
+            className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full shrink-0"
           >
             <Send className="h-4 w-4" />
           </Button>
