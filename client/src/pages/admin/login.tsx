@@ -35,6 +35,8 @@ export default function AdminLogin() {
     setIsLoading(true);
     
     try {
+      console.log("Attempting admin login with:", data);
+      
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
@@ -44,10 +46,12 @@ export default function AdminLogin() {
       });
 
       const result = await response.json();
+      console.log("Login response:", result);
 
       if (response.ok) {
         // 관리자 권한 확인
         if (result.user.role !== "admin") {
+          console.log("Access denied - not admin role:", result.user.role);
           toast({
             title: "접근 거부",
             description: "관리자 권한이 필요합니다.",
@@ -60,14 +64,19 @@ export default function AdminLogin() {
         localStorage.setItem("token", result.token);
         localStorage.setItem("user", JSON.stringify(result.user));
         
+        console.log("Admin login successful, redirecting to dashboard");
+        
         toast({
           title: "로그인 성공",
           description: "관리자 대시보드로 이동합니다.",
         });
 
-        // 강제로 페이지 새로고침 후 관리자 대시보드로 이동
-        window.location.href = "/admin/dashboard";
+        // 토스트 표시 후 잠시 대기 후 이동
+        setTimeout(() => {
+          window.location.href = "/admin/dashboard";
+        }, 1000);
       } else {
+        console.log("Login failed:", response.status, result);
         toast({
           title: "로그인 실패",
           description: result.error || "이메일 또는 비밀번호가 올바르지 않습니다.",
