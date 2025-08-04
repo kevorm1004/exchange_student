@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
+import { seedDatabase } from "./seed";
 import { 
   registerSchema,
   insertItemSchema,
@@ -51,6 +52,15 @@ const authenticateToken = async (req: any, res: any, next: any) => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+
+  // Seed database on startup (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      await seedDatabase();
+    } catch (error) {
+      console.log("Database already seeded or seeding failed:", error);
+    }
+  }
 
   // WebSocket server for real-time chat
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
@@ -120,6 +130,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auth routes
+  // Test login route for easy access
+  app.post('/api/auth/test-login', async (req, res) => {
+    try {
+      const { username } = req.body;
+      
+      // Find user by username
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+      
+      const token = jwt.sign({ 
+        id: user.id,
+        email: user.email 
+      }, JWT_SECRET, { expiresIn: '24h' });
+      
+      res.json({ 
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          fullName: user.fullName,
+          school: user.school,
+          country: user.country,
+          preferredCurrency: user.preferredCurrency,
+          role: user.role
+        }
+      });
+    } catch (error) {
+      console.error('Test login error:', error);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
   app.post('/api/auth/register', async (req, res) => {
     try {
       const validatedData = registerSchema.parse(req.body);

@@ -126,7 +126,7 @@ export default function Login() {
             </form>
           </Form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-2">
             <p className="text-sm text-gray-600">
               계정이 없으신가요?{" "}
               <Button
@@ -137,6 +137,13 @@ export default function Login() {
                 회원가입
               </Button>
             </p>
+            <Button
+              variant="link"
+              className="text-sm text-blue-600"
+              onClick={() => navigate("/test-login")}
+            >
+              🚀 테스트 로그인 (빠른 접속)
+            </Button>
           </div>
         </CardContent>
       </Card>

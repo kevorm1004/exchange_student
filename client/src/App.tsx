@@ -14,6 +14,7 @@ import MyPage from "@/pages/my";
 import Profile from "@/pages/profile";
 import Login from "@/pages/auth/login";
 import Register from "@/pages/auth/register";
+import TestLogin from "@/pages/test-login";
 import CreateItem from "@/pages/items/create";
 import ItemDetail from "@/pages/items/detail";
 import SearchPage from "@/pages/search";
@@ -37,6 +38,7 @@ function Router() {
       <Switch>
         <Route path="/auth/login" component={Login} />
         <Route path="/auth/register" component={Register} />
+        <Route path="/test-login" component={TestLogin} />
         <Route path="/" component={Home} />
         <Route path="/search" component={SearchPage} />
         <Route path="/search/:query" component={SearchResults} />
