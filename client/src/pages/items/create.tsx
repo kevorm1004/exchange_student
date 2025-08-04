@@ -109,6 +109,44 @@ export default function CreateItem() {
     form.setValue('images', newImages);
   };
 
+  // Drag and drop for image reordering
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+
+    const newImages = [...images];
+    const draggedImage = newImages[draggedIndex];
+    
+    // Remove dragged image
+    newImages.splice(draggedIndex, 1);
+    // Insert at new position
+    newImages.splice(dropIndex, 0, draggedImage);
+    
+    setImages(newImages);
+    form.setValue('images', newImages);
+    setDraggedIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
   // Update price when currency or value changes
   useEffect(() => {
     if (priceValue) {
@@ -231,11 +269,23 @@ export default function CreateItem() {
                       {/* Image Grid */}
                       <div className="grid grid-cols-3 gap-2">
                         {images.map((image, index) => (
-                          <div key={index} className="relative group">
+                          <div 
+                            key={index} 
+                            className={`relative group cursor-move transition-transform ${
+                              draggedIndex === index ? 'scale-105 rotate-2 z-10' : 'hover:scale-102'
+                            }`}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, index)}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, index)}
+                            onDragEnd={handleDragEnd}
+                          >
                             <img
                               src={image}
                               alt={`상품 사진 ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg"
+                              className={`w-full h-24 object-cover rounded-lg transition-all ${
+                                draggedIndex === index ? 'opacity-60' : ''
+                              }`}
                             />
                             
                             {/* Primary Badge */}
@@ -246,6 +296,11 @@ export default function CreateItem() {
                               </Badge>
                             )}
                             
+                            {/* Drag Indicator */}
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-20 rounded-lg">
+                              <Move className="h-6 w-6 text-white" />
+                            </div>
+                            
                             {/* Action Buttons */}
                             <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <div className="flex gap-1">
@@ -254,10 +309,13 @@ export default function CreateItem() {
                                     type="button"
                                     variant="secondary"
                                     size="sm"
-                                    className="h-6 w-6 p-0"
-                                    onClick={() => makePrimaryImage(index)}
+                                    className="h-6 w-6 p-0 bg-white hover:bg-gray-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      makePrimaryImage(index);
+                                    }}
                                   >
-                                    <Move className="h-3 w-3" />
+                                    <Star className="h-3 w-3" />
                                   </Button>
                                 )}
                                 <Button
@@ -265,7 +323,10 @@ export default function CreateItem() {
                                   variant="destructive"
                                   size="sm"
                                   className="h-6 w-6 p-0"
-                                  onClick={() => removeImage(index)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeImage(index);
+                                  }}
                                 >
                                   <X className="h-3 w-3" />
                                 </Button>
@@ -296,9 +357,11 @@ export default function CreateItem() {
                         )}
                       </div>
                       
-                      <p className="text-xs text-gray-500">
-                        첫 번째 사진이 대표 사진입니다. 순서를 변경하려면 이동 버튼을 클릭하세요.
-                      </p>
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <p>• 첫 번째 사진이 대표 사진으로 설정됩니다</p>
+                        <p>• 사진을 드래그해서 순서를 변경할 수 있습니다</p>
+                        <p>• ⭐ 버튼을 클릭하면 해당 사진을 대표 사진으로 설정합니다</p>
+                      </div>
                     </div>
                   )}
                   
@@ -355,8 +418,10 @@ export default function CreateItem() {
                 />
 
                 {/* Price with Currency Selection */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <label className="text-sm font-medium">가격</label>
+                  
+                  {/* Original Currency Price */}
                   <div className="flex gap-2">
                     {/* Currency Selector */}
                     <Select
@@ -395,12 +460,23 @@ export default function CreateItem() {
                     />
                   </div>
                   
-                  {/* KRW Conversion */}
-                  {krwPrice > 0 && (
-                    <p className="text-sm text-gray-600">
-                      ≈ ₩{krwPrice.toLocaleString()} (원화 환산)
-                    </p>
-                  )}
+                  {/* KRW Conversion Display */}
+                  <div className="flex gap-2">
+                    <div className="w-32 flex items-center justify-center bg-gray-100 rounded-md px-3 py-2">
+                      <span className="text-sm font-medium text-gray-600">₩ KRW</span>
+                    </div>
+                    <Input
+                      placeholder="0"
+                      type="text"
+                      value={krwPrice > 0 ? krwPrice.toLocaleString() : ""}
+                      readOnly
+                      className="flex-1 bg-gray-50 text-gray-600"
+                    />
+                  </div>
+                  
+                  <p className="text-xs text-gray-500">
+                    원화는 현재 환율(1 USD = ₩{USD_TO_KRW.toLocaleString()})로 자동 환산됩니다
+                  </p>
                 </div>
 
                 <FormField
