@@ -179,10 +179,11 @@ export default function CreateItem() {
       navigate("/");
     },
     onError: (error) => {
+      console.error('Mutation error:', error);
       toast({
         variant: "destructive",
         title: "상품 등록 실패",
-        description: "상품 등록 중 오류가 발생했습니다.",
+        description: "상품 등록 중 오류가 발생했습니다. 이미지 크기를 줄여서 다시 시도해보세요.",
       });
     },
   });
