@@ -98,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     ws.on('close', () => {
       // Remove client from active connections
-      for (const [userId, client] of clients.entries()) {
+      for (const [userId, client] of Array.from(clients.entries())) {
         if (client === ws) {
           clients.delete(userId);
           break;
@@ -223,6 +223,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Get user error:', error);
       res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  // Update user profile
+  app.put('/api/users/:id', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const targetUserId = req.params.id;
+      
+      // 사용자는 자신의 프로필만 업데이트할 수 있음
+      if (userId !== targetUserId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      const { currentPassword, newPassword, ...updateData } = req.body;
+
+      // 비밀번호 변경이 요청된 경우
+      if (newPassword) {
+        if (!currentPassword) {
+          return res.status(400).json({ error: 'Current password is required' });
+        }
+
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ error: 'User not found' });
+        }
+
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isCurrentPasswordValid) {
+          return res.status(400).json({ error: 'Current password is incorrect' });
+        }
+
+        // 새 비밀번호 해시화
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        updateData.password = hashedNewPassword;
+      }
+
+      const updatedUser = await storage.updateUser(userId, updateData);
+      if (!updatedUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 

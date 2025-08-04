@@ -9,7 +9,7 @@ export default function BottomNav() {
     { path: "/", icon: Home, label: "홈" },
     { path: "/chat", icon: MessageCircle, label: "채팅", badge: 2 },
     { path: "/community", icon: Users, label: "커뮤니티" },
-    { path: "/profile", icon: User, label: "MY" },
+    { path: "/my", icon: User, label: "MY" },
   ];
 
   return (

@@ -8,6 +8,7 @@ import { AuthProvider } from "./hooks/use-auth";
 import Home from "@/pages/home";
 import Chat from "@/pages/chat";
 import Community from "@/pages/community";
+import MyPage from "@/pages/my";
 import Profile from "@/pages/profile";
 import Login from "@/pages/auth/login";
 import Register from "@/pages/auth/register";
@@ -24,6 +25,7 @@ function Router() {
   const isAuthPage = location.startsWith('/auth');
   const isItemDetailPage = location.startsWith('/items/') && location !== '/items/create';
   const isSearchPage = location === '/search' || location.startsWith('/search/');
+  const isProfilePage = location === '/profile';
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen relative">
@@ -35,13 +37,14 @@ function Router() {
         <Route path="/search/:query" component={SearchResults} />
         <Route path="/chat" component={Chat} />
         <Route path="/community" component={Community} />
+        <Route path="/my" component={MyPage} />
         <Route path="/profile" component={Profile} />
         <Route path="/items/create" component={CreateItem} />
         <Route path="/items/:id" component={ItemDetail} />
         <Route component={NotFound} />
       </Switch>
       
-      {!isAuthPage && !isItemDetailPage && !isSearchPage && <BottomNav />}
+      {!isAuthPage && !isItemDetailPage && !isSearchPage && !isProfilePage && <BottomNav />}
     </div>
   );
 }
