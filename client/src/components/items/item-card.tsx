@@ -79,9 +79,9 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
           {/* 상단 이미지 */}
           <div className="relative mb-3">
             <img
-              src={item.images[0] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200"}
+              src={item.images[0] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300"}
               alt={item.title}
-              className="w-full h-32 object-cover rounded-lg"
+              className="w-full h-40 object-cover rounded-lg"
             />
             <Button
               variant="ghost"
@@ -101,30 +101,30 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
           {/* 하단 정보 */}
           <div>
             {/* 제목 */}
-            <h3 className="font-semibold text-gray-900 text-sm mb-1 truncate">{item.title}</h3>
+            <h3 className="font-semibold text-gray-900 text-base mb-2 line-clamp-2 leading-tight">{item.title}</h3>
             
             {/* 가격 */}
-            <p className="text-lg font-bold text-gray-900 mb-2">{displayPrice}</p>
+            <p className="text-xl font-bold text-gray-900 mb-3">{displayPrice}</p>
             
             {/* 위치 정보 */}
-            <div className="flex items-center text-xs text-gray-600 mb-2">
+            <div className="flex items-center text-sm text-gray-600 mb-2">
               <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
               <span className="text-primary font-medium">{distance}</span>
             </div>
             
             {/* 메타 정보 */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2 text-gray-500 text-xs">
+              <div className="flex items-center space-x-2 text-gray-500 text-sm">
                 <span className="flex items-center">
-                  <Eye className="w-3 h-3 mr-1" />
+                  <Eye className="w-4 h-4 mr-1" />
                   {item.views}
                 </span>
                 <span className="flex items-center">
-                  <Heart className="w-3 h-3 mr-1" />
+                  <Heart className="w-4 h-4 mr-1" />
                   {item.likes}
                 </span>
               </div>
-              <Badge className={`${getCategoryColor(item.category)} text-xs px-2 py-1`}>
+              <Badge className={`${getCategoryColor(item.category)} text-sm px-3 py-1`}>
                 {item.category}
               </Badge>
             </div>
@@ -143,9 +143,9 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
             {/* 왼쪽 이미지 */}
             <div className="relative flex-shrink-0">
               <img
-                src={item.images[0] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200"}
+                src={item.images[0] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300"}
                 alt={item.title}
-                className="w-20 h-20 object-cover rounded-lg"
+                className="w-24 h-24 object-cover rounded-lg"
               />
               <Button
                 variant="ghost"
@@ -165,7 +165,7 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
             {/* 오른쪽 정보 */}
             <div className="flex-1 min-w-0">
               {/* 제목 */}
-              <h3 className="font-semibold text-gray-900 text-base mb-1 truncate">{item.title}</h3>
+              <h3 className="font-semibold text-gray-900 text-lg mb-1 truncate">{item.title}</h3>
               
               {/* 거리와 대학교 */}
               <div className="flex items-center text-sm text-gray-600 mb-1">
@@ -180,18 +180,18 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
               
               {/* 하단 메타 정보 */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3 text-gray-500 text-xs">
+                <div className="flex items-center space-x-3 text-gray-500 text-sm">
                   <span className="flex items-center">
-                    <Eye className="w-3 h-3 mr-1" />
+                    <Eye className="w-4 h-4 mr-1" />
                     {item.views}
                   </span>
                   <span className="flex items-center">
-                    <Heart className="w-3 h-3 mr-1" />
+                    <Heart className="w-4 h-4 mr-1" />
                     {item.likes}
                   </span>
                   <span>{formatTimeAgo(new Date(item.createdAt))}</span>
                 </div>
-                <Badge className={`${getCategoryColor(item.category)} text-xs px-2 py-1`}>
+                <Badge className={`${getCategoryColor(item.category)} text-sm px-3 py-1`}>
                   {item.category}
                 </Badge>
               </div>
