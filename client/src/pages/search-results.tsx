@@ -13,6 +13,45 @@ function SearchResults() {
   const query = params?.query ? decodeURIComponent(params.query) : "";
   const [searchInput, setSearchInput] = useState(query);
 
+  // Add current search to history when component mounts
+  useEffect(() => {
+    if (query.trim()) {
+      const newHistoryItem = {
+        id: Date.now().toString(),
+        query: query.trim(),
+        timestamp: Date.now(),
+      };
+
+      // Get existing history
+      const existingHistory = localStorage.getItem("searchHistory");
+      let searchHistory = [];
+      if (existingHistory) {
+        try {
+          searchHistory = JSON.parse(existingHistory);
+        } catch (error) {
+          console.error("Failed to parse search history:", error);
+        }
+      }
+
+      // Check if this query already exists in recent history (within last 5 minutes)
+      const recentQuery = searchHistory.find((item: any) => 
+        item.query === query.trim() && 
+        (Date.now() - item.timestamp) < 300000 // 5 minutes
+      );
+
+      if (!recentQuery) {
+        // Remove duplicate if exists and add to front
+        const filteredHistory = searchHistory.filter(
+          (item: any) => item.query !== query.trim()
+        );
+        const updatedHistory = [newHistoryItem, ...filteredHistory].slice(0, 10);
+        
+        // Save to localStorage
+        localStorage.setItem("searchHistory", JSON.stringify(updatedHistory));
+      }
+    }
+  }, [query]);
+
   // Fetch search results
   const {
     data: items = [],
@@ -32,6 +71,33 @@ function SearchResults() {
 
   const handleSearch = () => {
     if (searchInput.trim()) {
+      // Add to search history
+      const newHistoryItem = {
+        id: Date.now().toString(),
+        query: searchInput.trim(),
+        timestamp: Date.now(),
+      };
+
+      // Get existing history
+      const existingHistory = localStorage.getItem("searchHistory");
+      let searchHistory = [];
+      if (existingHistory) {
+        try {
+          searchHistory = JSON.parse(existingHistory);
+        } catch (error) {
+          console.error("Failed to parse search history:", error);
+        }
+      }
+
+      // Remove duplicate if exists and add to front
+      const filteredHistory = searchHistory.filter(
+        (item: any) => item.query !== searchInput.trim()
+      );
+      const updatedHistory = [newHistoryItem, ...filteredHistory].slice(0, 10);
+      
+      // Save to localStorage
+      localStorage.setItem("searchHistory", JSON.stringify(updatedHistory));
+
       navigate(`/search/${encodeURIComponent(searchInput.trim())}`);
     }
   };
@@ -118,7 +184,7 @@ function SearchResults() {
 
         {/* Results */}
         {!isLoading && !isError && (
-          <div className="min-h-[calc(100vh-200px)]">
+          <>
             {items.length > 0 ? (
               <>
                 <div className="mb-4">
@@ -126,7 +192,7 @@ function SearchResults() {
                     총 {items.length}개의 상품을 찾았습니다
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-4 pb-6">
+                <div className="grid grid-cols-2 gap-4 pb-20">
                   {items.map((item: Item) => (
                     <ItemCard
                       key={item.id}
@@ -145,7 +211,7 @@ function SearchResults() {
                 </p>
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
