@@ -864,5 +864,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Placeholder image endpoint for missing product images
+  app.get('/api/placeholder-image.jpg', (req, res) => {
+    const svg = `<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#e5e7eb;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#f9fafb;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#grad1)" stroke="#d1d5db" stroke-width="2"/>
+      <circle cx="150" cy="100" r="25" fill="#9ca3af" opacity="0.5"/>
+      <polygon points="100,180 200,180 180,140 120,140" fill="#9ca3af" opacity="0.5"/>
+      <rect x="220" y="120" width="120" height="80" rx="8" fill="#9ca3af" opacity="0.3"/>
+      <text x="50%" y="220" font-family="Arial, sans-serif" font-size="14" fill="#6b7280" text-anchor="middle">
+        상품 이미지
+      </text>
+    </svg>`;
+    
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(svg);
+  });
+
   return httpServer;
 }

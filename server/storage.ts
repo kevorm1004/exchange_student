@@ -23,7 +23,7 @@ import {
   type Favorite, 
   type InsertFavorite
 } from "@shared/schema";
-import { eq, and, or, desc } from "drizzle-orm";
+import { eq, and, or, desc, like, count, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
