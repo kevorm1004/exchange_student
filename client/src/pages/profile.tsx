@@ -53,7 +53,7 @@ const countries = [
 
 export default function Profile() {
   const [, navigate] = useLocation();
-  const { user, token } = useAuth();
+  const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -97,24 +97,21 @@ export default function Profile() {
     },
     onSuccess: async (response) => {
       const updatedUser = await response.json();
-      // 로컬 스토리지의 사용자 정보 업데이트
-      localStorage.setItem("user", JSON.stringify(updatedUser));
       
-      // 쿼리 캐시 무효화
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      // 인증 컨텍스트와 로컬 스토리지 모두 업데이트
+      updateUser(updatedUser);
+      
+      // 쿼리 캐시 무효화 (홈 화면 데이터 새로고침)
+      queryClient.invalidateQueries({ queryKey: ["/api/items"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       
       toast({
         title: "프로필 업데이트 완료",
         description: "프로필 정보가 성공적으로 업데이트되었습니다.",
       });
       
-      // 비밀번호 필드 초기화
-      form.reset({
-        ...form.getValues(),
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
+      // MY 페이지로 이동
+      navigate("/my");
     },
     onError: (error) => {
       console.error('Profile update error:', error);
@@ -139,7 +136,7 @@ export default function Profile() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/my")}
               className="p-2"
             >
               <ArrowLeft className="w-5 h-5" />
