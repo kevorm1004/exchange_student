@@ -113,7 +113,7 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
             </div>
             
             {/* 메타 정보 */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-end justify-between">
               <div className="flex items-center space-x-2 text-gray-500 text-xs">
                 <span className="flex items-center">
                   <Eye className="w-3 h-3 mr-1" />
@@ -123,6 +123,7 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
                   <Heart className="w-3 h-3 mr-1" />
                   {item.likes}
                 </span>
+                <span>{formatTimeAgo(new Date(item.createdAt || new Date()))}</span>
               </div>
               <Badge className={`${getCategoryColor(item.category)} text-xs px-1.5 py-0.5`}>
                 {item.category}
@@ -179,7 +180,7 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
               <p className="text-base font-bold text-gray-900 mb-1">{displayPrice}</p>
               
               {/* 하단 메타 정보 */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-end justify-between">
                 <div className="flex items-center space-x-2 text-gray-500 text-xs">
                   <span className="flex items-center">
                     <Eye className="w-3 h-3 mr-1" />
