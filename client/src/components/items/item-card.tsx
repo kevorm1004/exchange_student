@@ -79,9 +79,9 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
           {/* 상단 이미지 */}
           <div className="relative mb-3">
             <img
-              src={item.images[0] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400"}
+              src={item.images[0] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=500"}
               alt={item.title}
-              className="w-full h-48 object-cover rounded-lg"
+              className="w-full h-56 object-cover rounded-lg"
             />
             <Button
               variant="ghost"
@@ -101,15 +101,15 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
           {/* 하단 정보 */}
           <div>
             {/* 제목 */}
-            <h3 className="font-semibold text-gray-900 text-sm mb-2 line-clamp-2 leading-tight">{item.title}</h3>
+            <h3 className="font-semibold text-gray-900 text-xs mb-2 line-clamp-2 leading-tight">{item.title}</h3>
             
             {/* 가격 */}
-            <p className="text-lg font-bold text-gray-900 mb-3">{displayPrice}</p>
+            <p className="text-base font-bold text-gray-900 mb-2">{displayPrice}</p>
             
             {/* 위치 정보 */}
-            <div className="flex items-center text-xs text-gray-600 mb-2">
-              <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
-              <span className="text-primary font-medium">{distance}</span>
+            <div className="flex items-center text-xs text-gray-600 mb-1">
+              <MapPin className="w-2.5 h-2.5 mr-1 flex-shrink-0" />
+              <span className="text-primary font-medium text-xs">{distance}</span>
             </div>
             
             {/* 메타 정보 */}
@@ -124,7 +124,7 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
                   {item.likes}
                 </span>
               </div>
-              <Badge className={`${getCategoryColor(item.category)} text-xs px-2 py-1`}>
+              <Badge className={`${getCategoryColor(item.category)} text-xs px-1.5 py-0.5`}>
                 {item.category}
               </Badge>
             </div>
@@ -143,9 +143,9 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
             {/* 왼쪽 이미지 */}
             <div className="relative flex-shrink-0">
               <img
-                src={item.images[0] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400"}
+                src={item.images[0] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=500"}
                 alt={item.title}
-                className="w-28 h-28 object-cover rounded-lg"
+                className="w-32 h-32 object-cover rounded-lg"
               />
               <Button
                 variant="ghost"
@@ -165,18 +165,18 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
             {/* 오른쪽 정보 */}
             <div className="flex-1 min-w-0">
               {/* 제목 */}
-              <h3 className="font-semibold text-gray-900 text-base mb-1 truncate">{item.title}</h3>
+              <h3 className="font-semibold text-gray-900 text-sm mb-1 truncate">{item.title}</h3>
               
               {/* 거리와 대학교 */}
-              <div className="flex items-center text-sm text-gray-600 mb-1">
-                <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
-                <span className="text-primary font-medium">{distance}</span>
-                <span className="mx-2">•</span>
-                <span className="truncate">{item.school}</span>
+              <div className="flex items-center text-xs text-gray-600 mb-1">
+                <MapPin className="w-2.5 h-2.5 mr-1 flex-shrink-0" />
+                <span className="text-primary font-medium text-xs">{distance}</span>
+                <span className="mx-1.5">•</span>
+                <span className="truncate text-xs">{item.school}</span>
               </div>
               
               {/* 가격 */}
-              <p className="text-lg font-bold text-gray-900 mb-2">{displayPrice}</p>
+              <p className="text-base font-bold text-gray-900 mb-1">{displayPrice}</p>
               
               {/* 하단 메타 정보 */}
               <div className="flex items-center justify-between">
@@ -191,7 +191,7 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
                   </span>
                   <span>{formatTimeAgo(new Date(item.createdAt))}</span>
                 </div>
-                <Badge className={`${getCategoryColor(item.category)} text-xs px-2 py-1`}>
+                <Badge className={`${getCategoryColor(item.category)} text-xs px-1.5 py-0.5`}>
                   {item.category}
                 </Badge>
               </div>
