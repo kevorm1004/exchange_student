@@ -185,6 +185,9 @@ export default function CreateItem() {
   });
 
   const onSubmit = async (data: InsertItem) => {
+    console.log('Form submitted with data:', data);
+    console.log('Form errors:', form.formState.errors);
+    
     if (images.length === 0) {
       toast({
         variant: "destructive",
@@ -203,7 +206,10 @@ export default function CreateItem() {
         price: form.getValues('price'),
         location: user?.school || "",
       };
+      console.log('Submitting item data:', submitData);
       createItemMutation.mutate(submitData);
+    } catch (error) {
+      console.error('Submit error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -555,6 +561,11 @@ export default function CreateItem() {
                   type="submit" 
                   className="w-full marketplace-button-primary"
                   disabled={isLoading || createItemMutation.isPending}
+                  onClick={() => {
+                    console.log('Button clicked');
+                    console.log('Form values:', form.getValues());
+                    console.log('Form valid:', form.formState.isValid);
+                  }}
                 >
                   {isLoading || createItemMutation.isPending ? "등록 중..." : "상품 등록"}
                 </Button>
