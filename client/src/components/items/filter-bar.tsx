@@ -14,19 +14,16 @@ export default function FilterBar({ activeFilter, onFilterChange }: FilterBarPro
   ];
 
   return (
-    <div className="bg-white px-4 py-3 border-b border-gray-200 sticky top-16 z-40">
-      <div className="flex gap-0 overflow-x-auto scrollbar-hide">
-        {filters.map((filter, index) => (
+    <div className="bg-white px-4 py-3 border-b border-gray-200 sticky top-16 z-40 -mt-px">
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+        {filters.map((filter) => (
           <button
             key={filter.id}
             onClick={() => onFilterChange(filter.id)}
             className={cn(
-              "px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors border",
-              index === 0 ? "rounded-l-lg" : "",
-              index === filters.length - 1 ? "rounded-r-lg" : "",
-              index > 0 ? "border-l-0" : "",
+              "px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors border flex-shrink-0",
               activeFilter === filter.id
-                ? "bg-blue-500 text-white border-blue-500 z-10"
+                ? "bg-blue-500 text-white border-blue-500"
                 : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
             )}
           >
