@@ -82,7 +82,21 @@ export class MemStorage implements IStorage {
     };
     this.users.set(sampleUser.id, sampleUser);
 
-    // Add some sample items for demo
+    // Add a test user for product registration
+    const testUser: User = {
+      id: "test_user",
+      username: "test123",
+      email: "test@student.com",
+      password: "$2a$10$YourHashedPasswordHere", // password: "test123"
+      fullName: "테스트 사용자",
+      school: "Seoul National University",
+      country: "South Korea",
+      profileImage: null,
+      createdAt: new Date(),
+    };
+    this.users.set(testUser.id, testUser);
+
+    // Add some sample items for demo (more items for infinite scroll testing)
     const sampleItems: Item[] = [
       {
         id: "item1",
@@ -134,6 +148,160 @@ export class MemStorage implements IStorage {
         views: 12,
         likes: 2,
         createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000) // 12 hours ago
+      },
+      // Add more items for infinite scroll testing
+      {
+        id: "item4",
+        title: "iPhone 12 Pro 128GB",
+        description: "상태 좋은 아이폰입니다. 액정보호필름과 케이스 포함.",
+        price: "650.00",
+        category: "전자기기",
+        condition: "양호",
+        images: ["https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
+        sellerId: "test_user",
+        school: "Seoul National University",
+        country: "South Korea",
+        location: "관악구",
+        isAvailable: true,
+        views: 67,
+        likes: 15,
+        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) // 1 day ago
+      },
+      {
+        id: "item5",
+        title: "스타벅스 텀블러 세트",
+        description: "새로 산 텀블러인데 중복으로 받아서 판매합니다.",
+        price: "15.00",
+        category: "생활용품",
+        condition: "새 상품",
+        images: ["https://images.unsplash.com/photo-1544716278-e513176f20a5?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
+        sellerId: "test_user",
+        school: "Seoul National University",
+        country: "South Korea",
+        location: "신림역",
+        isAvailable: true,
+        views: 8,
+        likes: 1,
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) // 3 days ago
+      },
+      {
+        id: "item6",
+        title: "나이키 운동화 (270mm)",
+        description: "몇 번 안 신은 운동화입니다. 사이즈가 맞지 않아 판매합니다.",
+        price: "45.00",
+        category: "의류",
+        condition: "거의 새 것",
+        images: ["https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
+        sellerId: "user1",
+        school: "Hanyang University",
+        country: "South Korea",
+        location: "왕십리역",
+        isAvailable: true,
+        views: 32,
+        likes: 6,
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) // 5 days ago
+      },
+      {
+        id: "item7",
+        title: "요가매트 + 요가블록 세트",
+        description: "운동 시작하려고 샀는데 사용할 시간이 없어서 판매합니다.",
+        price: "30.00",
+        category: "스포츠",
+        condition: "새 상품",
+        images: ["https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
+        sellerId: "test_user",
+        school: "Seoul National University",
+        country: "South Korea",
+        location: "봉천역",
+        isAvailable: true,
+        views: 19,
+        likes: 4,
+        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 1 week ago
+      },
+      {
+        id: "item8",
+        title: "토익 교재 세트 (LC+RC)",
+        description: "토익 점수 달성해서 더 이상 필요없어 판매합니다. 깨끗해요.",
+        price: "20.00",
+        category: "도서",
+        condition: "양호",
+        images: ["https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
+        sellerId: "user1",
+        school: "Sungkyunkwan University",
+        country: "South Korea",
+        location: "혜화역",
+        isAvailable: true,
+        views: 28,
+        likes: 7,
+        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) // 10 days ago
+      },
+      {
+        id: "item9",
+        title: "미니 냉장고 (원룸용)",
+        description: "기숙사에서 사용했던 미니 냉장고입니다. 이사로 인해 판매.",
+        price: "120.00",
+        category: "가전제품",
+        condition: "양호",
+        images: ["https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
+        sellerId: "test_user",
+        school: "Seoul National University",
+        country: "South Korea",
+        location: "샤로수길",
+        isAvailable: true,
+        views: 41,
+        likes: 12,
+        createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) // 2 weeks ago
+      },
+      {
+        id: "item10",
+        title: "블루투스 헤드폰 (소니)",
+        description: "음질 좋은 소니 헤드폰입니다. 충전 케이블 포함.",
+        price: "85.00",
+        category: "전자기기",
+        condition: "양호",
+        images: ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
+        sellerId: "user1",
+        school: "Hongik University",
+        country: "South Korea",
+        location: "홍대입구역",
+        isAvailable: true,
+        views: 33,
+        likes: 9,
+        createdAt: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000) // 18 days ago
+      },
+      {
+        id: "item11",
+        title: "캠퍼스 백팩 (노스페이스)",
+        description: "수업 들을 때 사용했던 백팩입니다. 노트북 수납 가능.",
+        price: "40.00",
+        category: "가방",
+        condition: "양호",
+        images: ["https://images.unsplash.com/photo-1553062407-98eeb64c6a62?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
+        sellerId: "test_user",
+        school: "Seoul National University",
+        country: "South Korea",
+        location: "서울대입구역",
+        isAvailable: true,
+        views: 15,
+        likes: 3,
+        createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000) // 3 weeks ago
+      },
+      {
+        id: "item12",
+        title: "전기포트 + 머그컵 세트",
+        description: "기숙사 생활용으로 샀던 전기포트와 머그컵 세트입니다.",
+        price: "25.00",
+        category: "생활용품",
+        condition: "양호",
+        images: ["https://images.unsplash.com/photo-1544787219-7f47ccb76574?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300"],
+        sellerId: "user1",
+        school: "Kyung Hee University",
+        country: "South Korea",
+        location: "회기역",
+        isAvailable: true,
+        views: 21,
+        likes: 5,
+        createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000) // 25 days ago
       }
     ];
 

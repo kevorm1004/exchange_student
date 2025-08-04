@@ -216,18 +216,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Items routes
+  // Items routes with pagination
   app.get('/api/items', async (req, res) => {
     try {
-      const { school, country, category, search } = req.query;
-      const items = await storage.getItems({
+      const { school, country, category, search, page = '0', limit = '10' } = req.query;
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      
+      const allItems = await storage.getItems({
         school: school as string,
         country: country as string,
         category: category as string,
         search: search as string
       });
 
-      res.json(items);
+      // Simple pagination
+      const startIndex = pageNum * limitNum;
+      const endIndex = startIndex + limitNum;
+      const paginatedItems = allItems.slice(startIndex, endIndex);
+
+      res.json(paginatedItems);
     } catch (error) {
       console.error('Get items error:', error);
       res.status(500).json({ error: 'Server error' });

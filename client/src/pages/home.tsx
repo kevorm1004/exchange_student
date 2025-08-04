@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { Plus, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -14,18 +14,50 @@ export default function Home() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
 
-  const { data: items = [], isLoading } = useQuery<Item[]>({
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+  } = useInfiniteQuery({
     queryKey: ["/api/items", filter, user?.school, user?.country],
-    queryFn: async () => {
+    queryFn: async ({ pageParam = 0 }) => {
       const params = new URLSearchParams();
       if (filter === "school" && user?.school) params.append("school", user.school);
       if (filter === "country" && user?.country) params.append("country", user.country);
+      params.append("page", pageParam.toString());
+      params.append("limit", "10");
       
       const response = await fetch(`/api/items?${params}`);
       if (!response.ok) throw new Error("Failed to fetch items");
       return response.json();
     },
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.length === 10 ? allPages.length : undefined;
+    },
+    initialPageParam: 0,
   });
+
+  const items = data?.pages.flat() || [];
+
+  // Infinite scroll implementation
+  const handleScroll = useCallback(() => {
+    if (
+      window.innerHeight + document.documentElement.scrollTop >=
+      document.documentElement.offsetHeight - 1000
+    ) {
+      if (hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
 
   const handleCreatePost = () => {
     if (!user) {
@@ -59,15 +91,18 @@ export default function Home() {
     }
   };
 
-  const handleLoadMore = () => {
-    // TODO: Implement pagination
-    console.log("Load more items");
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-gray-500">상품을 불러오는 중 오류가 발생했습니다.</p>
       </div>
     );
   }
@@ -95,15 +130,19 @@ export default function Home() {
               />
             ))}
             
-            <div className="px-4 py-6">
-              <Button 
-                onClick={handleLoadMore}
-                className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200"
-                variant="outline"
-              >
-                더 많은 상품 보기
-              </Button>
-            </div>
+            {/* Loading indicator at bottom */}
+            {isFetchingNextPage && (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="ml-2 text-gray-600">상품을 불러오고 있습니다...</span>
+              </div>
+            )}
+            
+            {!hasNextPage && items.length > 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <p>모든 상품을 확인했습니다</p>
+              </div>
+            )}
           </>
         )}
       </main>
