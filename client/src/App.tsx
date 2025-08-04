@@ -20,6 +20,7 @@ import BottomNav from "@/components/layout/bottom-nav";
 function Router() {
   const [location] = useLocation();
   const isAuthPage = location.startsWith('/auth');
+  const isItemDetailPage = location.startsWith('/items/') && location !== '/items/create';
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen relative">
@@ -35,7 +36,7 @@ function Router() {
         <Route component={NotFound} />
       </Switch>
       
-      {!isAuthPage && <BottomNav />}
+      {!isAuthPage && !isItemDetailPage && <BottomNav />}
     </div>
   );
 }
