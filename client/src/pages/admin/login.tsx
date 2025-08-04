@@ -56,16 +56,17 @@ export default function AdminLogin() {
           return;
         }
 
-        // 토큰 저장
+        // 토큰과 사용자 정보 저장
         localStorage.setItem("token", result.token);
+        localStorage.setItem("user", JSON.stringify(result.user));
         
         toast({
           title: "로그인 성공",
           description: "관리자 대시보드로 이동합니다.",
         });
 
-        // 관리자 대시보드로 이동
-        navigate("/admin/dashboard");
+        // 강제로 페이지 새로고침 후 관리자 대시보드로 이동
+        window.location.href = "/admin/dashboard";
       } else {
         toast({
           title: "로그인 실패",
