@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Upload } from "lucide-react";
+import { ArrowLeft, Upload, Camera, Folder, X, Star, Move } from "lucide-react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
@@ -34,12 +36,31 @@ const conditions = [
   "많이 사용함",
 ];
 
+const currencies = [
+  { code: "USD", symbol: "$", name: "미국 달러", rate: 1 },
+  { code: "EUR", symbol: "€", name: "유로", rate: 0.92 },
+  { code: "JPY", symbol: "¥", name: "일본 엔", rate: 149.5 },
+  { code: "GBP", symbol: "£", name: "영국 파운드", rate: 0.79 },
+  { code: "CNY", symbol: "¥", name: "중국 위안", rate: 7.24 },
+];
+
+// USD to KRW rate (example: 1 USD = 1350 KRW)
+const USD_TO_KRW = 1350;
+
 export default function CreateItem() {
   const [isLoading, setIsLoading] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
+  const [selectedCurrency, setSelectedCurrency] = useState(currencies[0]);
+  const [priceValue, setPriceValue] = useState("");
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { user } = useRequireAuth();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // Calculate KRW price
+  const krwPrice = priceValue ? Math.round(parseFloat(priceValue) / selectedCurrency.rate * USD_TO_KRW) : 0;
 
   const form = useForm<InsertItem>({
     resolver: zodResolver(insertItemSchema),
@@ -53,6 +74,50 @@ export default function CreateItem() {
       location: "",
     },
   });
+
+  // Handle image upload
+  const handleImageUpload = (files: FileList | null, isCamera: boolean = false) => {
+    if (!files) return;
+    
+    Array.from(files).forEach((file) => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          setImages(prev => [...prev, result]);
+          const currentImages = form.getValues('images') || [];
+          form.setValue('images', [...currentImages, result]);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  };
+
+  // Remove image
+  const removeImage = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    setImages(newImages);
+    form.setValue('images', newImages);
+  };
+
+  // Move image to front (make it primary)
+  const makePrimaryImage = (index: number) => {
+    const newImages = [...images];
+    const primaryImage = newImages.splice(index, 1)[0];
+    newImages.unshift(primaryImage);
+    setImages(newImages);
+    form.setValue('images', newImages);
+  };
+
+  // Update price when currency or value changes
+  useEffect(() => {
+    if (priceValue) {
+      const usdPrice = parseFloat(priceValue) / selectedCurrency.rate;
+      form.setValue('price', usdPrice.toFixed(2));
+    } else {
+      form.setValue('price', '');
+    }
+  }, [priceValue, selectedCurrency, form]);
 
   const createItemMutation = useMutation({
     mutationFn: async (data: InsertItem) => {
@@ -77,9 +142,25 @@ export default function CreateItem() {
   });
 
   const onSubmit = async (data: InsertItem) => {
+    if (images.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "사진을 업로드해주세요",
+        description: "최소 1장의 사진이 필요합니다.",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      createItemMutation.mutate(data);
+      // Include images and convert price to USD
+      const submitData = {
+        ...data,
+        images,
+        price: form.getValues('price'),
+        location: user?.school || "",
+      };
+      createItemMutation.mutate(submitData);
     } finally {
       setIsLoading(false);
     }
@@ -117,11 +198,128 @@ export default function CreateItem() {
                 {/* Image Upload */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">상품 사진</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">사진을 업로드하세요</p>
-                    <p className="text-xs text-gray-400">최대 10장까지 가능</p>
-                  </div>
+                  
+                  {/* Upload Area */}
+                  {images.length === 0 ? (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                      <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600 mb-4">사진을 업로드하세요</p>
+                      <div className="flex gap-2 justify-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Upload className="h-4 w-4 mr-2" />
+                              사진 추가
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => cameraInputRef.current?.click()}>
+                              <Camera className="h-4 w-4 mr-2" />
+                              카메라로 촬영
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                              <Folder className="h-4 w-4 mr-2" />
+                              폴더에서 선택
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-2">최대 10장까지 가능</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Image Grid */}
+                      <div className="grid grid-cols-3 gap-2">
+                        {images.map((image, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={image}
+                              alt={`상품 사진 ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-lg"
+                            />
+                            
+                            {/* Primary Badge */}
+                            {index === 0 && (
+                              <Badge className="absolute top-1 left-1 bg-blue-500 text-white text-xs px-1 py-0">
+                                <Star className="h-3 w-3 mr-1" />
+                                대표
+                              </Badge>
+                            )}
+                            
+                            {/* Action Buttons */}
+                            <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex gap-1">
+                                {index !== 0 && (
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => makePrimaryImage(index)}
+                                  >
+                                    <Move className="h-3 w-3" />
+                                  </Button>
+                                )}
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => removeImage(index)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {/* Add More Button */}
+                        {images.length < 10 && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <div className="w-full h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
+                                <Upload className="h-6 w-6 text-gray-400" />
+                              </div>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem onClick={() => cameraInputRef.current?.click()}>
+                                <Camera className="h-4 w-4 mr-2" />
+                                카메라로 촬영
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                                <Folder className="h-4 w-4 mr-2" />
+                                폴더에서 선택
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
+                      
+                      <p className="text-xs text-gray-500">
+                        첫 번째 사진이 대표 사진입니다. 순서를 변경하려면 이동 버튼을 클릭하세요.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Hidden File Inputs */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => handleImageUpload(e.target.files)}
+                  />
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => handleImageUpload(e.target.files, true)}
+                  />
                 </div>
 
                 <FormField
@@ -156,24 +354,54 @@ export default function CreateItem() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>가격 (USD)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="0"
-                          type="number"
-                          step="0.01"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                {/* Price with Currency Selection */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">가격</label>
+                  <div className="flex gap-2">
+                    {/* Currency Selector */}
+                    <Select
+                      value={selectedCurrency.code}
+                      onValueChange={(value) => {
+                        const currency = currencies.find(c => c.code === value);
+                        if (currency) setSelectedCurrency(currency);
+                      }}
+                    >
+                      <SelectTrigger className="w-32">
+                        <SelectValue>
+                          {selectedCurrency.symbol} {selectedCurrency.code}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currencies.map((currency) => (
+                          <SelectItem key={currency.code} value={currency.code}>
+                            <div className="flex items-center gap-2">
+                              <span>{currency.symbol}</span>
+                              <span>{currency.code}</span>
+                              <span className="text-xs text-gray-500">{currency.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    {/* Price Input */}
+                    <Input
+                      placeholder="0"
+                      type="number"
+                      step="0.01"
+                      value={priceValue}
+                      onChange={(e) => setPriceValue(e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                  
+                  {/* KRW Conversion */}
+                  {krwPrice > 0 && (
+                    <p className="text-sm text-gray-600">
+                      ≈ ₩{krwPrice.toLocaleString()} (원화 환산)
+                    </p>
                   )}
-                />
+                </div>
 
                 <FormField
                   control={form.control}
