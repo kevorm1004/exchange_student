@@ -99,7 +99,7 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
           </div>
 
           {/* 하단 정보 */}
-          <div>
+          <div className="flex flex-col h-full">
             {/* 제목 */}
             <h3 className="font-semibold text-gray-900 text-xs mb-2 line-clamp-2 leading-tight">{item.title}</h3>
             
@@ -107,13 +107,13 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
             <p className="text-base font-bold text-gray-900 mb-2">{displayPrice}</p>
             
             {/* 위치 정보 */}
-            <div className="flex items-center text-xs text-gray-600 mb-1">
+            <div className="flex items-center text-xs text-gray-600 mb-2">
               <MapPin className="w-2.5 h-2.5 mr-1 flex-shrink-0" />
               <span className="text-primary font-medium text-xs">{distance}</span>
             </div>
             
-            {/* 메타 정보 */}
-            <div className="flex items-end justify-between">
+            {/* 메타 정보 - 하단에 고정 */}
+            <div className="flex items-center justify-between mt-auto">
               <div className="flex items-center space-x-2 text-gray-500 text-xs">
                 <span className="flex items-center">
                   <Eye className="w-3 h-3 mr-1" />
@@ -164,7 +164,7 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
             </div>
 
             {/* 오른쪽 정보 */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 flex flex-col h-32">
               {/* 제목 */}
               <h3 className="font-semibold text-gray-900 text-sm mb-1 truncate">{item.title}</h3>
               
@@ -177,10 +177,10 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
               </div>
               
               {/* 가격 */}
-              <p className="text-base font-bold text-gray-900 mb-1">{displayPrice}</p>
+              <p className="text-base font-bold text-gray-900 mb-2">{displayPrice}</p>
               
-              {/* 하단 메타 정보 */}
-              <div className="flex items-end justify-between">
+              {/* 하단 메타 정보 - 하단에 고정 */}
+              <div className="flex items-center justify-between mt-auto">
                 <div className="flex items-center space-x-2 text-gray-500 text-xs">
                   <span className="flex items-center">
                     <Eye className="w-3 h-3 mr-1" />
