@@ -50,9 +50,20 @@ export default function ChatRoomPage() {
       if (!response.ok) throw new Error("Failed to send message");
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/rooms", roomId, "messages"] });
+    onSuccess: (newMessage) => {
+      // WebSocket으로 실시간 업데이트되므로 즉시 쿼리 무효화하지 않음
       setMessage("");
+      
+      // 낙관적 업데이트로 메시지를 즉시 표시
+      queryClient.setQueryData(
+        ["/api/chat/rooms", roomId, "messages"],
+        (oldMessages: Message[] = []) => {
+          // 이미 있는 메시지인지 확인
+          const exists = oldMessages.some(msg => msg.id === newMessage.id);
+          if (exists) return oldMessages;
+          return [...oldMessages, newMessage];
+        }
+      );
     },
     onError: () => {
       toast({
@@ -80,7 +91,12 @@ export default function ChatRoomPage() {
           if (data.type === "new_message") {
             queryClient.setQueryData(
               ["/api/chat/rooms", roomId, "messages"],
-              (oldMessages: Message[] = []) => [...oldMessages, data.message]
+              (oldMessages: Message[] = []) => {
+                // 중복 메시지 방지
+                const exists = oldMessages.some(msg => msg.id === data.message.id);
+                if (exists) return oldMessages;
+                return [...oldMessages, data.message];
+              }
             );
           }
         } catch (error) {
@@ -108,7 +124,7 @@ export default function ChatRoomPage() {
   }, [messages]);
 
   const handleSendMessage = () => {
-    if (!message.trim()) return;
+    if (!message.trim() || sendMessageMutation.isPending) return;
     sendMessageMutation.mutate(message.trim());
   };
 

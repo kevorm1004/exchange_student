@@ -90,28 +90,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (message.type === 'leave_room') {
           // Leave a chat room
           delete (ws as any).roomId;
-        } else if (message.type === 'chat_message') {
-          // Handle chat message
-          const newMessage = await storage.createMessage({
-            roomId: message.roomId,
-            senderId: message.senderId,
-            content: message.content,
-            messageType: message.messageType || 'text'
-          });
-          
-          // Broadcast to room participants
-          const room = await storage.getChatRoom(message.roomId);
-          if (room) {
-            [room.buyerId, room.sellerId].forEach(userId => {
-              const client = clients.get(userId);
-              if (client && client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify({
-                  type: 'new_message',
-                  message: newMessage
-                }));
-              }
-            });
-          }
         }
       } catch (error) {
         console.error('WebSocket message error:', error);
@@ -553,6 +531,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         senderId: req.user!.id,
         content: content.trim(),
         messageType: 'text'
+      });
+      
+      // Broadcast to room participants via WebSocket
+      [room.buyerId, room.sellerId].forEach(userId => {
+        const client = clients.get(userId);
+        if (client && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'new_message',
+            message: message
+          }));
+        }
       });
       
       res.json(message);
