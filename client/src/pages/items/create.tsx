@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { insertItemSchema, type InsertItem } from "@shared/schema";
+import { getCurrencyForCountry, convertFromUSD, convertToUSD, formatPrice, type Currency } from "@/lib/currency";
 
 const categories = [
   "전자기기",
@@ -59,8 +60,9 @@ export default function CreateItem() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  // Calculate KRW price
-  const krwPrice = priceValue ? Math.round(parseFloat(priceValue) / selectedCurrency.rate * USD_TO_KRW) : 0;
+  // 사용자의 국가에 맞는 통화로 변환된 가격 계산
+  const userCurrency = user ? getCurrencyForCountry(user.country) : getCurrencyForCountry("US");
+  const convertedPrice = priceValue ? convertFromUSD(parseFloat(priceValue) / selectedCurrency.rate, userCurrency) : 0;
 
   const form = useForm<InsertItem>({
     resolver: zodResolver(insertItemSchema),
@@ -480,19 +482,19 @@ export default function CreateItem() {
                   {/* KRW Conversion Display */}
                   <div className="flex gap-2">
                     <div className="w-32 flex items-center justify-center bg-gray-100 rounded-md px-3 py-2">
-                      <span className="text-sm font-medium text-gray-600">₩ KRW</span>
+                      <span className="text-sm font-medium text-gray-600">{userCurrency.symbol} {userCurrency.code}</span>
                     </div>
                     <Input
                       placeholder="0"
                       type="text"
-                      value={krwPrice > 0 ? krwPrice.toLocaleString() : ""}
+                      value={convertedPrice > 0 ? Math.round(convertedPrice).toLocaleString() : ""}
                       readOnly
                       className="flex-1 bg-gray-50 text-gray-600"
                     />
                   </div>
                   
                   <p className="text-xs text-gray-500">
-                    원화는 현재 환율(1 USD = ₩{USD_TO_KRW.toLocaleString()})로 자동 환산됩니다
+                    {userCurrency.name}(으)로 현재 환율(1 USD = {formatPrice(1, userCurrency)})로 자동 환산됩니다
                   </p>
                 </div>
 

@@ -6,6 +6,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import type { Item } from "@shared/schema";
 import { cn } from "@/lib/utils";
+import { getCurrencyForCountry, formatPrice } from "@/lib/currency";
 
 interface ItemCardProps {
   item: Item;
@@ -54,6 +55,10 @@ const calculateDistance = (userSchool: string, itemSchool: string) => {
 export default function ItemCard({ item, isFavorite = false, onToggleFavorite, variant = "default" }: ItemCardProps) {
   const [, navigate] = useLocation();
   const { user } = useAuth();
+  
+  // 사용자의 국가에 맞는 통화로 가격 표시
+  const userCurrency = user ? getCurrencyForCountry(user.country) : getCurrencyForCountry("US");
+  const displayPrice = formatPrice(parseFloat(item.price), userCurrency);
 
   const handleCardClick = () => {
     navigate(`/items/${item.id}`);
@@ -99,7 +104,7 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
             <h3 className="font-semibold text-gray-900 text-sm mb-1 truncate">{item.title}</h3>
             
             {/* 가격 */}
-            <p className="text-lg font-bold text-gray-900 mb-2">${item.price}</p>
+            <p className="text-lg font-bold text-gray-900 mb-2">{displayPrice}</p>
             
             {/* 위치 정보 */}
             <div className="flex items-center text-xs text-gray-600 mb-2">
@@ -171,7 +176,7 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
               </div>
               
               {/* 가격 */}
-              <p className="text-xl font-bold text-gray-900 mb-2">${item.price}</p>
+              <p className="text-xl font-bold text-gray-900 mb-2">{displayPrice}</p>
               
               {/* 하단 메타 정보 */}
               <div className="flex items-center justify-between">
