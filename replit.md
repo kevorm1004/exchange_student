@@ -9,6 +9,10 @@ This is a modern mobile-first marketplace web application designed for students 
 - Added country-specific filtering with dropdown selection
 - Created admin management system with user and item controls
 - Admin access via dedicated login page at /admin route
+- Implemented OAuth authentication with social login support (Google, Kakao, Naver)
+- Added OAuth provider and providerId fields to user schema for social authentication
+- Updated database schema to support both email and OAuth authentication
+- Added social login buttons to login page with OAuth callback handling
 
 # User Preferences
 

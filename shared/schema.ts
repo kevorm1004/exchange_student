@@ -15,6 +15,10 @@ export const users = pgTable("users", {
   preferredCurrency: text("preferred_currency").default("USD").notNull(),
   role: text("role").default("user").notNull(),
   status: text("status").default("active").notNull(),
+  authProvider: text("auth_provider").default("email").notNull(),
+  googleId: text("google_id"),
+  kakaoId: text("kakao_id"),
+  naverId: text("naver_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

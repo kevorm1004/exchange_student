@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import session from "express-session";
+import passport from "./passport-config";
 import { storage } from "./storage";
 import { seedDatabase } from "./seed";
 import { 
@@ -52,6 +54,18 @@ const authenticateToken = async (req: any, res: any, next: any) => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+
+  // Session middleware
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-session-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false } // Set to true in production with HTTPS
+  }));
+
+  // Passport middleware
+  app.use(passport.initialize());
+  app.use(passport.session());
 
   // Seed database on startup (only in development)
   if (process.env.NODE_ENV === 'development') {
@@ -106,6 +120,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
   });
+
+  // OAuth routes
+  // Google OAuth
+  app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+  app.get('/api/auth/google/callback', 
+    passport.authenticate('google', { failureRedirect: '/auth/login' }),
+    (req, res) => {
+      // Generate JWT token for authenticated user
+      const user = req.user as any;
+      const token = jwt.sign({ 
+        id: user.id,
+        email: user.email 
+      }, JWT_SECRET, { expiresIn: '24h' });
+      
+      // Redirect to frontend with token
+      res.redirect(`/?token=${token}&user=${encodeURIComponent(JSON.stringify({
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        fullName: user.fullName,
+        school: user.school,
+        country: user.country,
+        preferredCurrency: user.preferredCurrency,
+        role: user.role
+      }))}`);
+    }
+  );
+
+  // Kakao OAuth
+  app.get('/api/auth/kakao', passport.authenticate('kakao'));
+  app.get('/api/auth/kakao/callback', 
+    passport.authenticate('kakao', { failureRedirect: '/auth/login' }),
+    (req, res) => {
+      const user = req.user as any;
+      const token = jwt.sign({ 
+        id: user.id,
+        email: user.email 
+      }, JWT_SECRET, { expiresIn: '24h' });
+      
+      res.redirect(`/?token=${token}&user=${encodeURIComponent(JSON.stringify({
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        fullName: user.fullName,
+        school: user.school,
+        country: user.country,
+        preferredCurrency: user.preferredCurrency,
+        role: user.role
+      }))}`);
+    }
+  );
+
+  // Naver OAuth
+  app.get('/api/auth/naver', passport.authenticate('naver'));
+  app.get('/api/auth/naver/callback', 
+    passport.authenticate('naver', { failureRedirect: '/auth/login' }),
+    (req, res) => {
+      const user = req.user as any;
+      const token = jwt.sign({ 
+        id: user.id,
+        email: user.email 
+      }, JWT_SECRET, { expiresIn: '24h' });
+      
+      res.redirect(`/?token=${token}&user=${encodeURIComponent(JSON.stringify({
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        fullName: user.fullName,
+        school: user.school,
+        country: user.country,
+        preferredCurrency: user.preferredCurrency,
+        role: user.role
+      }))}`);
+    }
+  );
 
   // Auth routes
   // Test login route for easy access
