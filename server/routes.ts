@@ -141,8 +141,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   app.get('/api/auth/google/callback', async (req, res) => {
     console.log('Google callback received:', req.query);
+    console.log('Full callback URL:', req.url);
     
-    const { code, error } = req.query;
+    const { code, error, state } = req.query;
     
     if (error) {
       console.error('Google OAuth error:', error);
@@ -150,8 +151,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     if (!code) {
-      console.error('No authorization code received');
-      return res.redirect('/auth/login?error=no_code');
+      console.error('No authorization code received - user may have cancelled or denied access');
+      console.log('Query params received:', Object.keys(req.query));
+      return res.redirect('/auth/login?error=access_denied');
     }
     
     try {
