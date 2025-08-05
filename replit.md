@@ -13,6 +13,13 @@ This is a modern mobile-first marketplace web application designed for students 
 - Added OAuth provider and providerId fields to user schema for social authentication
 - Updated database schema to support both email and OAuth authentication
 - Added social login buttons to login page with OAuth callback handling
+- **Comprehensive Item Status System (January 5, 2025)**:
+  - Added status field to items with three states: 거래가능/거래완료/거래기간만료
+  - Implemented visual status indicators with graying effect for inactive items
+  - Added status badges positioned in bottom-right corner of item cards
+  - Created seller-only status management in item detail pages
+  - Implemented automatic expiration based on trading period dates
+  - Added test data with various statuses and realistic product images
 
 # User Preferences
 
