@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Upload, Camera, Folder, X, Star, Move } from "lucide-react";
+import { ArrowLeft, Upload, Camera, Folder, X, Star, Move, CalendarIcon } from "lucide-react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,11 +13,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { insertItemSchema, type InsertItem } from "@shared/schema";
 import { getCurrencyForCountry, convertFromUSD, convertToUSD, formatPrice, type Currency } from "@/lib/currency";
+import { cn } from "@/lib/utils";
 
 const categories = [
   "전자기기",
@@ -37,6 +41,13 @@ const conditions = [
   "많이 사용함",
 ];
 
+const deliveryMethods = [
+  "직거래",
+  "택배",
+  "대리전달",
+  "기타",
+];
+
 const currencies = [
   { code: "USD", symbol: "$", name: "미국 달러", rate: 1 },
   { code: "EUR", symbol: "€", name: "유로", rate: 0.92 },
@@ -53,6 +64,8 @@ export default function CreateItem() {
   const [images, setImages] = useState<string[]>([]);
   const [selectedCurrency, setSelectedCurrency] = useState(currencies[0]);
   const [priceValue, setPriceValue] = useState("");
+  const [selectedDeliveryMethod, setSelectedDeliveryMethod] = useState("");
+  const [customDeliveryMethod, setCustomDeliveryMethod] = useState("");
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { user } = useRequireAuth();
@@ -76,6 +89,10 @@ export default function CreateItem() {
       school: user?.school || "",
       country: user?.country || "",
       location: user?.school || "",
+      deliveryMethod: "",
+      customDeliveryMethod: "",
+      availableFrom: undefined,
+      availableTo: undefined,
       isAvailable: true,
     },
   });
@@ -213,6 +230,10 @@ export default function CreateItem() {
         school: user?.school || "",
         country: user?.country || "",
         location: data.location || user?.school || "",
+        deliveryMethod: data.deliveryMethod || "",
+        customDeliveryMethod: data.deliveryMethod === "기타" ? data.customDeliveryMethod : "",
+        availableFrom: data.availableFrom || null,
+        availableTo: data.availableTo || null,
       };
       console.log('Submitting item data:', submitData);
       createItemMutation.mutate(submitData);
@@ -564,6 +585,164 @@ export default function CreateItem() {
                     </FormItem>
                   )}
                 />
+
+                {/* Delivery Method */}
+                <FormField
+                  control={form.control}
+                  name="deliveryMethod"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>거래 방법</FormLabel>
+                      <Select 
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setSelectedDeliveryMethod(value);
+                          if (value !== "기타") {
+                            setCustomDeliveryMethod("");
+                            form.setValue("customDeliveryMethod", "");
+                          }
+                        }} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="거래 방법을 선택하세요" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {deliveryMethods.map((method) => (
+                            <SelectItem key={method} value={method}>
+                              {method}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Custom Delivery Method Input */}
+                {selectedDeliveryMethod === "기타" && (
+                  <FormField
+                    control={form.control}
+                    name="customDeliveryMethod"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>기타 거래 방법 상세</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="기타 거래 방법을 입력하세요"
+                            {...field}
+                            value={customDeliveryMethod}
+                            onChange={(e) => {
+                              setCustomDeliveryMethod(e.target.value);
+                              field.onChange(e.target.value);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {/* Available Period */}
+                <div className="space-y-4">
+                  <label className="text-sm font-medium">판매가능기간</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Start Date */}
+                    <FormField
+                      control={form.control}
+                      name="availableFrom"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>시작일</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "yyyy-MM-dd")
+                                  ) : (
+                                    <span>시작일 선택</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) =>
+                                  date < new Date(new Date().setHours(0, 0, 0, 0))
+                                }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* End Date */}
+                    <FormField
+                      control={form.control}
+                      name="availableTo"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>종료일</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "yyyy-MM-dd")
+                                  ) : (
+                                    <span>종료일 선택</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => {
+                                  const startDate = form.getValues("availableFrom");
+                                  const today = new Date(new Date().setHours(0, 0, 0, 0));
+                                  return date < today || (startDate && date < startDate);
+                                }}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    판매가능기간을 설정하지 않으면 상품이 계속 판매 가능한 상태로 유지됩니다.
+                  </p>
+                </div>
 
                 <Button 
                   type="submit" 
