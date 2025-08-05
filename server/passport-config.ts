@@ -28,7 +28,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/api/auth/google/callback"
+    callbackURL: "https://1b996db4-2b46-4043-bd81-c1a3847beff0-00-2akh5nzv1zwuu.spock.replit.dev/api/auth/google/callback"
   },
   async (accessToken: any, refreshToken: any, profile: any, done: any) => {
     try {
