@@ -125,56 +125,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // OAuth routes  
-  // Google OAuth
-  app.get('/api/auth/google', (req, res, next) => {
-    console.log('Google OAuth initiated');
-    passport.authenticate('google', { 
-      scope: ['profile', 'email'],
-      prompt: 'select_account'
-    })(req, res, next);
+  // Google OAuth - Direct URL approach for debugging
+  app.get('/api/auth/google', (req, res) => {
+    console.log('Google OAuth initiated - direct approach');
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${process.env.GOOGLE_CLIENT_ID}&` +
+      `redirect_uri=${encodeURIComponent('https://1b996db4-2b46-4043-bd81-c1a3847beff0-00-2akh5nzv1zwuu.spock.replit.dev/api/auth/google/callback')}&` +
+      `response_type=code&` +
+      `scope=${encodeURIComponent('profile email')}&` +
+      `access_type=offline&` +
+      `prompt=consent`;
+    
+    console.log('Redirecting to:', googleAuthUrl);
+    res.redirect(googleAuthUrl);
   });
-  app.get('/api/auth/google/callback', 
-    (req, res, next) => {
-      console.log('Google callback received:', req.query);
-      passport.authenticate('google', { 
-        failureRedirect: '/auth/login?error=oauth_failed',
-        failureMessage: true
-      }, (err, user, info) => {
-        if (err) {
-          console.error('Google OAuth error:', err);
-          return res.redirect('/auth/login?error=oauth_error');
-        }
-        if (!user) {
-          console.error('Google OAuth failed - no user:', info);
-          return res.redirect('/auth/login?error=oauth_no_user');
-        }
-        req.logIn(user, (loginErr) => {
-          if (loginErr) {
-            console.error('Login error:', loginErr);
-            return res.redirect('/auth/login?error=login_failed');
-          }
-          console.log('Google OAuth successful for user:', user.email);
-          // Generate JWT token
-          const token = jwt.sign({ 
-            id: user.id,
-            email: user.email 
-          }, JWT_SECRET, { expiresIn: '24h' });
-          
-          // Redirect to frontend with token
-          res.redirect(`/?token=${token}&user=${encodeURIComponent(JSON.stringify({
-            id: user.id,
-            email: user.email,
-            username: user.username,
-            fullName: user.fullName,
-            school: user.school,
-            country: user.country,
-            preferredCurrency: user.preferredCurrency,
-            role: user.role
-          }))}`);
-        });
-      })(req, res, next);
+  app.get('/api/auth/google/callback', async (req, res) => {
+    console.log('Google callback received:', req.query);
+    
+    const { code, error } = req.query;
+    
+    if (error) {
+      console.error('Google OAuth error:', error);
+      return res.redirect('/auth/login?error=' + error);
     }
-  );
+    
+    if (!code) {
+      console.error('No authorization code received');
+      return res.redirect('/auth/login?error=no_code');
+    }
+    
+    try {
+      // Exchange code for tokens
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: process.env.GOOGLE_CLIENT_ID!,
+          client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+          code: code as string,
+          grant_type: 'authorization_code',
+          redirect_uri: 'https://1b996db4-2b46-4043-bd81-c1a3847beff0-00-2akh5nzv1zwuu.spock.replit.dev/api/auth/google/callback'
+        })
+      });
+      
+      const tokens = await tokenResponse.json();
+      console.log('Token response:', tokens);
+      
+      if (!tokens.access_token) {
+        console.error('No access token received:', tokens);
+        return res.redirect('/auth/login?error=no_token');
+      }
+      
+      // Get user info from Google
+      const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+          'Authorization': `Bearer ${tokens.access_token}`
+        }
+      });
+      
+      const googleUser = await userResponse.json();
+      console.log('Google user info:', googleUser);
+      
+      if (!googleUser.email) {
+        console.error('No email from Google user info');
+        return res.redirect('/auth/login?error=no_email');
+      }
+      
+      // Check if user exists or create new one
+      let user = await storage.getUserByEmail(googleUser.email);
+      
+      if (!user) {
+        // Create new user
+        const username = `google_${googleUser.id}`;
+        user = await storage.createUser({
+          username,
+          email: googleUser.email,
+          password: '', // OAuth users don't need password
+          fullName: googleUser.name || username,
+          school: '',
+          country: '',
+          profileImage: googleUser.picture || null,
+          authProvider: 'google',
+          googleId: googleUser.id
+        });
+      } else if (!user.googleId) {
+        // Link existing account with Google
+        await storage.updateUser(user.id, {
+          googleId: googleUser.id,
+          authProvider: user.authProvider === 'email' ? 'email,google' : user.authProvider + ',google'
+        });
+      }
+      
+      console.log('Google OAuth successful for user:', user.email);
+      
+      // Generate JWT token
+      const token = jwt.sign({ 
+        id: user.id,
+        email: user.email 
+      }, JWT_SECRET, { expiresIn: '24h' });
+      
+      // Redirect to frontend with token
+      res.redirect(`/?token=${token}&user=${encodeURIComponent(JSON.stringify({
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        fullName: user.fullName,
+        school: user.school,
+        country: user.country,
+        preferredCurrency: user.preferredCurrency,
+        role: user.role
+      }))}`);
+      
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      res.redirect('/auth/login?error=callback_error');
+    }
+  });
 
   // Kakao OAuth
   app.get('/api/auth/kakao', passport.authenticate('kakao'));
