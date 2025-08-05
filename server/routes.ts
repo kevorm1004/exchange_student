@@ -124,9 +124,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // OAuth routes
+  // OAuth routes  
   // Google OAuth
-  app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+  app.get('/api/auth/google', (req, res, next) => {
+    console.log('Google OAuth initiated');
+    passport.authenticate('google', { 
+      scope: ['profile', 'email'],
+      prompt: 'select_account'
+    })(req, res, next);
+  });
   app.get('/api/auth/google/callback', 
     passport.authenticate('google', { failureRedirect: '/auth/login' }),
     (req, res) => {
