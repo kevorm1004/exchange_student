@@ -25,6 +25,7 @@ passport.deserializeUser(async (id: string, done) => {
 
 // Google OAuth Strategy
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  console.log('Configuring Google OAuth with callback URL: https://1b996db4-2b46-4043-bd81-c1a3847beff0-00-2akh5nzv1zwuu.spock.replit.dev/api/auth/google/callback');
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
