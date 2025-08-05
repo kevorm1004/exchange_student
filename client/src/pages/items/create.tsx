@@ -22,16 +22,7 @@ import { insertItemSchema, type InsertItem } from "@shared/schema";
 import { getCurrencyForCountry, convertFromUSD, convertToUSD, formatPrice, type Currency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
-const categories = [
-  "전자기기",
-  "도서",
-  "가구",
-  "가전",
-  "운동/레저",
-  "의류",
-  "생활용품",
-  "기타",
-];
+
 
 const conditions = [
   "새 상품",
@@ -83,7 +74,6 @@ export default function CreateItem() {
       title: "",
       description: "",
       price: "",
-      category: "",
       condition: "",
       images: [],
       school: user?.school || "",
@@ -232,8 +222,8 @@ export default function CreateItem() {
         location: data.location || user?.school || "",
         deliveryMethod: data.deliveryMethod || "",
         customDeliveryMethod: data.deliveryMethod === "기타" ? data.customDeliveryMethod : "",
-        availableFrom: data.availableFrom || null,
-        availableTo: data.availableTo || null,
+        availableFrom: data.availableFrom ? data.availableFrom.toISOString() : null,
+        availableTo: data.availableTo ? data.availableTo.toISOString() : null,
       };
       console.log('Submitting item data:', submitData);
       createItemMutation.mutate(submitData);
@@ -519,30 +509,7 @@ export default function CreateItem() {
                   </p>
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>카테고리</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="카테고리를 선택하세요" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
 
                 <FormField
                   control={form.control}
@@ -649,7 +616,7 @@ export default function CreateItem() {
 
                 {/* Available Period */}
                 <div className="space-y-4">
-                  <label className="text-sm font-medium">판매가능기간</label>
+                  <label className="text-sm font-medium">거래가능기간</label>
                   <div className="grid grid-cols-2 gap-4">
                     {/* Start Date */}
                     <FormField
@@ -728,7 +695,9 @@ export default function CreateItem() {
                                 disabled={(date) => {
                                   const startDate = form.getValues("availableFrom");
                                   const today = new Date(new Date().setHours(0, 0, 0, 0));
-                                  return date < today || (startDate && date < startDate);
+                                  if (date < today) return true;
+                                  if (startDate && date < startDate) return true;
+                                  return false;
                                 }}
                                 initialFocus
                               />
@@ -740,7 +709,7 @@ export default function CreateItem() {
                     />
                   </div>
                   <p className="text-xs text-gray-500">
-                    판매가능기간을 설정하지 않으면 상품이 계속 판매 가능한 상태로 유지됩니다.
+                    거래가능기간을 설정하지 않으면 상품이 계속 거래 가능한 상태로 유지됩니다.
                   </p>
                 </div>
 

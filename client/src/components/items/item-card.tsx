@@ -1,7 +1,6 @@
 import { Heart, Eye, Camera, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import type { Item } from "@shared/schema";
@@ -16,16 +15,7 @@ interface ItemCardProps {
   onItemClick?: () => void;
 }
 
-const getCategoryColor = (category: string) => {
-  const colors = {
-    "전자기기": "bg-blue-100 text-blue-800",
-    "도서": "bg-green-100 text-green-800",
-    "가구": "bg-purple-100 text-purple-800",
-    "가전": "bg-orange-100 text-orange-800",
-    "운동/레저": "bg-indigo-100 text-indigo-800",
-  };
-  return colors[category as keyof typeof colors] || "bg-gray-100 text-gray-800";
-};
+
 
 const formatTimeAgo = (date: Date) => {
   const now = new Date();
@@ -135,9 +125,7 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
                 </span>
                 <span>{formatTimeAgo(new Date(item.createdAt || new Date()))}</span>
               </div>
-              <Badge className={`${getCategoryColor(item.category)} text-xs px-1.5 py-0.5`}>
-                {item.category}
-              </Badge>
+
             </div>
           </div>
         </div>
@@ -202,9 +190,7 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
                   </span>
                   <span>{formatTimeAgo(new Date(item.createdAt))}</span>
                 </div>
-                <Badge className={`${getCategoryColor(item.category)} text-xs px-1.5 py-0.5`}>
-                  {item.category}
-                </Badge>
+
               </div>
             </div>
           </div>

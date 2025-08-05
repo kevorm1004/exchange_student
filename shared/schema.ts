@@ -27,7 +27,6 @@ export const items = pgTable("items", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  category: text("category").notNull(),
   condition: text("condition").notNull(),
   images: text("images").array().notNull().default(sql`'{}'::text[]`),
   sellerId: text("seller_id").notNull().references(() => users.id),
