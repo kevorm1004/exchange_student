@@ -134,26 +134,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })(req, res, next);
   });
   app.get('/api/auth/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/auth/login' }),
-    (req, res) => {
-      // Generate JWT token for authenticated user
-      const user = req.user as any;
-      const token = jwt.sign({ 
-        id: user.id,
-        email: user.email 
-      }, JWT_SECRET, { expiresIn: '24h' });
-      
-      // Redirect to frontend with token
-      res.redirect(`/?token=${token}&user=${encodeURIComponent(JSON.stringify({
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        fullName: user.fullName,
-        school: user.school,
-        country: user.country,
-        preferredCurrency: user.preferredCurrency,
-        role: user.role
-      }))}`);
+    (req, res, next) => {
+      console.log('Google callback received:', req.query);
+      passport.authenticate('google', { 
+        failureRedirect: '/auth/login?error=oauth_failed',
+        failureMessage: true
+      }, (err, user, info) => {
+        if (err) {
+          console.error('Google OAuth error:', err);
+          return res.redirect('/auth/login?error=oauth_error');
+        }
+        if (!user) {
+          console.error('Google OAuth failed - no user:', info);
+          return res.redirect('/auth/login?error=oauth_no_user');
+        }
+        req.logIn(user, (loginErr) => {
+          if (loginErr) {
+            console.error('Login error:', loginErr);
+            return res.redirect('/auth/login?error=login_failed');
+          }
+          console.log('Google OAuth successful for user:', user.email);
+          // Generate JWT token
+          const token = jwt.sign({ 
+            id: user.id,
+            email: user.email 
+          }, JWT_SECRET, { expiresIn: '24h' });
+          
+          // Redirect to frontend with token
+          res.redirect(`/?token=${token}&user=${encodeURIComponent(JSON.stringify({
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            fullName: user.fullName,
+            school: user.school,
+            country: user.country,
+            preferredCurrency: user.preferredCurrency,
+            role: user.role
+          }))}`);
+        });
+      })(req, res, next);
     }
   );
 
