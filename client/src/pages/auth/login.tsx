@@ -78,11 +78,7 @@ export default function Login() {
             {/* Social Login Buttons */}
             <Button 
               onClick={() => {
-                toast({
-                  title: "준비 중",
-                  description: "구글 로그인 기능은 현재 준비 중입니다.",
-                  variant: "default",
-                });
+                window.location.href = '/api/auth/google';
               }}
               className="w-full bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 flex items-center justify-center gap-3"
               variant="outline"

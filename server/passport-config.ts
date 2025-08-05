@@ -1,6 +1,9 @@
 import passport from 'passport';
+// @ts-ignore
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+// @ts-ignore  
 import { Strategy as KakaoStrategy } from 'passport-kakao';
+// @ts-ignore
 import { Strategy as NaverStrategy } from 'passport-naver-v2';
 import { storage } from './storage';
 import type { User } from '@shared/schema';
@@ -27,7 +30,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: "/api/auth/google/callback"
   },
-  async (accessToken, refreshToken, profile, done) => {
+  async (accessToken: any, refreshToken: any, profile: any, done: any) => {
     try {
       const email = profile.emails?.[0]?.value;
       if (!email) {
@@ -47,7 +50,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           fullName: profile.displayName || username,
           school: '',
           country: '',
-          location: '',
           profileImage: profile.photos?.[0]?.value || null,
           authProvider: 'google',
           googleId: profile.id
