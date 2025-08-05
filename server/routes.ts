@@ -514,12 +514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pageNum = parseInt(page as string, 10);
       const limitNum = parseInt(limit as string, 10);
       
-      const allItems = await storage.getItems({
-        school: school as string,
-        country: country as string,
-        category: category as string,
-        search: search as string
-      });
+      const allItems = await storage.getItems();
 
       // Simple pagination
       const startIndex = pageNum * limitNum;
@@ -543,13 +538,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const searchQuery = q.trim().toLowerCase();
-      const allItems = await storage.getItems({});
+      const allItems = await storage.getItems();
       
       // Filter items based on search query
       const searchResults = allItems.filter(item => 
         item.title.toLowerCase().includes(searchQuery) ||
-        item.description.toLowerCase().includes(searchQuery) ||
-        (item.category && item.category.toLowerCase().includes(searchQuery))
+        item.description.toLowerCase().includes(searchQuery)
       );
 
       res.json(searchResults);
