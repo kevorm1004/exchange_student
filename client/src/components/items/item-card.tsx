@@ -1,6 +1,7 @@
 import { Heart, Eye, Camera, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import type { Item } from "@shared/schema";
@@ -59,6 +60,37 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
   const userCurrency = user ? getCurrencyByCode(user.preferredCurrency || "USD") : getCurrencyByCode("USD");
   const displayPrice = formatPrice(parseFloat(item.price), userCurrency);
 
+  // 상품 상태 확인
+  const getItemStatus = (item: Item) => {
+    if (item.status === "거래완료") return "거래완료";
+    if (item.status === "거래기간만료") return "거래기간만료";
+    
+    // 거래 기간 만료 자동 확인
+    if (item.availableTo) {
+      const now = new Date();
+      const availableTo = new Date(item.availableTo);
+      if (now > availableTo) {
+        return "거래기간만료";
+      }
+    }
+    
+    return "거래가능";
+  };
+
+  const itemStatus = getItemStatus(item);
+  const isInactive = itemStatus !== "거래가능";
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case "거래완료":
+        return "bg-gray-500 text-white";
+      case "거래기간만료":
+        return "bg-red-500 text-white";
+      default:
+        return "bg-green-500 text-white";
+    }
+  };
+
   const handleCardClick = () => {
     onItemClick?.();
     navigate(`/items/${item.id}`);
@@ -74,8 +106,11 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
   // Grid variant for search results
   if (variant === "grid") {
     return (
-      <Card className="marketplace-card cursor-pointer hover:shadow-md transition-shadow" onClick={handleCardClick}>
-        <div className="p-4">
+      <Card className={cn(
+        "marketplace-card cursor-pointer hover:shadow-md transition-shadow relative",
+        isInactive && "opacity-60"
+      )} onClick={handleCardClick}>
+        <div className={cn("p-4", isInactive && "grayscale")}>
           {/* 상단 이미지 */}
           <div className="relative mb-3">
             <img
@@ -125,10 +160,19 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
                 </span>
                 <span>{formatTimeAgo(new Date(item.createdAt || new Date()))}</span>
               </div>
-
             </div>
           </div>
         </div>
+        
+        {/* 상태 배지 - 오른쪽 아래 */}
+        {itemStatus !== "거래가능" && (
+          <Badge className={cn(
+            "absolute bottom-2 right-2 text-xs px-2 py-1",
+            getStatusBadgeColor(itemStatus)
+          )}>
+            {itemStatus}
+          </Badge>
+        )}
       </Card>
     );
   }
@@ -136,8 +180,11 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
   // Default variant for home page
   return (
     <div className="px-4 mb-3">
-      <Card className="marketplace-card cursor-pointer hover:shadow-md transition-shadow" onClick={handleCardClick}>
-        <div className="p-4">
+      <Card className={cn(
+        "marketplace-card cursor-pointer hover:shadow-md transition-shadow relative",
+        isInactive && "opacity-60"
+      )} onClick={handleCardClick}>
+        <div className={cn("p-4", isInactive && "grayscale")}>
           <div className="flex space-x-4">
             {/* 왼쪽 이미지 */}
             <div className="relative flex-shrink-0">
@@ -190,11 +237,20 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
                   </span>
                   <span>{formatTimeAgo(new Date(item.createdAt))}</span>
                 </div>
-
               </div>
             </div>
           </div>
         </div>
+        
+        {/* 상태 배지 - 오른쪽 아래 */}
+        {itemStatus !== "거래가능" && (
+          <Badge className={cn(
+            "absolute bottom-2 right-2 text-xs px-2 py-1",
+            getStatusBadgeColor(itemStatus)
+          )}>
+            {itemStatus}
+          </Badge>
+        )}
       </Card>
     </div>
   );

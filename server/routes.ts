@@ -576,6 +576,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update item status
+  app.put('/api/items/:id', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const itemId = req.params.id;
+      const userId = req.user!.id;
+      const { status } = req.body;
+
+      // Check if item exists and user is the seller
+      const item = await storage.getItem(itemId);
+      if (!item) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+
+      if (item.sellerId !== userId) {
+        return res.status(403).json({ error: 'Only the seller can update item status' });
+      }
+
+      // Validate status
+      const validStatuses = ['거래가능', '거래완료', '거래기간만료'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+      }
+
+      // Update item status
+      const updatedItem = await storage.updateItemStatus(itemId, status);
+      res.json(updatedItem);
+    } catch (error) {
+      console.error('Error updating item status:', error);
+      res.status(500).json({ error: 'Failed to update item status' });
+    }
+  });
+
   app.post('/api/items', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const validatedData = insertItemSchema.parse(req.body);

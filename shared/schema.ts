@@ -37,6 +37,7 @@ export const items = pgTable("items", {
   customDeliveryMethod: text("custom_delivery_method"),
   availableFrom: timestamp("available_from"),
   availableTo: timestamp("available_to"),
+  status: text("status").default("거래가능").notNull(), // "거래가능", "거래완료", "거래기간만료"
   isAvailable: boolean("is_available").default(true).notNull(),
   views: integer("views").default(0).notNull(),
   likes: integer("likes").default(0).notNull(),

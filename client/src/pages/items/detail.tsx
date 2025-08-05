@@ -1,5 +1,5 @@
 import { useParams } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Heart, MessageCircle, Share, Eye, MapPin } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -11,35 +11,55 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Item } from "@shared/schema";
 
+const formatTimeAgo = (date: Date) => {
+  const now = new Date();
+  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+  
+  if (diffInHours < 1) return "방금 전";
+  if (diffInHours < 24) return `${diffInHours}시간 전`;
+  if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}일 전`;
+  return `${Math.floor(diffInHours / 168)}주 전`;
+};
+
 export default function ItemDetail() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: item, isLoading } = useQuery<Item>({
     queryKey: ["/api/items", id],
     enabled: !!id,
   });
 
-  const formatTimeAgo = (date: Date) => {
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+
+
+  // 상품 상태 확인
+  const getItemStatus = (item: Item) => {
+    if (item.status === "거래완료") return "거래완료";
+    if (item.status === "거래기간만료") return "거래기간만료";
     
-    if (diffInHours < 1) return "방금 전";
-    if (diffInHours < 24) return `${diffInHours}시간 전`;
-    if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}일 전`;
-    return `${Math.floor(diffInHours / 168)}주 전`;
+    // 거래 기간 만료 자동 확인
+    if (item.availableTo) {
+      const now = new Date();
+      const availableTo = new Date(item.availableTo);
+      if (now > availableTo) {
+        return "거래기간만료";
+      }
+    }
+    
+    return "거래가능";
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      "전자기기": "bg-blue-100 text-blue-800",
-      "도서": "bg-green-100 text-green-800",
-      "가구": "bg-purple-100 text-purple-800",
-      "가전": "bg-orange-100 text-orange-800",
-      "운동/레저": "bg-indigo-100 text-indigo-800",
-    };
-    return colors[category as keyof typeof colors] || "bg-gray-100 text-gray-800";
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case "거래완료":
+        return "bg-gray-500 text-white";
+      case "거래기간만료":
+        return "bg-red-500 text-white";
+      default:
+        return "bg-green-500 text-white";
+    }
   };
 
   const { toast } = useToast();
@@ -61,6 +81,29 @@ export default function ItemDetail() {
       toast({
         title: "채팅방 생성 실패",
         description: "채팅방을 생성할 수 없습니다. 다시 시도해주세요.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const updateItemStatusMutation = useMutation({
+    mutationFn: async (status: string) => {
+      const response = await apiRequest("PUT", `/api/items/${id}`, { status });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "상품 상태 변경됨",
+        description: "상품 상태가 성공적으로 변경되었습니다."
+      });
+      // Invalidate and refetch item data
+      queryClient.invalidateQueries({ queryKey: ["/api/items", id] });
+    },
+    onError: (error: any) => {
+      console.error("Status update error:", error);
+      toast({
+        title: "상태 변경 실패",
+        description: "상품 상태를 변경할 수 없습니다. 다시 시도해주세요.",
         variant: "destructive"
       });
     }
@@ -163,7 +206,11 @@ export default function ItemDetail() {
           {/* Item Info */}
           <Card className="p-4">
             <div className="flex justify-between items-start mb-3">
-              <Badge className={getCategoryColor(item.category)}>{item.category}</Badge>
+              <div className="flex items-center space-x-2">
+                <Badge className={getStatusBadgeColor(getItemStatus(item))}>
+                  {getItemStatus(item)}
+                </Badge>
+              </div>
               <div className="flex items-center text-gray-500 text-sm space-x-3">
                 <span className="flex items-center">
                   <Eye className="w-4 h-4 mr-1" />
@@ -207,7 +254,40 @@ export default function ItemDetail() {
 
           {/* Seller Info */}
           <Card className="p-4">
-            <h3 className="font-semibold mb-3">판매자 정보</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">판매자 정보</h3>
+              {user && user.id === item.sellerId && (
+                <div className="flex space-x-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateItemStatusMutation.mutate("거래가능")}
+                    disabled={updateItemStatusMutation.isPending || getItemStatus(item) === "거래가능"}
+                    className="text-xs"
+                  >
+                    거래가능
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateItemStatusMutation.mutate("거래완료")}
+                    disabled={updateItemStatusMutation.isPending || getItemStatus(item) === "거래완료"}
+                    className="text-xs"
+                  >
+                    거래완료
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateItemStatusMutation.mutate("거래기간만료")}
+                    disabled={updateItemStatusMutation.isPending || getItemStatus(item) === "거래기간만료"}
+                    className="text-xs"
+                  >
+                    기간만료
+                  </Button>
+                </div>
+              )}
+            </div>
             <div className="flex items-center space-x-3">
               <Avatar>
                 <AvatarFallback>U</AvatarFallback>

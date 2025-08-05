@@ -38,6 +38,7 @@ export interface IStorage {
   getItem(id: string): Promise<Item | undefined>;
   createItem(insertItem: InsertItem): Promise<Item>;
   updateItem(id: string, updates: Partial<InsertItem>): Promise<Item | undefined>;
+  updateItemStatus(id: string, status: string): Promise<Item | undefined>;
   deleteItem(id: string): Promise<boolean>;
   searchItems(query: string): Promise<Item[]>;
   getItemsByCategory(category: string): Promise<Item[]>;
@@ -199,6 +200,15 @@ export class DatabaseStorage implements IStorage {
       .update(items)
       .set({ views: sql`COALESCE(${items.views}, 0) + 1` })
       .where(eq(items.id, id));
+  }
+
+  async updateItemStatus(id: string, status: string): Promise<Item | undefined> {
+    const [updatedItem] = await db
+      .update(items)
+      .set({ status })
+      .where(eq(items.id, id))
+      .returning();
+    return updatedItem || undefined;
   }
 
   async getChatRoomMessages(roomId: string): Promise<Message[]> {
