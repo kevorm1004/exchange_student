@@ -55,6 +55,9 @@ const authenticateToken = async (req: any, res: any, next: any) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
+  // Trust proxy for HTTPS redirect URIs
+  app.set('trust proxy', 1);
+
   // Session middleware
   app.use(session({
     secret: process.env.SESSION_SECRET || 'your-session-secret',
