@@ -15,6 +15,7 @@ import Community from "@/pages/community";
 import MyPage from "@/pages/my";
 import Profile from "@/pages/profile";
 import Login from "@/pages/auth/login";
+import EmailLogin from "@/pages/auth/email-login";
 import Register from "@/pages/auth/register";
 import TestLogin from "@/pages/test-login";
 import CreateItem from "@/pages/items/create";
@@ -70,6 +71,7 @@ function Router() {
     <div className={isAdminPage ? "bg-gray-50 min-h-screen" : "max-w-md mx-auto bg-white min-h-screen relative"}>
       <Switch>
         <Route path="/auth/login" component={Login} />
+        <Route path="/auth/email-login" component={EmailLogin} />
         <Route path="/auth/register" component={Register} />
         <Route path="/test-login" component={TestLogin} />
         <Route path="/" component={Home} />

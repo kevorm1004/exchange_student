@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Mail } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,10 +64,26 @@ export default function Login() {
           <p className="text-gray-600">교환학생 중고거래 플랫폼</p>
         </CardHeader>
         <CardContent>
-          {/* Social Login Buttons */}
+          {/* Login Options */}
           <div className="space-y-3 mb-6">
+            {/* Email Login Button */}
             <Button 
-              onClick={() => window.location.href = '/api/auth/google'}
+              onClick={() => navigate('/auth/email-login')}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-3"
+            >
+              <Mail className="w-5 h-5" />
+              이메일로 로그인
+            </Button>
+
+            {/* Social Login Buttons */}
+            <Button 
+              onClick={() => {
+                toast({
+                  title: "준비 중",
+                  description: "구글 로그인 기능은 현재 준비 중입니다.",
+                  variant: "default",
+                });
+              }}
               className="w-full bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 flex items-center justify-center gap-3"
               variant="outline"
             >
@@ -81,7 +97,13 @@ export default function Login() {
             </Button>
             
             <Button 
-              onClick={() => window.location.href = '/api/auth/kakao'}
+              onClick={() => {
+                toast({
+                  title: "준비 중",
+                  description: "카카오 로그인 기능은 현재 준비 중입니다.",
+                  variant: "default",
+                });
+              }}
               className="w-full bg-[#FEE500] hover:bg-[#FADA0C] text-black flex items-center justify-center gap-3"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -91,7 +113,13 @@ export default function Login() {
             </Button>
             
             <Button 
-              onClick={() => window.location.href = '/api/auth/naver'}
+              onClick={() => {
+                toast({
+                  title: "준비 중",
+                  description: "네이버 로그인 기능은 현재 준비 중입니다.",
+                  variant: "default",
+                });
+              }}
               className="w-full bg-[#03C75A] hover:bg-[#02B350] text-white flex items-center justify-center gap-3"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -100,77 +128,6 @@ export default function Login() {
               네이버로 로그인
             </Button>
           </div>
-
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-2 text-gray-500">또는</span>
-            </div>
-          </div>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>이메일 또는 사용자명</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="이메일 또는 사용자명을 입력하세요"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>비밀번호</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          placeholder="비밀번호를 입력하세요"
-                          type={showPassword ? "text" : "password"}
-                          {...field}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button 
-                type="submit" 
-                className="w-full marketplace-button-primary"
-                disabled={isLoading}
-              >
-                {isLoading ? "로그인 중..." : "이메일로 로그인"}
-              </Button>
-            </form>
-          </Form>
 
           <div className="mt-6 text-center space-y-2">
             <p className="text-sm text-gray-600">
