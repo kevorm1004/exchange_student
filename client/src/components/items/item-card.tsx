@@ -56,8 +56,8 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
   const [, navigate] = useLocation();
   const { user } = useAuth();
   
-  // 가격 표시 (KRW 기준)
-  const displayPrice = formatCurrency(parseFloat(item.price), 'KRW');
+  // 가격 표시 (원래 통화를 KRW로 환산)
+  const displayPrice = formatCurrency(parseFloat(item.price), (item as any).currency || 'KRW');
 
   // 상품 상태 확인
   const getItemStatus = (item: Item) => {

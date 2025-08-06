@@ -32,6 +32,7 @@ export const items = pgTable("items", {
   sellerId: text("seller_id").notNull().references(() => users.id),
   school: text("school").notNull(),
   country: text("country").notNull(),
+  currency: varchar("currency", { length: 10 }).default("KRW"),
   location: text("location").notNull(),
   deliveryMethod: text("delivery_method"),
   customDeliveryMethod: text("custom_delivery_method"),

@@ -64,9 +64,8 @@ export default function CreateItem() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  // 사용자의 국가에 맞는 통화로 변환된 가격 계산
-  // 간단하게 KRW로 고정
-  const convertedPrice = priceValue ? parseFloat(priceValue) : 0;
+  // KRW로 환산된 가격 계산
+  const convertedPrice = priceValue ? parseFloat(priceValue) * selectedCurrency.rate * 1350 : 0;
 
   const form = useForm<InsertItem>({
     resolver: zodResolver(insertItemSchema),
@@ -222,8 +221,9 @@ export default function CreateItem() {
         location: data.location || user?.school || "",
         deliveryMethod: data.deliveryMethod || "",
         customDeliveryMethod: data.deliveryMethod === "기타" ? data.customDeliveryMethod : "",
-        availableFrom: data.availableFrom ? data.availableFrom.toISOString() : null,
-        availableTo: data.availableTo ? data.availableTo.toISOString() : null,
+        availableFrom: data.availableFrom || null,
+        availableTo: data.availableTo || null,
+        currency: selectedCurrency.code,
       };
       console.log('Submitting item data:', submitData);
       createItemMutation.mutate(submitData);
@@ -493,19 +493,19 @@ export default function CreateItem() {
                   {/* KRW Conversion Display */}
                   <div className="flex gap-2">
                     <div className="w-32 flex items-center justify-center bg-gray-100 rounded-md px-3 py-2">
-                      <span className="text-sm font-medium text-gray-600">{userCurrency.symbol} {userCurrency.code}</span>
+                      <span className="text-sm font-medium text-gray-600">₩ KRW</span>
                     </div>
                     <Input
                       placeholder="0"
                       type="text"
-                      value={convertedPrice > 0 ? Math.round(convertedPrice).toLocaleString() : ""}
+                      value={convertedPrice > 0 ? `₩${Math.round(convertedPrice).toLocaleString()}` : ""}
                       readOnly
                       className="flex-1 bg-gray-50 text-gray-600"
                     />
                   </div>
                   
                   <p className="text-xs text-gray-500">
-                    {userCurrency.name}(으)로 현재 환율(1 USD = {formatPrice(1, userCurrency)})로 자동 환산됩니다
+                    한국 원화로 자동 환산됩니다
                   </p>
                 </div>
 
@@ -601,7 +601,7 @@ export default function CreateItem() {
                           <Input 
                             placeholder="기타 거래 방법을 입력하세요"
                             {...field}
-                            value={customDeliveryMethod}
+                            value={customDeliveryMethod || ""}
                             onChange={(e) => {
                               setCustomDeliveryMethod(e.target.value);
                               field.onChange(e.target.value);
@@ -647,7 +647,7 @@ export default function CreateItem() {
                             <PopoverContent className="w-auto p-0" align="start">
                               <Calendar
                                 mode="single"
-                                selected={field.value}
+                                selected={field.value || undefined}
                                 onSelect={field.onChange}
                                 disabled={(date) =>
                                   date < new Date(new Date().setHours(0, 0, 0, 0))
@@ -690,7 +690,7 @@ export default function CreateItem() {
                             <PopoverContent className="w-auto p-0" align="start">
                               <Calendar
                                 mode="single"
-                                selected={field.value}
+                                selected={field.value || undefined}
                                 onSelect={field.onChange}
                                 disabled={(date) => {
                                   const startDate = form.getValues("availableFrom");
