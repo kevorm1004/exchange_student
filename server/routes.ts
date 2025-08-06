@@ -507,14 +507,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Items routes with pagination
+  // Items routes with pagination and filtering
   app.get('/api/items', async (req, res) => {
     try {
       const { school, country, category, search, page = '0', limit = '10' } = req.query;
       const pageNum = parseInt(page as string, 10);
       const limitNum = parseInt(limit as string, 10);
       
-      const allItems = await storage.getItems();
+      let allItems = await storage.getItems();
+
+      // Apply filters
+      if (school && school !== 'all') {
+        allItems = await storage.getItemsBySchool(school as string);
+      } else if (country && country !== 'all') {
+        allItems = await storage.getItemsByCountry(country as string);
+      }
+
+      if (search && typeof search === 'string' && search.trim()) {
+        const searchQuery = search.trim().toLowerCase();
+        allItems = allItems.filter(item => 
+          item.title.toLowerCase().includes(searchQuery) ||
+          item.description.toLowerCase().includes(searchQuery)
+        );
+      }
 
       // Simple pagination
       const startIndex = pageNum * limitNum;
@@ -604,7 +619,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/items', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const validatedData = insertItemSchema.parse(req.body);
+      // Parse dates from strings if they exist
+      const itemData = { ...req.body };
+      if (itemData.availableFrom && typeof itemData.availableFrom === 'string') {
+        itemData.availableFrom = new Date(itemData.availableFrom);
+      }
+      if (itemData.availableTo && typeof itemData.availableTo === 'string') {
+        itemData.availableTo = new Date(itemData.availableTo);
+      }
+      
+      const validatedData = insertItemSchema.parse(itemData);
       const user = await storage.getUser(req.user!.id);
       
       if (!user) {
@@ -632,6 +656,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Toggle like error:', error);
       res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  // Report item
+  app.post('/api/items/:id/report', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { reason, description } = req.body;
+      const itemId = req.params.id;
+      const reporterId = req.user!.id;
+
+      if (!reason) {
+        return res.status(400).json({ error: '신고 사유를 선택해주세요' });
+      }
+
+      const report = await storage.createReport({
+        itemId,
+        reason,
+        description: description || '',
+        reporterId
+      });
+
+      res.status(201).json({ message: '신고가 접수되었습니다', report });
+    } catch (error) {
+      console.error('Report error:', error);
+      res.status(500).json({ error: '신고 처리 중 오류가 발생했습니다' });
+    }
+  });
+
+  // Get user statistics
+  app.get('/api/users/stats', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const stats = await storage.getUserStats(req.user!.id);
+      res.json(stats);
+    } catch (error) {
+      console.error('User stats error:', error);
+      res.status(500).json({ error: 'Failed to get user statistics' });
+    }
+  });
+
+  // Get user items by status
+  app.get('/api/users/items', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { status } = req.query;
+      let items = await storage.getUserItems(req.user!.id);
+      
+      if (status && status !== 'all') {
+        items = items.filter(item => item.status === status);
+      }
+      
+      res.json(items);
+    } catch (error) {
+      console.error('User items error:', error);
+      res.status(500).json({ error: 'Failed to get user items' });
+    }
+  });
+
+  // Get user favorites
+  app.get('/api/users/favorites', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const favorites = await storage.getUserFavorites(req.user!.id);
+      
+      // Get item details for each favorite
+      const favoriteItems = await Promise.all(
+        favorites.map(async (favorite) => {
+          const item = await storage.getItem(favorite.itemId);
+          return { ...favorite, item };
+        })
+      );
+      
+      res.json(favoriteItems);
+    } catch (error) {
+      console.error('User favorites error:', error);
+      res.status(500).json({ error: 'Failed to get user favorites' });
     }
   });
 
@@ -811,6 +908,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error creating chat room:', error);
       res.status(500).json({ error: 'Failed to create chat room' });
+    }
+  });
+
+  // Delete chat room
+  app.delete('/api/chat/rooms/:roomId', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { roomId } = req.params;
+      const userId = req.user!.id;
+      
+      const success = await storage.deleteChatRoom(roomId, userId);
+      
+      if (!success) {
+        return res.status(403).json({ error: 'Cannot delete this chat room' });
+      }
+      
+      res.json({ message: 'Chat room deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting chat room:', error);
+      res.status(500).json({ error: 'Failed to delete chat room' });
     }
   });
 

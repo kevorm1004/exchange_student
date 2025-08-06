@@ -1,15 +1,41 @@
 import { useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Heart, MessageCircle, Share, Eye, MapPin } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Share, Eye, MapPin, Flag, MoreVertical } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { formatCurrency } from "@/lib/currency";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Item } from "@shared/schema";
+import { useState } from "react";
 
 const formatTimeAgo = (date: Date) => {
   const now = new Date();
@@ -26,6 +52,9 @@ export default function ItemDetail() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [reportReason, setReportReason] = useState("");
+  const [reportDescription, setReportDescription] = useState("");
+  const [showReportDialog, setShowReportDialog] = useState(false);
 
   const { data: item, isLoading } = useQuery<Item>({
     queryKey: ["/api/items", id],
@@ -109,6 +138,33 @@ export default function ItemDetail() {
     }
   });
 
+  const reportItemMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/items/${id}/report`, {
+        reason: reportReason,
+        description: reportDescription
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "신고가 접수되었습니다",
+        description: "신고가 성공적으로 접수되었습니다. 검토 후 조치하겠습니다."
+      });
+      setShowReportDialog(false);
+      setReportReason("");
+      setReportDescription("");
+    },
+    onError: (error: any) => {
+      console.error("Report error:", error);
+      toast({
+        title: "신고 접수 실패",
+        description: "신고를 접수할 수 없습니다. 다시 시도해주세요.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleChatStart = () => {
     if (!user) {
       navigate("/auth/login");
@@ -128,6 +184,18 @@ export default function ItemDetail() {
     }
     
     createChatRoomMutation.mutate();
+  };
+
+  const handleReportSubmit = () => {
+    if (!reportReason) {
+      toast({
+        title: "신고 사유 필요",
+        description: "신고 사유를 선택해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+    reportItemMutation.mutate();
   };
 
   if (isLoading) {
@@ -167,22 +235,32 @@ export default function ItemDetail() {
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-red-500 hover:text-red-600 hover:bg-red-50"
-              onClick={() => {
-                // TODO: Toggle favorite functionality
-                console.log('Toggle favorite');
-              }}
-            >
-              <Heart className="h-5 w-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
               className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
               onClick={handleChatStart}
             >
               <MessageCircle className="h-5 w-5" />
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-gray-600"
+                >
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
+                  <Flag className="w-4 h-4 mr-2" />
+                  신고하기
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => console.log("Share")}>
+                  <Share className="w-4 h-4 mr-2" />
+                  공유하기
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
@@ -224,7 +302,7 @@ export default function ItemDetail() {
             </div>
             
             <h1 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h1>
-            <p className="text-3xl font-bold text-primary mb-3">${item.price}</p>
+            <p className="text-3xl font-bold text-primary mb-3">{formatCurrency(parseFloat(item.price), 'KRW')}</p>
             
             <div className="flex items-center text-gray-600 text-sm mb-4">
               <MapPin className="w-4 h-4 mr-1" />
@@ -327,6 +405,60 @@ export default function ItemDetail() {
           </Button>
         </div>
       </div>
+
+      {/* Report Dialog */}
+      <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>상품 신고하기</DialogTitle>
+            <DialogDescription>
+              부적절한 상품을 신고해주세요. 신고된 내용은 검토 후 조치됩니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="reason">신고 사유</Label>
+              <Select value={reportReason} onValueChange={setReportReason}>
+                <SelectTrigger>
+                  <SelectValue placeholder="신고 사유를 선택해주세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="부적절한 내용">부적절한 내용</SelectItem>
+                  <SelectItem value="사기 의심">사기 의심</SelectItem>
+                  <SelectItem value="스팸/광고">스팸/광고</SelectItem>
+                  <SelectItem value="가격 조작">가격 조작</SelectItem>
+                  <SelectItem value="중복 게시">중복 게시</SelectItem>
+                  <SelectItem value="기타">기타</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="description">상세 설명 (선택사항)</Label>
+              <Textarea
+                id="description"
+                placeholder="신고 사유를 자세히 설명해주세요."
+                value={reportDescription}
+                onChange={(e) => setReportDescription(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowReportDialog(false)}
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleReportSubmit}
+              disabled={reportItemMutation.isPending || !reportReason}
+            >
+              {reportItemMutation.isPending ? "신고 중..." : "신고하기"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

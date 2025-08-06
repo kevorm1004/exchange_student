@@ -1,99 +1,84 @@
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface FilterBarProps {
-  activeFilter: string;
+  filter: string;
   onFilterChange: (filter: string) => void;
-  selectedCountry?: string;
-  onCountryChange?: (country: string) => void;
+  selectedCountry: string;
+  onCountryChange: (country: string) => void;
 }
 
-export default function FilterBar({ 
-  activeFilter, 
-  onFilterChange, 
-  selectedCountry = "all",
-  onCountryChange 
-}: FilterBarProps) {
-  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+const COUNTRIES = [
+  { value: "all", label: "전체 국가" },
+  { value: "korea", label: "한국" },
+  { value: "usa", label: "미국" },
+  { value: "japan", label: "일본" },
+  { value: "china", label: "중국" },
+  { value: "canada", label: "캐나다" },
+  { value: "australia", label: "호주" },
+  { value: "uk", label: "영국" },
+  { value: "germany", label: "독일" },
+  { value: "france", label: "프랑스" }
+];
 
-  const filters = [
-    { id: "all", label: "전체" },
-    { id: "school", label: "내 학교" },
-  ];
-
-  const countries = [
-    { id: "all", label: "모든 국가" },
-    { id: "Korea", label: "한국" },
-    { id: "USA", label: "미국" },
-    { id: "Japan", label: "일본" },
-    { id: "China", label: "중국" },
-    { id: "Canada", label: "캐나다" },
-    { id: "Australia", label: "호주" },
-    { id: "UK", label: "영국" },
-    { id: "Germany", label: "독일" },
-    { id: "France", label: "프랑스" },
-  ];
-
+export default function FilterBar({ filter, onFilterChange, selectedCountry, onCountryChange }: FilterBarProps) {
   return (
-    <div className="bg-white px-4 py-3 border-b border-gray-200 sticky top-16 z-40 border-t-0">
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-        {filters.map((filter) => (
-          <button
-            key={filter.id}
-            onClick={() => onFilterChange(filter.id)}
-            className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors border flex-shrink-0",
-              activeFilter === filter.id
-                ? "bg-blue-500 text-white border-blue-500"
-                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-            )}
-          >
-            {filter.label}
-          </button>
-        ))}
-        
-        {/* 국가별 드롭다운 */}
-        <DropdownMenu open={showCountryDropdown} onOpenChange={setShowCountryDropdown}>
-          <DropdownMenuTrigger asChild>
-            <button
-              className={cn(
-                "px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors border flex-shrink-0 flex items-center gap-1",
-                activeFilter === "country"
-                  ? "bg-blue-500 text-white border-blue-500"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-              )}
-            >
-              {countries.find(c => c.id === selectedCountry)?.label || "국가별"}
-              <ChevronDown className="w-3 h-3" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-48">
-            {countries.map((country) => (
-              <DropdownMenuItem
-                key={country.id}
-                onClick={() => {
-                  onCountryChange?.(country.id);
-                  onFilterChange("country");
-                  setShowCountryDropdown(false);
-                }}
-                className={cn(
-                  "cursor-pointer",
-                  selectedCountry === country.id && "bg-blue-50 text-blue-600"
-                )}
-              >
-                {country.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+    <div className="bg-white border-b border-gray-200 px-4 py-3 space-y-3">
+      {/* 상품 필터 */}
+      <div className="flex space-x-2">
+        <Button
+          variant={filter === "all" ? "default" : "outline"}
+          size="sm"
+          onClick={() => onFilterChange("all")}
+          className={cn(
+            "text-sm",
+            filter === "all" ? "marketplace-button-primary" : ""
+          )}
+        >
+          전체
+        </Button>
+        <Button
+          variant={filter === "school" ? "default" : "outline"}
+          size="sm"
+          onClick={() => onFilterChange("school")}
+          className={cn(
+            "text-sm",
+            filter === "school" ? "marketplace-button-primary" : ""
+          )}
+        >
+          우리 학교
+        </Button>
+        <Button
+          variant={filter === "country" ? "default" : "outline"}
+          size="sm"
+          onClick={() => onFilterChange("country")}
+          className={cn(
+            "text-sm",
+            filter === "country" ? "marketplace-button-primary" : ""
+          )}
+        >
+          국가별
+        </Button>
       </div>
+
+      {/* 국가 선택 - country 필터가 선택된 경우에만 표시 */}
+      {filter === "country" && (
+        <div>
+          <Select value={selectedCountry} onValueChange={onCountryChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="국가를 선택해주세요" />
+            </SelectTrigger>
+            <SelectContent>
+              {COUNTRIES.map((country) => (
+                <SelectItem key={country.value} value={country.value}>
+                  {country.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
     </div>
   );
 }

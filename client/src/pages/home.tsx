@@ -128,7 +128,7 @@ export default function Home() {
     <>
       <Header title="ExchangeMart" />
       <FilterBar 
-        activeFilter={filter} 
+        filter={filter} 
         onFilterChange={setFilter}
         selectedCountry={selectedCountry}
         onCountryChange={setSelectedCountry}

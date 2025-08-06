@@ -8,6 +8,7 @@ import {
   communityPosts, 
   comments, 
   favorites,
+  reports,
   type User, 
   type InsertUser,
   type Item, 
@@ -21,7 +22,9 @@ import {
   type Comment, 
   type InsertComment,
   type Favorite, 
-  type InsertFavorite
+  type InsertFavorite,
+  type Report,
+  type InsertReport
 } from "@shared/schema";
 import { eq, and, or, desc, like, count, sql } from "drizzle-orm";
 
@@ -72,6 +75,20 @@ export interface IStorage {
   addFavorite(favorite: InsertFavorite): Promise<Favorite>;
   removeFavorite(userId: string, itemId: string): Promise<boolean>;
   isFavorite(userId: string, itemId: string): Promise<boolean>;
+  
+  // Report methods
+  createReport(insertReport: InsertReport & { reporterId: string }): Promise<Report>;
+  getUserReports(userId: string): Promise<Report[]>;
+  
+  // Statistics methods
+  getUserStats(userId: string): Promise<{
+    itemsPosted: number;
+    itemsSold: number;
+    itemsPurchased: number;
+  }>;
+  
+  // Chat room management
+  deleteChatRoom(roomId: string, userId: string): Promise<boolean>;
   
   // Admin methods
   getAdminStats(): Promise<{
@@ -477,6 +494,66 @@ export class DatabaseStorage implements IStorage {
 
   async getComments(postId: string): Promise<Comment[]> {
     return await this.getPostComments(postId);
+  }
+
+  // New methods implementation
+  async createReport(insertReport: InsertReport & { reporterId: string }): Promise<Report> {
+    const [report] = await db
+      .insert(reports)
+      .values(insertReport)
+      .returning();
+    return report;
+  }
+
+  async getUserReports(userId: string): Promise<Report[]> {
+    return await db.select().from(reports)
+      .where(eq(reports.reporterId, userId))
+      .orderBy(desc(reports.createdAt));
+  }
+
+  async getUserStats(userId: string): Promise<{
+    itemsPosted: number;
+    itemsSold: number;
+    itemsPurchased: number;
+  }> {
+    const [itemsPosted] = await db.select({ count: sql`count(*)` }).from(items)
+      .where(eq(items.sellerId, userId));
+    
+    const [itemsSold] = await db.select({ count: sql`count(*)` }).from(items)
+      .where(and(
+        eq(items.sellerId, userId),
+        eq(items.status, "거래완료")
+      ));
+
+    // For purchased items, we need to look at chat rooms where user was buyer
+    const [itemsPurchased] = await db.select({ count: sql`count(distinct ${chatRooms.itemId})` })
+      .from(chatRooms)
+      .leftJoin(items, eq(chatRooms.itemId, items.id))
+      .where(and(
+        eq(chatRooms.buyerId, userId),
+        eq(items.status, "거래완료")
+      ));
+
+    return {
+      itemsPosted: Number(itemsPosted.count) || 0,
+      itemsSold: Number(itemsSold.count) || 0,
+      itemsPurchased: Number(itemsPurchased.count) || 0,
+    };
+  }
+
+  async deleteChatRoom(roomId: string, userId: string): Promise<boolean> {
+    // First check if user is participant in this room
+    const room = await this.getChatRoom(roomId);
+    if (!room || (room.buyerId !== userId && room.sellerId !== userId)) {
+      return false;
+    }
+
+    // Delete all messages in the room first
+    await db.delete(messages).where(eq(messages.roomId, roomId));
+    
+    // Then delete the room
+    const result = await db.delete(chatRooms).where(eq(chatRooms.id, roomId));
+    return result.rowCount > 0;
   }
 }
 

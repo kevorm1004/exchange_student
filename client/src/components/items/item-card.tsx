@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import type { Item } from "@shared/schema";
 import { cn } from "@/lib/utils";
-import { getCurrencyByCode, formatPrice } from "@/lib/currency";
+import { formatCurrency } from "@/lib/currency";
 
 interface ItemCardProps {
   item: Item;
@@ -56,9 +56,8 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
   const [, navigate] = useLocation();
   const { user } = useAuth();
   
-  // 사용자의 선호 통화로 가격 표시
-  const userCurrency = user ? getCurrencyByCode(user.preferredCurrency || "USD") : getCurrencyByCode("USD");
-  const displayPrice = formatPrice(parseFloat(item.price), userCurrency);
+  // 가격 표시 (KRW 기준)
+  const displayPrice = formatCurrency(parseFloat(item.price), 'KRW');
 
   // 상품 상태 확인
   const getItemStatus = (item: Item) => {

@@ -1,114 +1,65 @@
-// 환율 정보와 통화 변환 유틸리티
-export interface Currency {
-  code: string;
-  symbol: string;
-  name: string;
-  rate: number; // USD 기준 환율
-}
-
-// 지원하는 통화 목록 (USD 기준 환율)
-export const CURRENCIES: Record<string, Currency> = {
-  KR: {
-    code: "KRW",
-    symbol: "₩",
-    name: "원",
-    rate: 1350, // 1 USD = 1,350 KRW
-  },
-  US: {
-    code: "USD",
-    symbol: "$",
-    name: "달러",
-    rate: 1, // 기준 통화
-  },
-  JP: {
-    code: "JPY",
-    symbol: "¥",
-    name: "엔",
-    rate: 150, // 1 USD = 150 JPY
-  },
-  CN: {
-    code: "CNY",
-    symbol: "¥",
-    name: "위안",
-    rate: 7.2, // 1 USD = 7.2 CNY
-  },
-  GB: {
-    code: "GBP",
-    symbol: "£",
-    name: "파운드",
-    rate: 0.8, // 1 USD = 0.8 GBP
-  },
-  EU: {
-    code: "EUR",
-    symbol: "€",
-    name: "유로",
-    rate: 0.92, // 1 USD = 0.92 EUR
-  },
-  CA: {
-    code: "CAD",
-    symbol: "C$",
-    name: "캐나다 달러",
-    rate: 1.35, // 1 USD = 1.35 CAD
-  },
-  AU: {
-    code: "AUD",
-    symbol: "A$",
-    name: "호주 달러",
-    rate: 1.5, // 1 USD = 1.5 AUD
-  },
+// 환율 정보 (실제 운영시에는 API에서 가져와야 함)
+const exchangeRates = {
+  USD: 1350, // 1 USD = 1350 KRW
+  EUR: 1450, // 1 EUR = 1450 KRW  
+  JPY: 9,    // 1 JPY = 9 KRW
+  CNY: 188,  // 1 CNY = 188 KRW
+  KRW: 1,    // 1 KRW = 1 KRW
 };
 
-// 국가 코드에서 통화 정보 가져오기
-export function getCurrencyForCountry(countryCode: string): Currency {
-  return CURRENCIES[countryCode] || CURRENCIES.US; // 기본값은 USD
-}
-
-// USD를 특정 통화로 변환
-export function convertFromUSD(usdAmount: number, targetCurrency: Currency): number {
-  return usdAmount * targetCurrency.rate;
-}
-
-// 특정 통화를 USD로 변환
-export function convertToUSD(amount: number, sourceCurrency: Currency): number {
-  return amount / sourceCurrency.rate;
-}
-
-// 가격을 사용자의 통화로 포맷
-export function formatPrice(usdPrice: number, currency: Currency): string {
-  const convertedPrice = convertFromUSD(usdPrice, currency);
+export function formatCurrency(amount: number, currency: string = 'KRW'): string {
+  if (!amount) return '₩0';
   
-  // 통화별 소수점 처리
-  let formattedAmount: string;
-  if (currency.code === "KRW" || currency.code === "JPY") {
-    // 원, 엔은 소수점 없이 표시
-    formattedAmount = Math.round(convertedPrice).toLocaleString();
-  } else {
-    // 기타 통화는 소수점 2자리
-    formattedAmount = convertedPrice.toFixed(2);
+  // 원래 통화가 KRW인 경우 그대로 표시
+  if (currency === 'KRW') {
+    return `₩${amount.toLocaleString('ko-KR')}`;
   }
   
-  return `${currency.symbol}${formattedAmount}`;
+  // 다른 통화를 KRW로 변환
+  const rate = exchangeRates[currency as keyof typeof exchangeRates];
+  if (!rate) {
+    return `${getCurrencySymbol(currency)}${amount.toLocaleString()}`;
+  }
+  
+  const krwAmount = Math.round(amount * rate);
+  const originalAmount = `${getCurrencySymbol(currency)}${amount.toLocaleString()}`;
+  const krwFormatted = `₩${krwAmount.toLocaleString('ko-KR')}`;
+  
+  return `${originalAmount} (${krwFormatted})`;
 }
 
-// 두 통화 간 직접 변환
-export function convertCurrency(
-  amount: number,
-  fromCurrency: Currency,
-  toCurrency: Currency
-): number {
-  const usdAmount = convertToUSD(amount, fromCurrency);
-  return convertFromUSD(usdAmount, toCurrency);
+export function getCurrencySymbol(currency: string): string {
+  const symbols: Record<string, string> = {
+    USD: '$',
+    EUR: '€',
+    JPY: '¥',
+    CNY: '¥',
+    KRW: '₩',
+  };
+  
+  return symbols[currency] || currency;
 }
 
-// 통화 코드로 Currency 객체 가져오기
-export function getCurrencyByCode(currencyCode: string): Currency {
-  const currency = Object.values(CURRENCIES).find(c => c.code === currencyCode);
-  return currency || CURRENCIES.US; // 기본값은 USD
+export function convertToKRW(amount: number, fromCurrency: string): number {
+  if (fromCurrency === 'KRW') return amount;
+  
+  const rate = exchangeRates[fromCurrency as keyof typeof exchangeRates];
+  if (!rate) return amount;
+  
+  return Math.round(amount * rate);
 }
 
-// 지원하는 모든 통화 목록 (프로필 설정용)
-export const SUPPORTED_CURRENCIES = Object.values(CURRENCIES).map(currency => ({
-  code: currency.code,
-  name: currency.name,
-  symbol: currency.symbol,
-}));
+export function getSupportedCurrencies(): string[] {
+  return Object.keys(exchangeRates);
+}
+
+export const SUPPORTED_CURRENCIES = Object.keys(exchangeRates);
+
+export function convertFromUSD(amount: number, toCurrency: string): number {
+  if (toCurrency === 'USD') return amount;
+  
+  const rate = exchangeRates[toCurrency as keyof typeof exchangeRates];
+  if (!rate) return amount;
+  
+  return Math.round(amount / (exchangeRates.USD / rate));
+}

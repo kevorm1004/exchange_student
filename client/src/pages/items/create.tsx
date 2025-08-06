@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { insertItemSchema, type InsertItem } from "@shared/schema";
-import { getCurrencyForCountry, convertFromUSD, convertToUSD, formatPrice, type Currency } from "@/lib/currency";
+import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 
@@ -65,8 +65,8 @@ export default function CreateItem() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // 사용자의 국가에 맞는 통화로 변환된 가격 계산
-  const userCurrency = user ? getCurrencyForCountry(user.country) : getCurrencyForCountry("US");
-  const convertedPrice = priceValue ? convertFromUSD(parseFloat(priceValue) / selectedCurrency.rate, userCurrency) : 0;
+  // 간단하게 KRW로 고정
+  const convertedPrice = priceValue ? parseFloat(priceValue) : 0;
 
   const form = useForm<InsertItem>({
     resolver: zodResolver(insertItemSchema),

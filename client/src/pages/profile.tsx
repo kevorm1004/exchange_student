@@ -292,8 +292,8 @@ export default function Profile() {
                           </FormControl>
                           <SelectContent>
                             {SUPPORTED_CURRENCIES.map((currency) => (
-                              <SelectItem key={currency.code} value={currency.code}>
-                                {currency.symbol} {currency.name} ({currency.code})
+                              <SelectItem key={currency} value={currency}>
+                                {currency}
                               </SelectItem>
                             ))}
                           </SelectContent>
