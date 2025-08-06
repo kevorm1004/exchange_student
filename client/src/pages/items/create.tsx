@@ -20,6 +20,7 @@ import { useRequireAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { insertItemSchema, type InsertItem } from "@shared/schema";
 import { formatCurrency } from "@/lib/currency";
+import { COUNTRIES } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 
 
@@ -527,6 +528,32 @@ export default function CreateItem() {
                           {conditions.map((condition) => (
                             <SelectItem key={condition} value={condition}>
                               {condition}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Country Selection */}
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>거래 국가</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="거래할 국가를 선택하세요" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {COUNTRIES.map((country) => (
+                            <SelectItem key={country} value={country}>
+                              {country}
                             </SelectItem>
                           ))}
                         </SelectContent>

@@ -16,6 +16,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
+import { COUNTRIES } from "@/lib/countries";
 
 // 프로필 업데이트 스키마 (비밀번호 제외)
 const updateProfileSchema = insertUserSchema.omit({ password: true }).extend({
@@ -38,18 +39,7 @@ const updateProfileSchema = insertUserSchema.omit({ password: true }).extend({
 
 type UpdateProfileForm = z.infer<typeof updateProfileSchema>;
 
-const countries = [
-  { code: "KR", name: "대한민국" },
-  { code: "US", name: "미국" },
-  { code: "JP", name: "일본" },
-  { code: "CN", name: "중국" },
-  { code: "GB", name: "영국" },
-  { code: "CA", name: "캐나다" },
-  { code: "AU", name: "호주" },
-  { code: "DE", name: "독일" },
-  { code: "FR", name: "프랑스" },
-  { code: "IT", name: "이탈리아" },
-];
+// Remove the old countries array as we'll use the shared COUNTRIES constant
 
 export default function Profile() {
   const [, navigate] = useLocation();
@@ -248,9 +238,9 @@ export default function Profile() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {countries.map((country) => (
-                              <SelectItem key={country.code} value={country.code}>
-                                {country.name}
+                            {COUNTRIES.map((country) => (
+                              <SelectItem key={country} value={country}>
+                                {country}
                               </SelectItem>
                             ))}
                           </SelectContent>

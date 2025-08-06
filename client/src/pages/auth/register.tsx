@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { authApi } from "@/lib/auth";
 import { registerSchema, type RegisterData } from "@shared/schema";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { COUNTRIES } from "@/lib/countries";
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
@@ -132,9 +134,20 @@ export default function Register() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>국가</FormLabel>
-                    <FormControl>
-                      <Input placeholder="국가를 입력하세요" {...field} />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="국가를 선택하세요" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country} value={country}>
+                            {country}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
