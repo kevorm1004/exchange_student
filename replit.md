@@ -20,6 +20,13 @@ This is a modern mobile-first marketplace web application designed for students 
   - Created seller-only status management in item detail pages
   - Implemented automatic expiration based on trading period dates
   - Added test data with various statuses and realistic product images
+- **Currency Conversion System (January 6, 2025)**:
+  - Implemented multi-currency support with automatic KRW conversion
+  - Added currency field to items schema and database
+  - Created formatCurrency utility function for price display
+  - Prices display as "12¥ (₩xxx)" format showing original currency converted to KRW
+  - Applied currency conversion to homepage item cards and detail pages
+  - Fixed /items/create page with currency selection and conversion preview
 
 # User Preferences
 

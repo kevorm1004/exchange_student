@@ -302,7 +302,7 @@ export default function ItemDetail() {
             </div>
             
             <h1 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h1>
-            <p className="text-3xl font-bold text-primary mb-3">{formatCurrency(parseFloat(item.price), 'KRW')}</p>
+            <p className="text-3xl font-bold text-primary mb-3">{formatCurrency(parseFloat(item.price), (item as any).currency || 'KRW')}</p>
             
             <div className="flex items-center text-gray-600 text-sm mb-4">
               <MapPin className="w-4 h-4 mr-1" />
