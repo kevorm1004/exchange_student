@@ -11,7 +11,8 @@ import {
   registerSchema,
   insertItemSchema,
   insertCommunityPostSchema,
-  insertCommentSchema 
+  insertCommentSchema,
+  type User
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -24,14 +25,7 @@ const serverLoginSchema = z.object({
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    username?: string;
-    fullName?: string;
-    country?: string;
-    school?: string;
-  };
+  user?: User;
 }
 
 // Middleware to verify JWT token
@@ -310,35 +304,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test login route for easy access
   app.post('/api/auth/test-login', async (req, res) => {
     try {
-      const { username } = req.body;
+      // Find or create a test user
+      let user = await storage.getUserByEmail("test@example.com");
       
-      // Find user by username
-      const user = await storage.getUserByUsername(username);
       if (!user) {
-        return res.status(401).json({ error: 'User not found' });
+        user = await storage.createUser({
+          email: "test@example.com",
+          username: "testuser",
+          password: await bcrypt.hash("password", 10),
+          fullName: "Test User",
+          country: "일본",
+          school: "도쿄대학교"
+        });
       }
-      
-      const token = jwt.sign({ 
-        id: user.id,
-        email: user.email 
-      }, JWT_SECRET, { expiresIn: '24h' });
-      
-      res.json({ 
-        token,
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          fullName: user.fullName,
-          school: user.school,
-          country: user.country,
-          preferredCurrency: user.preferredCurrency,
-          role: user.role
-        }
-      });
+
+      const token = jwt.sign(
+        { id: user.id },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      console.log("Test login successful - User ID:", user.id);
+      console.log("Generated token:", token.substring(0, 20) + "...");
+
+      res.json({ token, user: { ...user, password: undefined } });
     } catch (error) {
       console.error('Test login error:', error);
-      res.status(500).json({ error: 'Server error' });
+      res.status(500).json({ error: 'Test login failed' });
     }
   });
 
@@ -647,12 +639,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      const item = await storage.createItem({
-        ...validatedData,
+      const itemCreateData = {
+        title: validatedData.title,
+        description: validatedData.description,
+        price: validatedData.price,
+        condition: validatedData.condition,
+        images: validatedData.images || [],
         sellerId: user.id,
-        school: user.school,
-        country: user.country
-      });
+        school: user.school || "",
+        country: user.country || "",
+        currency: validatedData.currency,
+        location: validatedData.location,
+        deliveryMethod: validatedData.deliveryMethod,
+        customDeliveryMethod: validatedData.customDeliveryMethod,
+        availableFrom: validatedData.availableFrom,
+        availableTo: validatedData.availableTo
+      };
+      
+      const item = await storage.createItem(itemCreateData);
 
       res.status(201).json(item);
     } catch (error) {
