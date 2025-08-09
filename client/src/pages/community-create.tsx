@@ -46,7 +46,11 @@ export default function CommunityCreate() {
 
   const createPostMutation = useMutation({
     mutationFn: async (data: CreatePostForm) => {
-      console.log("Submitting community post:", data);
+      console.log("=== 글 작성 시작 ===");
+      console.log("Form data:", data);
+      console.log("User info:", user);
+      console.log("Uploaded images:", uploadedImages);
+      
       const postData = {
         title: data.title,
         content: data.content,
@@ -56,11 +60,22 @@ export default function CommunityCreate() {
         images: uploadedImages,
         semester: data.category === "모임방" ? data.semester : undefined,
       };
-      console.log("Final post data:", postData);
-      const response = await apiRequest("POST", "/api/community/posts", postData);
-      return response.json();
+      console.log("Sending to API:", postData);
+      
+      try {
+        const response = await apiRequest("POST", "/api/community/posts", postData);
+        console.log("API response status:", response.status);
+        const result = await response.json();
+        console.log("API response data:", result);
+        return result;
+      } catch (error) {
+        console.error("API request failed:", error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log("=== 글 작성 성공 ===");
+      console.log("Created post:", result);
       toast({
         title: "게시글 작성 완료",
         description: "게시글이 성공적으로 작성되었습니다."
@@ -69,8 +84,23 @@ export default function CommunityCreate() {
       navigate("/community");
     },
     onError: (error: any) => {
-      console.error("Post creation error:", error);
-      const errorMessage = error.message || "게시글을 작성하는데 실패했습니다. 다시 시도해주세요.";
+      console.error("=== 글 작성 실패 ===");
+      console.error("Error object:", error);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      
+      let errorMessage = "게시글을 작성하는데 실패했습니다.";
+      
+      if (error.message) {
+        if (error.message.includes("401")) {
+          errorMessage = "로그인이 만료되었습니다. 다시 로그인해주세요.";
+        } else if (error.message.includes("403")) {
+          errorMessage = "권한이 없습니다. 다시 로그인해주세요.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "게시글 작성 실패",
         description: errorMessage,
@@ -80,12 +110,16 @@ export default function CommunityCreate() {
   });
 
   const onSubmit = (data: CreatePostForm) => {
-    console.log("Form submitted with data:", data);
+    console.log("=== 폼 제출 ===");
+    console.log("Form data:", data);
     console.log("Form errors:", form.formState.errors);
     console.log("Form is valid:", form.formState.isValid);
     console.log("User data:", user);
+    console.log("Authentication token exists:", !!localStorage.getItem('token'));
     
+    // 필수 필드 검증
     if (!data.title.trim()) {
+      console.log("Title validation failed");
       toast({
         title: "제목을 입력해주세요",
         description: "제목은 필수 항목입니다.",
@@ -95,6 +129,7 @@ export default function CommunityCreate() {
     }
     
     if (!data.content.trim()) {
+      console.log("Content validation failed");
       toast({
         title: "내용을 입력해주세요", 
         description: "내용은 필수 항목입니다.",
@@ -103,6 +138,7 @@ export default function CommunityCreate() {
       return;
     }
     
+    console.log("All validations passed, creating post...");
     createPostMutation.mutate(data);
   };
 
@@ -223,7 +259,12 @@ export default function CommunityCreate() {
           </div>
           
           <Button
-            onClick={form.handleSubmit(onSubmit)}
+            onClick={(e) => {
+              console.log("=== 완료 버튼 클릭 ===");
+              console.log("Button clicked");
+              e.preventDefault();
+              form.handleSubmit(onSubmit)();
+            }}
             disabled={createPostMutation.isPending}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm"
           >
