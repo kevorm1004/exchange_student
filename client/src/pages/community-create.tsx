@@ -81,6 +81,28 @@ export default function CommunityCreate() {
 
   const onSubmit = (data: CreatePostForm) => {
     console.log("Form submitted with data:", data);
+    console.log("Form errors:", form.formState.errors);
+    console.log("Form is valid:", form.formState.isValid);
+    console.log("User data:", user);
+    
+    if (!data.title.trim()) {
+      toast({
+        title: "제목을 입력해주세요",
+        description: "제목은 필수 항목입니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!data.content.trim()) {
+      toast({
+        title: "내용을 입력해주세요", 
+        description: "내용은 필수 항목입니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     createPostMutation.mutate(data);
   };
 

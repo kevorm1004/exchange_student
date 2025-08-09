@@ -39,19 +39,27 @@ const authenticateToken = async (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
+  console.log("Auth header:", authHeader);
+  console.log("Extracted token:", token ? token.substring(0, 20) + "..." : "none");
+
   if (!token) {
+    console.log("No token provided");
     return res.status(401).json({ error: 'Access token required' });
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
+    console.log("Decoded token:", decoded);
     const user = await storage.getUser(decoded.id);
     if (!user) {
+      console.log("User not found for ID:", decoded.id);
       return res.status(403).json({ error: 'User not found' });
     }
+    console.log("Authentication successful for user:", user.username);
     req.user = user;
     next();
   } catch (error) {
+    console.log("Token verification failed:", error);
     return res.status(403).json({ error: 'Invalid token' });
   }
 };
@@ -960,10 +968,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/community/posts', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
+      console.log("Community post request body:", req.body);
+      console.log("Authenticated user:", req.user);
+      
       const validatedData = insertCommunityPostSchema.parse(req.body);
       const user = await storage.getUser(req.user!.id);
       
       if (!user) {
+        console.log("User not found in database:", req.user!.id);
         return res.status(404).json({ error: 'User not found' });
       }
 
@@ -980,11 +992,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Creating community post with data:", postData);
       const post = await storage.createCommunityPost(postData);
+      console.log("Post created successfully:", post);
 
       res.status(201).json(post);
     } catch (error) {
       console.error('Create community post error:', error);
-      res.status(400).json({ error: 'Failed to create post' });
+      if (error instanceof Error) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(400).json({ error: 'Failed to create post' });
+      }
     }
   });
 
