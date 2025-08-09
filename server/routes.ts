@@ -933,13 +933,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Community routes
   app.get('/api/community/posts', async (req, res) => {
     try {
-      const { school, country, filter } = req.query;
+      const { category, country } = req.query;
       let posts;
       
-      if (filter === 'school' && school) {
-        posts = await storage.getCommunityPostsBySchool(school as string);
-      } else if (filter === 'country' && country) {
-        posts = await storage.getCommunityPostsByCountry(country as string);
+      if (category && country && country !== "전체") {
+        posts = await storage.getCommunityPostsByQuery({
+          category: category as string,
+          country: country as string
+        });
+      } else if (category) {
+        posts = await storage.getCommunityPostsByCategory(category as string);
       } else {
         posts = await storage.getCommunityPosts();
       }
@@ -963,9 +966,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const post = await storage.createCommunityPost({
         title: validatedData.title,
         content: validatedData.content,
+        category: validatedData.category,
         authorId: user.id,
-        school: user.school,
-        country: user.country
+        school: validatedData.school || user.school,
+        country: validatedData.country || user.country,
+        images: validatedData.images || []
       });
 
       res.status(201).json(post);

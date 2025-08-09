@@ -1,23 +1,28 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, MessageSquare, Heart } from "lucide-react";
+import { Plus, MessageSquare, Heart, Search, Users, Eye } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
-import Header from "@/components/layout/header";
-import FilterBar from "@/components/items/filter-bar";
+import { useLocation } from "wouter";
 import type { CommunityPost } from "@shared/schema";
+import { COUNTRIES } from "@/lib/countries";
 
 export default function Community() {
-  const [filter, setFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState<"이야기방" | "모임방">("이야기방");
+  const [selectedCountry, setSelectedCountry] = useState("전체");
   const { user } = useAuth();
+  const [, navigate] = useLocation();
 
   const { data: posts = [], isLoading } = useQuery<CommunityPost[]>({
-    queryKey: ["/api/community/posts", filter, user?.school, user?.country],
+    queryKey: ["/api/community/posts", activeTab, selectedCountry],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (filter === "school" && user?.school) params.append("school", user.school);
-      if (filter === "country" && user?.country) params.append("country", user.country);
+      params.append("category", activeTab);
+      if (selectedCountry !== "전체") {
+        params.append("country", selectedCountry);
+      }
       
       const response = await fetch(`/api/community/posts?${params}`);
       if (!response.ok) throw new Error("Failed to fetch posts");
@@ -35,6 +40,10 @@ export default function Community() {
     return `${Math.floor(diffInHours / 168)}주 전`;
   };
 
+  const handleCreatePost = () => {
+    navigate("/community/create");
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -44,37 +53,115 @@ export default function Community() {
   }
 
   return (
-    <>
-      <Header title="커뮤니티" />
-      <FilterBar activeFilter={filter} onFilterChange={setFilter} />
-      
-      <main className="pb-20 pt-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b px-4 py-3">
+        <div className="flex items-center justify-between">
+          {/* Tab Navigation */}
+          <div className="flex space-x-1">
+            <button
+              onClick={() => setActiveTab("이야기방")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "이야기방" 
+                  ? "bg-gray-200 text-gray-900" 
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              이야기방
+            </button>
+            <button
+              onClick={() => setActiveTab("모임방")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "모임방" 
+                  ? "bg-gray-200 text-gray-900" 
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              모임방
+            </button>
+          </div>
+          
+          {/* Search Icon */}
+          <Button variant="ghost" size="sm" className="p-2">
+            <Search className="w-5 h-5" />
+          </Button>
+        </div>
+      </header>
+
+      {/* Country Filter */}
+      <div className="px-4 py-3 bg-white border-b">
+        <div className="flex space-x-2 overflow-x-auto">
+          <button
+            onClick={() => setSelectedCountry("전체")}
+            className={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition-colors ${
+              selectedCountry === "전체" 
+                ? "bg-gray-900 text-white" 
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            전체
+          </button>
+          {["미국", "일본", "영국", "스페인"].map((country) => (
+            <button
+              key={country}
+              onClick={() => setSelectedCountry(country)}
+              className={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition-colors ${
+                selectedCountry === country 
+                  ? "bg-gray-900 text-white" 
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {country}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      <main className="pb-20">
         {posts.length === 0 ? (
           <div className="text-center py-12">
-            <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">아직 게시글이 없습니다</p>
-            <Button className="marketplace-button-primary">
+            {activeTab === "이야기방" ? (
+              <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            ) : (
+              <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            )}
+            <p className="text-gray-500 mb-4">
+              아직 {activeTab}에 게시글이 없습니다
+            </p>
+            <Button onClick={handleCreatePost} className="bg-blue-500 hover:bg-blue-600 text-white">
               첫 번째 게시글 작성하기
             </Button>
           </div>
         ) : (
-          <div className="px-4 space-y-4">
+          <div className="px-4 py-4 space-y-4">
             {posts.map((post) => (
-              <Card key={post.id} className="p-4 cursor-pointer hover:bg-gray-50">
-                <h3 className="font-semibold text-gray-900 mb-2">{post.title}</h3>
-                <p className="text-gray-700 text-sm mb-3 line-clamp-2">{post.content}</p>
-                <div className="flex items-center justify-between text-sm text-gray-500">
-                  <div className="flex items-center space-x-4">
-                    <span>{post.school}</span>
-                    <span>•</span>
-                    <span>{formatTimeAgo(new Date(post.createdAt))}</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="flex items-center">
-                      <Heart className="w-4 h-4 mr-1" />
-                      {post.likes}
-                    </span>
-                  </div>
+              <Card key={post.id} className="p-4 bg-white cursor-pointer hover:bg-gray-50">
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="font-semibold text-gray-900 text-base">{post.title}</h3>
+                  {post.images && post.images.length > 0 && (
+                    <div className="w-16 h-16 bg-gray-200 rounded-lg ml-3 flex-shrink-0">
+                      <img 
+                        src={post.images[0]} 
+                        alt="Post image" 
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
+                  )}
+                </div>
+                
+                <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                  {post.content}
+                </p>
+                
+                <div className="flex items-center text-sm text-gray-500">
+                  <MessageSquare className="w-4 h-4 mr-1" />
+                  <span className="mr-4">{post.commentsCount || 0}</span>
+                  
+                  <span className="mr-4">{formatTimeAgo(new Date(post.createdAt))}</span>
+                  
+                  <Eye className="w-4 h-4 mr-1" />
+                  <span>{post.views || 0}</span>
                 </div>
               </Card>
             ))}
@@ -82,9 +169,13 @@ export default function Community() {
         )}
       </main>
 
-      <Button className="marketplace-floating-button">
+      {/* Floating Action Button */}
+      <Button 
+        onClick={handleCreatePost}
+        className="fixed bottom-20 right-4 w-14 h-14 rounded-full bg-red-500 hover:bg-red-600 text-white shadow-lg z-50"
+      >
         <Plus className="h-6 w-6" />
       </Button>
-    </>
+    </div>
   );
 }

@@ -25,6 +25,7 @@ import SearchResults from "@/pages/search-results";
 import NotFound from "@/pages/not-found";
 import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
+import CommunityCreate from "@/pages/community-create";
 
 import BottomNav from "@/components/layout/bottom-nav";
 
@@ -80,6 +81,7 @@ function Router() {
         <Route path="/chat" component={Chat} />
         <Route path="/chat/:roomId" component={ChatRoom} />
         <Route path="/community" component={Community} />
+        <Route path="/community/create" component={CommunityCreate} />
         <Route path="/my" component={MyPage} />
         <Route path="/profile" component={Profile} />
         <Route path="/items/create" component={CreateItem} />

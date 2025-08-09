@@ -65,6 +65,8 @@ export interface IStorage {
   getCommunityPosts(): Promise<CommunityPost[]>;
   getCommunityPost(id: string): Promise<CommunityPost | undefined>;
   createCommunityPost(insertPost: InsertCommunityPost): Promise<CommunityPost>;
+  getCommunityPostsByCategory(category: string): Promise<CommunityPost[]>;
+  getCommunityPostsByQuery(query: { category: string; country?: string }): Promise<CommunityPost[]>;
   getCommunityPostsBySchool(school: string): Promise<CommunityPost[]>;
   getCommunityPostsByCountry(country: string): Promise<CommunityPost[]>;
   getPostComments(postId: string): Promise<Comment[]>;
@@ -300,6 +302,24 @@ export class DatabaseStorage implements IStorage {
       .values(insertPost)
       .returning();
     return post;
+  }
+
+  async getCommunityPostsByCategory(category: string): Promise<CommunityPost[]> {
+    return await db.select().from(communityPosts)
+      .where(eq(communityPosts.category, category))
+      .orderBy(desc(communityPosts.createdAt));
+  }
+
+  async getCommunityPostsByQuery(query: { category: string; country?: string }): Promise<CommunityPost[]> {
+    const whereConditions = [eq(communityPosts.category, query.category)];
+    
+    if (query.country) {
+      whereConditions.push(eq(communityPosts.country, query.country));
+    }
+
+    return await db.select().from(communityPosts)
+      .where(and(...whereConditions))
+      .orderBy(desc(communityPosts.createdAt));
   }
 
   async getCommunityPostsBySchool(school: string): Promise<CommunityPost[]> {

@@ -66,10 +66,14 @@ export const communityPosts = pgTable("community_posts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   content: text("content").notNull(),
+  category: text("category").notNull(), // "이야기방", "모임방"
   authorId: text("author_id").notNull().references(() => users.id),
   school: text("school").notNull(),
   country: text("country").notNull(),
+  images: text("images").array().notNull().default(sql`'{}'::text[]`),
   likes: integer("likes").default(0).notNull(),
+  views: integer("views").default(0).notNull(),
+  commentsCount: integer("comments_count").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -124,8 +128,9 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
 
 export const insertCommunityPostSchema = createInsertSchema(communityPosts).omit({
   id: true,
-  authorId: true,
   likes: true,
+  views: true,
+  commentsCount: true,
   createdAt: true,
 });
 
