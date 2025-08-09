@@ -109,8 +109,8 @@ export default function CommunityCreate() {
         let compressedDataUrl = canvas.toDataURL('image/jpeg', currentQuality);
         let sizeInBytes = (compressedDataUrl.length * 3) / 4;
         
-        // Keep compressing until under 500KB or quality gets too low
-        while (sizeInBytes > 500 * 1024 && currentQuality > 0.1) {
+        // Keep compressing until under 200KB or quality gets too low
+        while (sizeInBytes > 200 * 1024 && currentQuality > 0.05) {
           currentQuality *= 0.7;
           compressedDataUrl = canvas.toDataURL('image/jpeg', currentQuality);
           sizeInBytes = (compressedDataUrl.length * 3) / 4;

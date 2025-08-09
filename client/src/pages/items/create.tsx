@@ -119,8 +119,8 @@ export default function CreateItem() {
         let compressedDataUrl = canvas.toDataURL('image/jpeg', currentQuality);
         let sizeInBytes = (compressedDataUrl.length * 3) / 4;
         
-        // Keep compressing until under 500KB or quality gets too low
-        while (sizeInBytes > 500 * 1024 && currentQuality > 0.1) {
+        // Keep compressing until under 200KB or quality gets too low
+        while (sizeInBytes > 200 * 1024 && currentQuality > 0.05) {
           currentQuality *= 0.7;
           compressedDataUrl = canvas.toDataURL('image/jpeg', currentQuality);
           sizeInBytes = (compressedDataUrl.length * 3) / 4;
@@ -148,7 +148,11 @@ export default function CreateItem() {
           });
           
           // Compress image before adding to state
+          console.log(`Original file size: ${file.size} bytes`);
           const compressedImage = await compressImage(file);
+          const compressedSize = (compressedImage.length * 3) / 4;
+          console.log(`Compressed file size: ${compressedSize} bytes (${Math.round(compressedSize / 1024)}KB)`);
+          
           setImages(prev => [...prev, compressedImage]);
           const currentImages = form.getValues('images') || [];
           form.setValue('images', [...currentImages, compressedImage]);
@@ -237,6 +241,11 @@ export default function CreateItem() {
 
   const createItemMutation = useMutation({
     mutationFn: async (data: InsertItem) => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("인증이 필요합니다. 다시 로그인해주세요.");
+      }
+      console.log("Attempting to create item with token:", token ? "present" : "missing");
       const res = await apiRequest("POST", "/api/items", data);
       return res.json();
     },
@@ -255,11 +264,20 @@ export default function CreateItem() {
     },
     onError: (error) => {
       console.error('Mutation error:', error);
-      toast({
-        variant: "destructive",
-        title: "상품 등록 실패",
-        description: "상품 등록 중 오류가 발생했습니다. 이미지 크기를 줄여서 다시 시도해보세요.",
-      });
+      if (error.message.includes("401") || error.message.includes("Invalid token") || error.message.includes("Unauthorized")) {
+        toast({
+          title: "인증 오류",
+          description: "로그인이 만료되었습니다. 다시 로그인해주세요.",
+          variant: "destructive",
+        });
+        navigate("/auth/login");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "상품 등록 실패",
+          description: error.message || "상품 등록 중 오류가 발생했습니다.",
+        });
+      }
     },
   });
 
