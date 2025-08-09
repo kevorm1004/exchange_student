@@ -52,12 +52,33 @@ export default function Community() {
     );
   }
 
+  // Country color mapping for meeting cards
+  const getCountryColor = (country: string) => {
+    const colorMap: { [key: string]: string } = {
+      "독일": "bg-red-200 text-red-800",
+      "영국": "bg-green-200 text-green-800", 
+      "미국": "bg-blue-200 text-blue-800",
+      "일본": "bg-orange-200 text-orange-800",
+      "중국": "bg-purple-200 text-purple-800",
+      "한국": "bg-pink-200 text-pink-800",
+      "프랑스": "bg-indigo-200 text-indigo-800",
+      "스페인": "bg-yellow-200 text-yellow-800",
+    };
+    return colorMap[country] || "bg-gray-200 text-gray-800";
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header with Logo */}
+      <div className="bg-white border-b border-gray-200 p-4">
+        <div className="flex items-center justify-center">
+          <h1 className="text-xl font-bold text-gray-900">커뮤니티</h1>
+        </div>
+      </div>
+
+      {/* Tab Navigation */}
       <header className="bg-white border-b px-4 py-3">
         <div className="flex items-center justify-between">
-          {/* Tab Navigation */}
           <div className="flex space-x-1">
             <button
               onClick={() => setActiveTab("이야기방")}
@@ -134,37 +155,66 @@ export default function Community() {
             </Button>
           </div>
         ) : (
-          <div className="px-4 py-4 space-y-4">
-            {posts.map((post) => (
-              <Card key={post.id} className="p-4 bg-white cursor-pointer hover:bg-gray-50">
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900 text-base">{post.title}</h3>
-                  {post.images && post.images.length > 0 && (
-                    <div className="w-16 h-16 bg-gray-200 rounded-lg ml-3 flex-shrink-0">
-                      <img 
-                        src={post.images[0]} 
-                        alt="Post image" 
-                        className="w-full h-full object-cover rounded-lg"
-                      />
+          <div className="px-4 py-4">
+            {activeTab === "이야기방" ? (
+              <div className="space-y-4">
+                {posts.map((post) => (
+                  <Card key={post.id} className="p-4 bg-white cursor-pointer hover:bg-gray-50">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="font-semibold text-gray-900 text-base">{post.title}</h3>
+                      {post.images && post.images.length > 0 && (
+                        <div className="w-16 h-16 bg-gray-200 rounded-lg ml-3 flex-shrink-0">
+                          <img 
+                            src={post.images[0]} 
+                            alt="Post image" 
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                  {post.content}
-                </p>
-                
-                <div className="flex items-center text-sm text-gray-500">
-                  <MessageSquare className="w-4 h-4 mr-1" />
-                  <span className="mr-4">{post.commentsCount || 0}</span>
-                  
-                  <span className="mr-4">{formatTimeAgo(new Date(post.createdAt))}</span>
-                  
-                  <Eye className="w-4 h-4 mr-1" />
-                  <span>{post.views || 0}</span>
-                </div>
-              </Card>
-            ))}
+                    
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                      {post.content}
+                    </p>
+                    
+                    <div className="flex items-center text-sm text-gray-500">
+                      <MessageSquare className="w-4 h-4 mr-1" />
+                      <span className="mr-4">{post.commentsCount || 0}</span>
+                      
+                      <span className="mr-4">{formatTimeAgo(new Date(post.createdAt))}</span>
+                      
+                      <Eye className="w-4 h-4 mr-1" />
+                      <span>{post.views || 0}</span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {posts.map((post) => (
+                  <Card key={post.id} className={`cursor-pointer hover:shadow-md transition-shadow relative ${getCountryColor(post.country)}`}>
+                    <div className="p-4">
+                      {/* Country Badge */}
+                      <div className="absolute top-2 left-2 px-2 py-1 rounded text-xs font-medium bg-white bg-opacity-80">
+                        {post.country}
+                      </div>
+                      
+                      {/* Comments Count */}
+                      <div className="absolute top-2 right-2 flex items-center space-x-1 text-xs">
+                        <MessageSquare className="w-3 h-3" />
+                        <span>{post.commentsCount || 0}</span>
+                      </div>
+
+                      <div className="mt-8 mb-2">
+                        <div className="text-sm font-medium mb-1">{post.semester || "25-2"}</div>
+                        <div className="text-sm text-gray-700 mb-1">{post.school}</div>
+                        <h3 className="font-semibold text-sm">{post.title}</h3>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>

@@ -18,6 +18,7 @@ import { z } from "zod";
 
 const createPostSchema = insertCommunityPostSchema.extend({
   images: z.array(z.string()).max(2, "최대 2장까지만 업로드할 수 있습니다").optional(),
+  semester: z.string().optional(),
 });
 
 type CreatePostForm = z.infer<typeof createPostSchema>;
@@ -39,6 +40,7 @@ export default function CommunityCreate() {
       country: user?.country || "",
       school: user?.school || "",
       images: [],
+      semester: "",
     },
   });
 
@@ -185,6 +187,33 @@ export default function CommunityCreate() {
                 </FormItem>
               )}
             />
+
+            {/* Semester Selection - Only for 모임방 */}
+            {form.watch("category") === "모임방" && (
+              <FormField
+                control={form.control}
+                name="semester"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>학기</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="학기를 선택하세요" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="2025-1">2025년 1학기</SelectItem>
+                        <SelectItem value="2025-2">2025년 2학기</SelectItem>
+                        <SelectItem value="2024-2">2024년 2학기</SelectItem>
+                        <SelectItem value="2024-1">2024년 1학기</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* Country Selection */}
             <FormField

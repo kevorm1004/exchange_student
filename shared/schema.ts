@@ -67,6 +67,7 @@ export const communityPosts = pgTable("community_posts", {
   title: text("title").notNull(),
   content: text("content").notNull(),
   category: text("category").notNull(), // "이야기방", "모임방"
+  semester: text("semester"), // For meeting posts: "2024-1", "2024-2", etc.
   authorId: text("author_id").notNull().references(() => users.id),
   school: text("school").notNull(),
   country: text("country").notNull(),

@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, items, chatRooms, messages } from "@shared/schema";
+import { users, items, chatRooms, messages, communityPosts } from "@shared/schema";
 import bcrypt from "bcryptjs";
 
 export async function seedDatabase() {
@@ -199,12 +199,58 @@ export async function seedDatabase() {
     await db.insert(messages).values(testMessages);
     console.log(`Created chat room with ${testMessages.length} messages`);
 
+    // Create test community posts
+    const testCommunityPosts = [
+      {
+        title: "25-2 오하이오 대학교 한인 순례길 참가",
+        content: "안녕하세요! 2025년 2학기에 오하이오주립대학교에서 공부할 예정인 학생입니다. 한인 순례길 모임에 참가하고 싶은데, 혹시 관심 있으신 분들 계신가요?",
+        category: "모임방",
+        semester: "2025-2", 
+        authorId: insertedUsers[0].id,
+        school: "Ohio State University",
+        country: "미국",
+        images: []
+      },
+      {
+        title: "독일 뮌헨대학교 기숙사 정보",
+        content: "뮌헨대학교 기숙사에 대한 정보를 공유합니다. 저는 작년에 뮌헨대학교에서 교환학생을 했는데, 기숙사 신청 방법이나 생활 팁 등을 알려드릴 수 있어요!",
+        category: "이야기방",
+        authorId: insertedUsers[1].id,
+        school: "University of Munich",
+        country: "독일",
+        images: []
+      },
+      {
+        title: "25-1 영국대학교 가지 나눔",
+        content: "영국에서 유학 중인 학생들과 함께 가지 나눔 모임을 하려고 합니다. 현지 음식도 함께 나누고 정보도 공유해요!",
+        category: "모임방",
+        semester: "2025-1",
+        authorId: insertedUsers[2].id,
+        school: "University of Cambridge",
+        country: "영국",
+        images: []
+      },
+      {
+        title: "일본 도쿄 맛집 추천",
+        content: "도쿄에서 1년간 유학했던 경험을 바탕으로 맛집들을 추천해드려요. 특히 저렴하면서도 맛있는 곳들 위주로 정리했습니다.",
+        category: "이야기방",
+        authorId: insertedUsers[3].id,
+        school: "University of Tokyo",
+        country: "일본",
+        images: []
+      }
+    ];
+
+    const insertedPosts = await db.insert(communityPosts).values(testCommunityPosts).returning();
+    console.log(`Created ${insertedPosts.length} community posts`);
+
     console.log("Database seeding completed successfully!");
     
     return {
       users: insertedUsers,
       items: insertedItems,
-      chatRoom: testChatRoom[0]
+      chatRoom: testChatRoom[0],
+      communityPosts: insertedPosts
     };
     
   } catch (error) {
