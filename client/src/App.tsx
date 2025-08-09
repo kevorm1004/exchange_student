@@ -81,6 +81,7 @@ function Router() {
         <Route path="/chat" component={Chat} />
         <Route path="/chat/:roomId" component={ChatRoom} />
         <Route path="/community" component={Community} />
+        <Route path="/community-create" component={CommunityCreate} />
         <Route path="/community/create" component={CommunityCreate} />
         <Route path="/my" component={MyPage} />
         <Route path="/profile" component={Profile} />

@@ -27,6 +27,10 @@ interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
+    username?: string;
+    fullName?: string;
+    country?: string;
+    school?: string;
   };
 }
 
@@ -963,15 +967,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      const post = await storage.createCommunityPost({
+      const postData = {
         title: validatedData.title,
         content: validatedData.content,
         category: validatedData.category,
         authorId: user.id,
-        school: validatedData.school || user.school,
-        country: validatedData.country || user.country,
-        images: validatedData.images || []
-      });
+        school: validatedData.school || user.school || "",
+        country: validatedData.country || user.country || "",
+        images: validatedData.images || [],
+        ...(validatedData.semester && { semester: validatedData.semester })
+      };
+      
+      console.log("Creating community post with data:", postData);
+      const post = await storage.createCommunityPost(postData);
 
       res.status(201).json(post);
     } catch (error) {

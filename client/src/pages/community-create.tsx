@@ -46,11 +46,17 @@ export default function CommunityCreate() {
 
   const createPostMutation = useMutation({
     mutationFn: async (data: CreatePostForm) => {
+      console.log("Submitting community post:", data);
       const postData = {
-        ...data,
+        title: data.title,
+        content: data.content,
+        category: data.category,
+        country: data.country || user!.country,
+        school: data.school || user!.school,
         images: uploadedImages,
-        authorId: user!.id,
+        semester: data.category === "모임방" ? data.semester : undefined,
       };
+      console.log("Final post data:", postData);
       const response = await apiRequest("POST", "/api/community/posts", postData);
       return response.json();
     },
@@ -64,9 +70,10 @@ export default function CommunityCreate() {
     },
     onError: (error: any) => {
       console.error("Post creation error:", error);
+      const errorMessage = error.message || "게시글을 작성하는데 실패했습니다. 다시 시도해주세요.";
       toast({
         title: "게시글 작성 실패",
-        description: "게시글을 작성하는데 실패했습니다. 다시 시도해주세요.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
