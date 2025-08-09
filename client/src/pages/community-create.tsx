@@ -259,11 +259,32 @@ export default function CommunityCreate() {
           </div>
           
           <Button
-            onClick={(e) => {
+            type="button"
+            onClick={async (e) => {
               console.log("=== 완료 버튼 클릭 ===");
-              console.log("Button clicked");
               e.preventDefault();
-              form.handleSubmit(onSubmit)();
+              e.stopPropagation();
+              
+              // 폼 데이터를 직접 가져와서 제출
+              const formData = form.getValues();
+              console.log("Current form values:", formData);
+              
+              // 유효성 검사 실행
+              const isValid = await form.trigger();
+              console.log("Form validation result:", isValid);
+              console.log("Form errors after validation:", form.formState.errors);
+              
+              if (isValid) {
+                console.log("Form is valid, calling onSubmit");
+                onSubmit(formData);
+              } else {
+                console.log("Form validation failed");
+                toast({
+                  title: "입력 오류",
+                  description: "필수 항목을 모두 입력해주세요.",
+                  variant: "destructive"
+                });
+              }
             }}
             disabled={createPostMutation.isPending}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm"
@@ -276,7 +297,14 @@ export default function CommunityCreate() {
       {/* Form */}
       <div className="p-4">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form 
+            onSubmit={(e) => {
+              console.log("Form onSubmit triggered");
+              e.preventDefault();
+              form.handleSubmit(onSubmit)(e);
+            }} 
+            className="space-y-6"
+          >
             {/* Category Selection */}
             <FormField
               control={form.control}
