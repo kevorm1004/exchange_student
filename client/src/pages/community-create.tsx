@@ -77,15 +77,15 @@ export default function CommunityCreate() {
     createPostMutation.mutate(data);
   };
 
-  // Image compression function
-  const compressImage = (file: File, maxWidth: number = 1200, quality: number = 0.8): Promise<string> => {
+  // Image compression function with progressive compression
+  const compressImage = (file: File, maxWidth: number = 600, quality: number = 0.5): Promise<string> => {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d')!;
       const img = new Image();
       
       img.onload = () => {
-        // Calculate new dimensions
+        // Calculate new dimensions (smaller for mobile)
         let { width, height } = img;
         if (width > height) {
           if (width > maxWidth) {
@@ -102,9 +102,20 @@ export default function CommunityCreate() {
         canvas.width = width;
         canvas.height = height;
         
-        // Draw and compress
+        // Draw and compress progressively
         ctx.drawImage(img, 0, 0, width, height);
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        
+        let currentQuality = quality;
+        let compressedDataUrl = canvas.toDataURL('image/jpeg', currentQuality);
+        let sizeInBytes = (compressedDataUrl.length * 3) / 4;
+        
+        // Keep compressing until under 500KB or quality gets too low
+        while (sizeInBytes > 500 * 1024 && currentQuality > 0.1) {
+          currentQuality *= 0.7;
+          compressedDataUrl = canvas.toDataURL('image/jpeg', currentQuality);
+          sizeInBytes = (compressedDataUrl.length * 3) / 4;
+        }
+        
         resolve(compressedDataUrl);
       };
       
@@ -130,9 +141,19 @@ export default function CommunityCreate() {
     for (const file of Array.from(files)) {
       if (file.type.startsWith('image/')) {
         try {
+          toast({
+            title: "이미지 처리 중",
+            description: "고화질 이미지를 압축하고 있습니다...",
+          });
+          
           // Compress image before adding to state
           const compressedImage = await compressImage(file);
           setUploadedImages(prev => [...prev, compressedImage]);
+          
+          toast({
+            title: "이미지 추가 완료",
+            description: "이미지가 성공적으로 추가되었습니다.",
+          });
         } catch (error) {
           console.error('Error compressing image:', error);
           toast({
