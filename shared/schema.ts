@@ -129,6 +129,7 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
 
 export const insertCommunityPostSchema = createInsertSchema(communityPosts).omit({
   id: true,
+  authorId: true,
   likes: true,
   views: true,
   commentsCount: true,

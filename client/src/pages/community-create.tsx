@@ -311,7 +311,7 @@ export default function CommunityCreate() {
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>카테고리</FormLabel>
+                  <FormLabel>카테고리 *</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -334,7 +334,7 @@ export default function CommunityCreate() {
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>제목</FormLabel>
+                  <FormLabel>제목 *</FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="제목을 입력하세요"
@@ -380,7 +380,7 @@ export default function CommunityCreate() {
               name="country"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>국가</FormLabel>
+                  <FormLabel>국가 *</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -406,7 +406,7 @@ export default function CommunityCreate() {
               name="content"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>내용</FormLabel>
+                  <FormLabel>내용 *</FormLabel>
                   <FormControl>
                     <Textarea 
                       placeholder="내용을 입력하세요..."
