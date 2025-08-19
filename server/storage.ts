@@ -334,6 +334,12 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(communityPosts.createdAt));
   }
 
+  async incrementCommunityPostViews(id: string): Promise<void> {
+    await db.update(communityPosts)
+      .set({ views: sql`${communityPosts.views} + 1` })
+      .where(eq(communityPosts.id, id));
+  }
+
   async getPostComments(postId: string): Promise<Comment[]> {
     return await db.select().from(comments)
       .where(eq(comments.postId, postId))

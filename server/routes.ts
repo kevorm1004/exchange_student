@@ -970,6 +970,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get single community post by ID
+  app.get('/api/community/posts/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const post = await storage.getCommunityPost(id);
+      
+      if (!post) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+
+      // Increment view count
+      await storage.incrementCommunityPostViews(id);
+      
+      res.json(post);
+    } catch (error) {
+      console.error('Error fetching community post:', error);
+      res.status(500).json({ error: 'Failed to fetch community post' });
+    }
+  });
+
   app.post('/api/community/posts', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       console.log("Community post request body:", req.body);
@@ -991,7 +1011,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         school: validatedData.school || user.school || "",
         country: validatedData.country || user.country || "",
         images: validatedData.images || [],
-        ...(validatedData.semester && { semester: validatedData.semester })
+        ...(validatedData.semester && { semester: validatedData.semester }),
+        ...(validatedData.openChatLink && { openChatLink: validatedData.openChatLink })
       };
       
       console.log("Creating community post with data:", postData);

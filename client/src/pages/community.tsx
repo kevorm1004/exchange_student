@@ -159,7 +159,11 @@ export default function Community() {
             {activeTab === "이야기방" ? (
               <div className="space-y-4">
                 {posts.map((post) => (
-                  <Card key={post.id} className="p-4 bg-white cursor-pointer hover:bg-gray-50">
+                  <Card 
+                    key={post.id} 
+                    onClick={() => navigate(`/community/post/${post.id}`)}
+                    className="p-4 bg-white cursor-pointer hover:bg-gray-50"
+                  >
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="font-semibold text-gray-900 text-base">{post.title}</h3>
                       {post.images && post.images.length > 0 && (
@@ -192,7 +196,11 @@ export default function Community() {
             ) : (
               <div className="grid grid-cols-2 gap-4">
                 {posts.map((post) => (
-                  <Card key={post.id} className={`cursor-pointer hover:shadow-md transition-shadow relative ${getCountryColor(post.country)}`}>
+                  <Card 
+                    key={post.id} 
+                    onClick={() => navigate(`/community/post/${post.id}`)}
+                    className={`cursor-pointer hover:shadow-md transition-shadow relative ${getCountryColor(post.country)}`}
+                  >
                     <div className="p-4">
                       {/* Country Badge */}
                       <div className="absolute top-2 left-2 px-2 py-1 rounded text-xs font-medium bg-white bg-opacity-80">

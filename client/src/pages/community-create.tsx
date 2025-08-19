@@ -360,7 +360,7 @@ export default function CommunityCreate() {
       </header>
 
       {/* Form */}
-      <div className="p-4">
+      <div className="p-4 pb-20">
         <Form {...form}>
           <form 
             onSubmit={(e) => {
@@ -440,26 +440,7 @@ export default function CommunityCreate() {
               />
             )}
 
-            {/* Open Chat Link field - Only for 모임방 */}
-            {form.watch("category") === "모임방" && (
-              <FormField
-                control={form.control}
-                name="openChatLink"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>오픈 카톡 링크</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="https://open.kakao.com/..."
-                        {...field} 
-                        className="text-base"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+
 
             {/* Country Selection */}
             <FormField
