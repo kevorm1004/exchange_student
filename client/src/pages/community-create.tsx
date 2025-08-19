@@ -19,6 +19,7 @@ import { z } from "zod";
 const createPostSchema = insertCommunityPostSchema.extend({
   images: z.array(z.string()).max(2, "최대 2장까지만 업로드할 수 있습니다").optional(),
   semester: z.string().optional(),
+  openChatLink: z.string().optional(),
 });
 
 type CreatePostForm = z.infer<typeof createPostSchema>;
@@ -31,6 +32,42 @@ export default function CommunityCreate() {
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Generate semester options based on current date
+  const generateSemesterOptions = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 0-based to 1-based
+    
+    const options = [];
+    let startYear = currentYear;
+    let startSemester = 1;
+    
+    // Determine current semester
+    if (currentMonth >= 3 && currentMonth <= 6) {
+      startSemester = 2; // 2학기
+    } else if (currentMonth >= 7 && currentMonth <= 8) {
+      startSemester = 3; // 3학기
+    } else if (currentMonth >= 9 || currentMonth <= 2) {
+      if (currentMonth >= 9) {
+        startYear = currentYear + 1;
+        startSemester = 1; // 다음년도 1학기
+      } else {
+        startSemester = 1; // 1학기
+      }
+    }
+    
+    // Generate 5 semester options starting from current
+    for (let i = 0; i < 5; i++) {
+      const year = startYear + Math.floor((startSemester - 1 + i) / 3);
+      const semester = ((startSemester - 1 + i) % 3) + 1;
+      options.push(`${year % 100}년 ${semester}학기`);
+    }
+    
+    return options;
+  };
+
+  const semesterOptions = generateSemesterOptions();
+
   const form = useForm<CreatePostForm>({
     resolver: zodResolver(createPostSchema),
     defaultValues: {
@@ -40,7 +77,8 @@ export default function CommunityCreate() {
       country: user?.country || "",
       school: user?.school || "",
       images: [],
-      semester: "",
+      semester: semesterOptions[0] || "",
+      openChatLink: "",
     },
   });
 
@@ -59,6 +97,7 @@ export default function CommunityCreate() {
         school: data.school || user!.school,
         images: uploadedImages,
         semester: data.category === "모임방" ? data.semester : undefined,
+        openChatLink: data.category === "모임방" ? data.openChatLink : undefined,
       };
       console.log("Sending to API:", postData);
       
@@ -137,7 +176,33 @@ export default function CommunityCreate() {
       });
       return;
     }
+
+    // Additional validation for 모임방
+    if (data.category === "모임방") {
+      if (!data.semester) {
+        console.log("Semester validation failed");
+        toast({
+          title: "학기를 선택해주세요",
+          description: "모임방 글에는 학기 선택이 필수입니다.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
     
+    // 모임방 전용 필수 필드 검증
+    if (data.category === "모임방") {
+      if (!data.semester?.trim()) {
+        console.log("Semester validation failed");
+        toast({
+          title: "학기를 선택해주세요",
+          description: "모임방 글에는 학기가 필수입니다.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     console.log("All validations passed, creating post...");
     createPostMutation.mutate(data);
   };
@@ -354,7 +419,7 @@ export default function CommunityCreate() {
                 name="semester"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>학기</FormLabel>
+                    <FormLabel>학기 *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -362,12 +427,34 @@ export default function CommunityCreate() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="2025-1">2025년 1학기</SelectItem>
-                        <SelectItem value="2025-2">2025년 2학기</SelectItem>
-                        <SelectItem value="2024-2">2024년 2학기</SelectItem>
-                        <SelectItem value="2024-1">2024년 1학기</SelectItem>
+                        {semesterOptions.map((semester) => (
+                          <SelectItem key={semester} value={semester}>
+                            {semester}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Open Chat Link field - Only for 모임방 */}
+            {form.watch("category") === "모임방" && (
+              <FormField
+                control={form.control}
+                name="openChatLink"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>오픈 카톡 링크</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="https://open.kakao.com/..."
+                        {...field} 
+                        className="text-base"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -399,6 +486,27 @@ export default function CommunityCreate() {
                 </FormItem>
               )}
             />
+
+            {/* Open Chat Link - Only for 모임방 */}
+            {form.watch("category") === "모임방" && (
+              <FormField
+                control={form.control}
+                name="openChatLink"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>오픈 카톡 링크</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="https://open.kakao.com/..."
+                        {...field} 
+                        className="text-base"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* Content */}
             <FormField
