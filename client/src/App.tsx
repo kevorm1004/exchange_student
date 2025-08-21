@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "./hooks/use-auth";
 import { WebSocketProvider } from "./hooks/use-websocket";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useEffect, lazy } from "react";
 
 import Home from "@/pages/home";
 import Chat from "@/pages/chat";
@@ -89,6 +89,9 @@ function Router() {
         <Route path="/community/post/:id" component={CommunityDetail} />
         <Route path="/community/create" component={CommunityCreate} />
         <Route path="/my" component={MyPage} />
+        <Route path="/my/items" component={lazy(() => import("@/pages/my/my-items"))} />
+        <Route path="/my/reviews" component={lazy(() => import("@/pages/my/my-reviews"))} />
+        <Route path="/settings" component={lazy(() => import("@/pages/settings"))} />
         <Route path="/profile" component={Profile} />
         <Route path="/favorites" component={Favorites} />
         <Route path="/notifications" component={NotificationsPage} />

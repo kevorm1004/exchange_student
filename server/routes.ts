@@ -519,29 +519,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pageNum = parseInt(page as string, 10);
       const limitNum = parseInt(limit as string, 10);
       
-      let allItems = await storage.getItems();
+      // Use optimized filtering at database level
+      const items = await storage.getItemsWithFilters({
+        school: school as string,
+        country: country as string,
+        category: category as string,
+        search: search as string,
+        page: pageNum,
+        limit: limitNum
+      });
 
-      // Apply filters
-      if (school && school !== 'all') {
-        allItems = await storage.getItemsBySchool(school as string);
-      } else if (country && country !== 'all') {
-        allItems = await storage.getItemsByCountry(country as string);
-      }
-
-      if (search && typeof search === 'string' && search.trim()) {
-        const searchQuery = search.trim().toLowerCase();
-        allItems = allItems.filter(item => 
-          item.title.toLowerCase().includes(searchQuery) ||
-          item.description.toLowerCase().includes(searchQuery)
-        );
-      }
-
-      // Simple pagination
-      const startIndex = pageNum * limitNum;
-      const endIndex = startIndex + limitNum;
-      const paginatedItems = allItems.slice(startIndex, endIndex);
-
-      res.json(paginatedItems);
+      res.json(items);
     } catch (error) {
       console.error('Get items error:', error);
       res.status(500).json({ error: 'Server error' });
@@ -615,6 +603,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update item status
       const updatedItem = await storage.updateItemStatus(itemId, status);
+      
+      // Create notification for interested buyers (from chat rooms)
+      if (status === '거래완료' || status === '거래기간만료') {
+        const chatRooms = await storage.getChatRoomsByItem(itemId);
+        const seller = await storage.getUser(userId);
+        
+        for (const room of chatRooms) {
+          if (room.buyerId !== userId) { // Don't notify seller
+            await storage.createNotification({
+              userId: room.buyerId,
+              type: 'status_change',
+              content: `관심 상품 "${item.title}"의 거래 상태가 "${status}"로 변경되었습니다.`,
+              link: `/items/${itemId}`
+            });
+          }
+        }
+      }
+      
       res.json(updatedItem);
     } catch (error) {
       console.error('Error updating item status:', error);
@@ -882,6 +888,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       console.log(`Message created by user ${userId} in room ${roomId}`);
+      
+      // Create notification for the recipient
+      const recipientId = room.buyerId === userId ? room.sellerId : room.buyerId;
+      const sender = await storage.getUser(userId);
+      
+      await storage.createNotification({
+        userId: recipientId,
+        type: 'new_message',
+        content: `${sender?.username || '사용자'}님이 메시지를 보냈습니다: ${content.slice(0, 50)}${content.length > 50 ? '...' : ''}`,
+        link: `/chat/${roomId}`
+      });
       
       // Broadcast to room participants via WebSocket
       [room.buyerId, room.sellerId].forEach(participantId => {
@@ -1185,6 +1202,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         postId: req.params.id,
         authorId: req.user!.id
       });
+
+      // Create notification for post author (if not commenting on own post)
+      const post = await storage.getCommunityPost(req.params.id);
+      if (post && post.authorId !== req.user!.id) {
+        const commenter = await storage.getUser(req.user!.id);
+        await storage.createNotification({
+          userId: post.authorId,
+          type: 'new_comment',
+          content: `${commenter?.username || '사용자'}님이 회원님의 게시글에 댓글을 남겼습니다: ${validatedData.content.slice(0, 50)}${validatedData.content.length > 50 ? '...' : ''}`,
+          link: `/community/post/${req.params.id}`
+        });
+      }
 
       res.status(201).json(comment);
     } catch (error) {

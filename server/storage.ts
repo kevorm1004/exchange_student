@@ -155,6 +155,49 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(items).orderBy(desc(items.createdAt));
   }
 
+  async getItemsWithFilters(filters: {
+    school?: string;
+    country?: string;
+    category?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<Item[]> {
+    let query = db.select().from(items);
+    const conditions = [];
+
+    // Add filter conditions
+    if (filters.school && filters.school !== 'all') {
+      conditions.push(eq(items.school, filters.school));
+    }
+    if (filters.country && filters.country !== 'all') {
+      conditions.push(eq(items.country, filters.country));
+    }
+    if (filters.category && filters.category !== 'all') {
+      conditions.push(eq(items.category, filters.category));
+    }
+    if (filters.search && filters.search.trim()) {
+      const searchTerm = `%${filters.search.trim().toLowerCase()}%`;
+      conditions.push(or(
+        sql`LOWER(${items.title}) LIKE ${searchTerm}`,
+        sql`LOWER(${items.description}) LIKE ${searchTerm}`
+      ));
+    }
+
+    // Apply conditions if any
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    // Apply pagination
+    if (filters.page !== undefined && filters.limit !== undefined) {
+      const offset = filters.page * filters.limit;
+      query = query.limit(filters.limit).offset(offset);
+    }
+
+    return await query.orderBy(desc(items.createdAt));
+  }
+
   async getItem(id: string): Promise<Item | undefined> {
     const [item] = await db.select().from(items).where(eq(items.id, id));
     return item || undefined;
@@ -263,6 +306,11 @@ export class DatabaseStorage implements IStorage {
   async getChatRoom(id: string): Promise<ChatRoom | undefined> {
     const [room] = await db.select().from(chatRooms).where(eq(chatRooms.id, id));
     return room || undefined;
+  }
+
+  async getChatRoomsByItem(itemId: string): Promise<ChatRoom[]> {
+    return await db.select().from(chatRooms)
+      .where(eq(chatRooms.itemId, itemId));
   }
 
   async createChatRoom(insertChatRoom: InsertChatRoom): Promise<ChatRoom> {
