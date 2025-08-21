@@ -28,6 +28,7 @@ import AdminDashboard from "@/pages/admin/dashboard";
 import CommunityCreate from "@/pages/community-create";
 import CommunityDetail from "@/pages/community-detail";
 import Favorites from "@/pages/favorites";
+import NotificationsPage from "@/pages/notifications";
 
 import BottomNav from "@/components/layout/bottom-nav";
 
@@ -39,6 +40,7 @@ function Router() {
   const isItemDetailPage = location.startsWith('/items/') && location !== '/items/create';
   const isSearchPage = location === '/search' || location.startsWith('/search/');
   const isProfilePage = location === '/profile';
+  const isNotificationsPage = location === '/notifications';
   const isAdminPage = location.startsWith('/admin');
 
   // Handle OAuth callback
@@ -89,6 +91,7 @@ function Router() {
         <Route path="/my" component={MyPage} />
         <Route path="/profile" component={Profile} />
         <Route path="/favorites" component={Favorites} />
+        <Route path="/notifications" component={NotificationsPage} />
         <Route path="/items/create" component={CreateItem} />
         <Route path="/items/:id" component={ItemDetail} />
         <Route path="/admin" component={AdminLogin} />
@@ -96,7 +99,7 @@ function Router() {
         <Route component={NotFound} />
       </Switch>
       
-      {!isAuthPage && !isItemDetailPage && !isSearchPage && !isProfilePage && !isAdminPage && <BottomNav />}
+      {!isAuthPage && !isItemDetailPage && !isSearchPage && !isProfilePage && !isNotificationsPage && !isAdminPage && <BottomNav />}
     </div>
   );
 }

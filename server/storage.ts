@@ -8,6 +8,7 @@ import {
   communityPosts, 
   comments, 
   favorites,
+  notifications,
   reports,
   type User, 
   type InsertUser,
@@ -23,6 +24,8 @@ import {
   type InsertComment,
   type Favorite, 
   type InsertFavorite,
+  type Notification,
+  type InsertNotification,
   type Report,
   type InsertReport
 } from "@shared/schema";
@@ -639,6 +642,72 @@ export class DatabaseStorage implements IStorage {
       ))
       .limit(1);
     return !!result;
+  }
+
+  // Notification methods
+  async getNotifications(userId: string): Promise<Notification[]> {
+    return await db.select().from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
+  }
+
+  async createNotification(insertNotification: InsertNotification): Promise<Notification> {
+    const [notification] = await db
+      .insert(notifications)
+      .values(insertNotification)
+      .returning();
+    return notification;
+  }
+
+  async markNotificationAsRead(id: string): Promise<boolean> {
+    const result = await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getUnreadNotificationCount(userId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false)
+      ));
+    return result.count;
+  }
+
+  async getUnreadMessageCount(userId: string): Promise<number> {
+    // Get all chat rooms where user is participant
+    const userRooms = await db.select().from(chatRooms)
+      .where(or(
+        eq(chatRooms.buyerId, userId),
+        eq(chatRooms.sellerId, userId)
+      ));
+
+    if (userRooms.length === 0) return 0;
+
+    const roomIds = userRooms.map(r => r.id);
+    
+    // Count unread messages in user's rooms where sender is not the user
+    const messageConditions = [
+      eq(messages.isRead, false),
+      sql`${messages.senderId} != ${userId}`
+    ];
+
+    // Add room ID condition
+    if (roomIds.length > 0) {
+      const roomIdCondition = roomIds.map(id => eq(messages.roomId, id));
+      messageConditions.push(or(...roomIdCondition));
+    }
+
+    const [result] = await db
+      .select({ count: count() })
+      .from(messages)
+      .where(and(...messageConditions));
+
+    return result.count;
   }
 }
 
