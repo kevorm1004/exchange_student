@@ -33,9 +33,11 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useExchangeRates } from "@/hooks/use-exchange";
+import { useFavorites } from "@/hooks/use-favorites";
 import { apiRequest } from "@/lib/queryClient";
 import type { Item } from "@shared/schema";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 const formatTimeAgo = (date: Date) => {
   const now = new Date();
@@ -56,6 +58,16 @@ export default function ItemDetail() {
   const [reportReason, setReportReason] = useState("");
   const [reportDescription, setReportDescription] = useState("");
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const { toast } = useToast();
+  
+  // Favorites functionality
+  const { 
+    isFavorited, 
+    addFavorite, 
+    removeFavorite, 
+    isAddingFavorite, 
+    isRemovingFavorite 
+  } = useFavorites();
 
   const { data: item, isLoading } = useQuery<Item>({
     queryKey: ["/api/items", id],
@@ -92,7 +104,44 @@ export default function ItemDetail() {
     }
   };
 
-  const { toast } = useToast();
+  // Handle favorite toggle
+  const handleFavoriteClick = async () => {
+    if (!user) {
+      toast({
+        title: "로그인 필요",
+        description: "관심 상품 기능을 사용하려면 로그인하세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!id) return;
+
+    try {
+      const isCurrentlyFavorited = isFavorited(id);
+      
+      if (isCurrentlyFavorited) {
+        await removeFavorite(id);
+        toast({
+          title: "관심 상품에서 제거되었습니다",
+          variant: "default",
+        });
+      } else {
+        await addFavorite(id);
+        toast({
+          title: "관심 상품에 추가되었습니다",
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.error('Favorite toggle error:', error);
+      toast({
+        title: "오류가 발생했습니다",
+        description: error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const createChatRoomMutation = useMutation({
     mutationFn: async () => {
@@ -397,13 +446,14 @@ export default function ItemDetail() {
             variant="outline" 
             size="lg"
             className="flex-1 h-12"
-            onClick={() => {
-              // TODO: Toggle favorite functionality
-              console.log('Toggle favorite');
-            }}
+            onClick={handleFavoriteClick}
+            disabled={isAddingFavorite || isRemovingFavorite}
           >
-            <Heart className="w-5 h-5 mr-2" />
-            찜하기
+            <Heart className={cn(
+              "w-5 h-5 mr-2",
+              id && isFavorited(id) ? "fill-red-500 text-red-500" : "fill-none"
+            )} />
+            {id && isFavorited(id) ? "찜 해제" : "찜하기"}
           </Button>
           <Button 
             size="lg"
