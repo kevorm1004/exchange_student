@@ -16,11 +16,26 @@ export function useFavorites() {
 
   const addFavoriteMutation = useMutation({
     mutationFn: async (itemId: string) => {
-      return apiRequest('/api/favorites', {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch('/api/favorites', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ itemId }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      return response.json();
     },
     onMutate: async (itemId: string) => {
       // Cancel any outgoing refetches
@@ -54,9 +69,24 @@ export function useFavorites() {
 
   const removeFavoriteMutation = useMutation({
     mutationFn: async (itemId: string) => {
-      return apiRequest(`/api/favorites/${itemId}`, {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch(`/api/favorites/${itemId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      return response.status === 204 ? null : response.json();
     },
     onMutate: async (itemId: string) => {
       // Cancel any outgoing refetches
@@ -84,8 +114,23 @@ export function useFavorites() {
 
   const checkFavoriteMutation = useMutation({
     mutationFn: async (itemId: string) => {
-      const response = await apiRequest(`/api/favorites/check/${itemId}`);
-      return response.isFavorited;
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch(`/api/favorites/check/${itemId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.isFavorited;
     },
   });
 

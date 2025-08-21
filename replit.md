@@ -35,6 +35,14 @@ This is a modern mobile-first marketplace web application designed for students 
   - Created meeting creation form with semester selection (year + semester dropdown)
   - Built story posts with traditional list layout showing images, views, and comments
   - Added database seeding for community test data with both story and meeting posts
+- **Favorites System and Exchange Rate Implementation (January 21, 2025)**:
+  - Added complete favorites system with database schema, API endpoints, and React hooks
+  - Implemented automatic exchange rate service with daily updates via cron jobs
+  - Enhanced ItemCard component with heart functionality and real-time currency conversion
+  - Created dedicated favorites page with search and complete CRUD operations
+  - Added My page integration for accessing favorites
+  - Fixed authentication issues in favorites API calls with proper JWT token handling
+  - Implemented fallback rates for exchange service reliability
 
 # User Preferences
 

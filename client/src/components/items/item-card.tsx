@@ -123,13 +123,18 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
     }
 
     try {
+      console.log('Toggling favorite for item:', item.id);
+      console.log('Current favorite status:', isItemFavorited);
+      
       if (isItemFavorited) {
+        console.log('Removing from favorites...');
         await removeFavorite(item.id);
         toast({
           title: "관심 상품에서 제거되었습니다",
           variant: "default",
         });
       } else {
+        console.log('Adding to favorites...');
         await addFavorite(item.id);
         toast({
           title: "관심 상품에 추가되었습니다",
@@ -140,9 +145,10 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
       // Also call external handler if provided
       onToggleFavorite?.(item.id);
     } catch (error) {
+      console.error('Favorite toggle error:', error);
       toast({
         title: "오류가 발생했습니다",
-        description: "잠시 후 다시 시도해주세요.",
+        description: error instanceof Error ? error.message : "잠시 후 다시 시도해주세요.",
         variant: "destructive",
       });
     }
