@@ -39,6 +39,8 @@ export default function Home() {
       return lastPage.length === 10 ? allPages.length : undefined;
     },
     initialPageParam: 0,
+    // Keep previous data while fetching to prevent flicker
+    placeholderData: (previousData) => previousData,
   });
 
   const items = data?.pages.flat() || [];

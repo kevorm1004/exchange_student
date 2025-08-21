@@ -581,6 +581,65 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(chatRooms).where(eq(chatRooms.id, roomId));
     return result.rowCount > 0;
   }
+
+  // Favorites operations
+  async getUserFavorites(userId: string): Promise<any[]> {
+    const favoriteItems = await db.select({
+      id: favorites.id,
+      itemId: favorites.itemId,
+      createdAt: favorites.createdAt,
+      item: {
+        id: items.id,
+        title: items.title,
+        price: items.price,
+        currency: items.currency,
+        images: items.images,
+        status: items.status,
+        location: items.location,
+        createdAt: items.createdAt,
+        seller: {
+          id: users.id,
+          username: users.username,
+          school: users.school,
+          country: users.country
+        }
+      }
+    })
+    .from(favorites)
+    .leftJoin(items, eq(favorites.itemId, items.id))
+    .leftJoin(users, eq(items.sellerId, users.id))
+    .where(eq(favorites.userId, userId))
+    .orderBy(desc(favorites.createdAt));
+
+    return favoriteItems;
+  }
+
+  async addFavorite(userId: string, itemId: string): Promise<any> {
+    const [favorite] = await db.insert(favorites)
+      .values({ userId, itemId })
+      .returning();
+    return favorite;
+  }
+
+  async removeFavorite(userId: string, itemId: string): Promise<boolean> {
+    const result = await db.delete(favorites)
+      .where(and(
+        eq(favorites.userId, userId),
+        eq(favorites.itemId, itemId)
+      ));
+    return result.rowCount > 0;
+  }
+
+  async isFavorited(userId: string, itemId: string): Promise<boolean> {
+    const [result] = await db.select()
+      .from(favorites)
+      .where(and(
+        eq(favorites.userId, userId),
+        eq(favorites.itemId, itemId)
+      ))
+      .limit(1);
+    return !!result;
+  }
 }
 
 export const storage = new DatabaseStorage();

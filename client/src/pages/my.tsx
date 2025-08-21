@@ -85,7 +85,7 @@ export default function MyPage() {
                 icon={Heart}
                 title="관심 상품"
                 description="찜한 상품 목록"
-                onClick={() => navigate("/my/favorites")}
+                onClick={() => navigate("/favorites")}
               />
               <MenuItem
                 icon={MessageSquare}

@@ -27,6 +27,7 @@ import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
 import CommunityCreate from "@/pages/community-create";
 import CommunityDetail from "@/pages/community-detail";
+import Favorites from "@/pages/favorites";
 
 import BottomNav from "@/components/layout/bottom-nav";
 
@@ -87,6 +88,7 @@ function Router() {
         <Route path="/community/create" component={CommunityCreate} />
         <Route path="/my" component={MyPage} />
         <Route path="/profile" component={Profile} />
+        <Route path="/favorites" component={Favorites} />
         <Route path="/items/create" component={CreateItem} />
         <Route path="/items/:id" component={ItemDetail} />
         <Route path="/admin" component={AdminLogin} />

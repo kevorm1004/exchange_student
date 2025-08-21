@@ -7,6 +7,7 @@ import session from "express-session";
 import passport from "./passport-config";
 import { storage } from "./storage";
 import { seedDatabase } from "./seed";
+import './exchange'; // Initialize exchange service
 import { 
   registerSchema,
   insertItemSchema,
@@ -1037,6 +1038,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Get comments error:', error);
       res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  // Exchange rate endpoints
+  app.get('/api/exchange', async (req, res) => {
+    try {
+      const { exchangeService } = await import('./exchange');
+      const rates = exchangeService.getRates();
+      const lastUpdate = exchangeService.getLastUpdate();
+      
+      res.json({
+        rates,
+        lastUpdate: lastUpdate?.toISOString() || null,
+        baseCurrency: 'KRW'
+      });
+    } catch (error) {
+      console.error('Get exchange rates error:', error);
+      res.status(500).json({ error: 'Failed to fetch exchange rates' });
+    }
+  });
+
+  app.post('/api/exchange/refresh', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      // Check if user is admin
+      const user = await storage.getUser(req.user!.id);
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { exchangeService } = await import('./exchange');
+      const success = await exchangeService.updateRates();
+      
+      if (success) {
+        const rates = exchangeService.getRates();
+        const lastUpdate = exchangeService.getLastUpdate();
+        
+        res.json({
+          message: 'Exchange rates updated successfully',
+          rates,
+          lastUpdate: lastUpdate?.toISOString() || null,
+          baseCurrency: 'KRW'
+        });
+      } else {
+        res.status(500).json({ error: 'Failed to update exchange rates' });
+      }
+    } catch (error) {
+      console.error('Refresh exchange rates error:', error);
+      res.status(500).json({ error: 'Failed to refresh exchange rates' });
+    }
+  });
+
+  // Favorites endpoints
+  app.get('/api/favorites', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const favorites = await storage.getUserFavorites(req.user!.id);
+      res.json(favorites);
+    } catch (error) {
+      console.error('Get favorites error:', error);
+      res.status(500).json({ error: 'Failed to fetch favorites' });
+    }
+  });
+
+  app.post('/api/favorites', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { itemId } = req.body;
+      
+      if (!itemId) {
+        return res.status(400).json({ error: 'Item ID is required' });
+      }
+
+      // Check if item exists
+      const item = await storage.getItem(itemId);
+      if (!item) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+
+      const favorite = await storage.addFavorite(req.user!.id, itemId);
+      res.status(201).json(favorite);
+    } catch (error) {
+      console.error('Add favorite error:', error);
+      if (error instanceof Error && error.message.includes('duplicate key')) {
+        res.status(409).json({ error: 'Item already in favorites' });
+      } else {
+        res.status(500).json({ error: 'Failed to add favorite' });
+      }
+    }
+  });
+
+  app.delete('/api/favorites/:itemId', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { itemId } = req.params;
+      const success = await storage.removeFavorite(req.user!.id, itemId);
+      
+      if (success) {
+        res.status(204).send();
+      } else {
+        res.status(404).json({ error: 'Favorite not found' });
+      }
+    } catch (error) {
+      console.error('Remove favorite error:', error);
+      res.status(500).json({ error: 'Failed to remove favorite' });
+    }
+  });
+
+  app.get('/api/favorites/check/:itemId', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { itemId } = req.params;
+      const isFavorited = await storage.isFavorited(req.user!.id, itemId);
+      res.json({ isFavorited });
+    } catch (error) {
+      console.error('Check favorite error:', error);
+      res.status(500).json({ error: 'Failed to check favorite status' });
     }
   });
 

@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useFavorites } from "@/hooks/use-favorites";
+import { useExchangeRates } from "@/hooks/use-exchange";
+import { useToast } from "@/hooks/use-toast";
 import type { Item } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
@@ -55,9 +58,21 @@ interface ItemCardProps {
 export default function ItemCard({ item, isFavorite = false, onToggleFavorite, variant = "default", onItemClick }: ItemCardProps) {
   const [, navigate] = useLocation();
   const { user } = useAuth();
+  const { formatPrice } = useExchangeRates();
+  const { toast } = useToast();
+  const { 
+    isFavorited, 
+    addFavorite, 
+    removeFavorite, 
+    isAddingFavorite, 
+    isRemovingFavorite 
+  } = useFavorites();
   
-  // 가격 표시 (원래 통화를 KRW로 환산)
-  const displayPrice = formatCurrency(parseFloat(item.price), (item as any).currency || 'KRW');
+  // 가격 표시 (환율 서비스 사용)
+  const displayPrice = formatPrice(parseFloat(item.price), (item as any).currency || 'KRW');
+  
+  // 내부 관심 상품 상태
+  const isItemFavorited = isFavorite || isFavorited(item.id);
 
   // 상품 상태 확인
   const getItemStatus = (item: Item) => {
@@ -95,9 +110,42 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
     navigate(`/items/${item.id}`);
   };
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    onToggleFavorite?.(item.id);
+    
+    if (!user) {
+      toast({
+        title: "로그인 필요",
+        description: "관심 상품 기능을 사용하려면 로그인하세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (isItemFavorited) {
+        await removeFavorite(item.id);
+        toast({
+          title: "관심 상품에서 제거되었습니다",
+          variant: "default",
+        });
+      } else {
+        await addFavorite(item.id);
+        toast({
+          title: "관심 상품에 추가되었습니다",
+          variant: "default",
+        });
+      }
+      
+      // Also call external handler if provided
+      onToggleFavorite?.(item.id);
+    } catch (error) {
+      toast({
+        title: "오류가 발생했습니다",
+        description: "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
   const distance = user ? calculateDistance(user.school, item.school) : "알 수 없음";
@@ -122,11 +170,13 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
               size="sm"
               className="absolute top-2 right-2 text-gray-600 hover:text-red-500 p-1 bg-white rounded-full shadow-sm"
               onClick={handleFavoriteClick}
+              disabled={isAddingFavorite || isRemovingFavorite}
             >
               <Heart 
                 className={cn(
                   "h-4 w-4",
-                  isFavorite ? "fill-red-500 text-red-500" : "fill-none"
+                  isItemFavorited ? "fill-red-500 text-red-500" : "fill-none",
+                  (isAddingFavorite || isRemovingFavorite) && "opacity-50"
                 )} 
               />
             </Button>
@@ -197,11 +247,13 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
                 size="sm"
                 className="absolute -top-2 -right-2 text-gray-600 hover:text-red-500 p-1 bg-white rounded-full shadow-sm"
                 onClick={handleFavoriteClick}
+                disabled={isAddingFavorite || isRemovingFavorite}
               >
                 <Heart 
                   className={cn(
                     "h-4 w-4",
-                    isFavorite ? "fill-red-500 text-red-500" : "fill-none"
+                    isItemFavorited ? "fill-red-500 text-red-500" : "fill-none",
+                    (isAddingFavorite || isRemovingFavorite) && "opacity-50"
                   )} 
                 />
               </Button>
