@@ -752,11 +752,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Chat routes
   app.get('/api/chat/rooms', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const rooms = await storage.getChatRooms(req.user!.id);
+      const userId = req.user!.id;
+      console.log(`Fetching chat rooms for user: ${userId}`);
+      
+      const rooms = await storage.getChatRooms(userId);
+      console.log(`Found ${rooms.length} rooms for user ${userId}`);
+      
+      // Double check: ensure user is participant in each room
+      const validRooms = rooms.filter(room => 
+        room.buyerId === userId || room.sellerId === userId
+      );
+      
+      if (validRooms.length !== rooms.length) {
+        console.warn(`Filtered out ${rooms.length - validRooms.length} invalid rooms for user ${userId}`);
+      }
       
       // Get detailed room info with user and item data
       const detailedRooms = await Promise.all(
-        rooms.map(async (room) => {
+        validRooms.map(async (room) => {
           const [item, buyer, seller] = await Promise.all([
             storage.getItem(room.itemId),
             storage.getUser(room.buyerId),
@@ -815,18 +828,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/chat/rooms/:roomId/messages', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const { roomId } = req.params;
+      const userId = req.user!.id;
+      
       const room = await storage.getChatRoom(roomId);
       
       if (!room) {
+        console.warn(`Room not found: ${roomId} requested by user: ${userId}`);
         return res.status(404).json({ error: 'Chat room not found' });
       }
       
       // Check if user is participant
-      if (room.buyerId !== req.user!.id && room.sellerId !== req.user!.id) {
-        return res.status(403).json({ error: 'Access denied' });
+      if (room.buyerId !== userId && room.sellerId !== userId) {
+        console.warn(`Access denied: User ${userId} tried to access room ${roomId} (buyer: ${room.buyerId}, seller: ${room.sellerId})`);
+        return res.status(403).json({ error: 'Access denied - You are not a participant in this chat room' });
       }
       
       const messages = await storage.getChatRoomMessages(roomId);
+      console.log(`Returning ${messages.length} messages for room ${roomId} to user ${userId}`);
       res.json(messages);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -838,6 +856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { roomId } = req.params;
       const { content } = req.body;
+      const userId = req.user!.id;
       
       if (!content || !content.trim()) {
         return res.status(400).json({ error: 'Message content is required' });
@@ -845,24 +864,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const room = await storage.getChatRoom(roomId);
       if (!room) {
+        console.warn(`Room not found: ${roomId} for message from user: ${userId}`);
         return res.status(404).json({ error: 'Chat room not found' });
       }
       
       // Check if user is participant
-      if (room.buyerId !== req.user!.id && room.sellerId !== req.user!.id) {
-        return res.status(403).json({ error: 'Access denied' });
+      if (room.buyerId !== userId && room.sellerId !== userId) {
+        console.warn(`Access denied: User ${userId} tried to send message to room ${roomId} (buyer: ${room.buyerId}, seller: ${room.sellerId})`);
+        return res.status(403).json({ error: 'Access denied - You are not a participant in this chat room' });
       }
       
       const message = await storage.createMessage({
         roomId,
-        senderId: req.user!.id,
+        senderId: userId,
         content: content.trim(),
         messageType: 'text'
       });
       
+      console.log(`Message created by user ${userId} in room ${roomId}`);
+      
       // Broadcast to room participants via WebSocket
-      [room.buyerId, room.sellerId].forEach(userId => {
-        const client = clients.get(userId);
+      [room.buyerId, room.sellerId].forEach(participantId => {
+        const client = clients.get(participantId);
         if (client && client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({
             type: 'new_message',
