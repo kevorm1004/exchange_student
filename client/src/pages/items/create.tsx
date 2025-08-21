@@ -19,9 +19,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { insertItemSchema, type InsertItem } from "@shared/schema";
-import { formatCurrency } from "@/lib/currency";
 import { COUNTRIES } from "@/lib/countries";
 import { cn } from "@/lib/utils";
+import { useExchangeRates } from "@/hooks/use-exchange";
 
 
 
@@ -61,6 +61,7 @@ export default function CreateItem() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { user } = useRequireAuth();
+  const { formatPrice } = useExchangeRates();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -583,7 +584,7 @@ export default function CreateItem() {
                     <Input
                       placeholder="0"
                       type="text"
-                      value={convertedPrice > 0 ? `₩${Math.round(convertedPrice).toLocaleString()}` : ""}
+                      value={priceValue ? formatPrice(parseFloat(priceValue), selectedCurrency.code) : ""}
                       readOnly
                       className="flex-1 bg-gray-50 text-gray-600"
                     />
