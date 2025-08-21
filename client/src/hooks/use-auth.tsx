@@ -32,6 +32,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = (newToken: string, newUser: User) => {
+    // Clear all previous session data to prevent conflicts
+    localStorage.clear();
+    
     setToken(newToken);
     setUser(newUser);
     localStorage.setItem("token", newToken);

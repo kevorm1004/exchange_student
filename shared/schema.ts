@@ -28,6 +28,7 @@ export const items = pgTable("items", {
   description: text("description").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   condition: text("condition").notNull(),
+  category: text("category").default("전자기기").notNull(), // 카테고리 필드 추가
   images: text("images").array().notNull().default(sql`'{}'::text[]`),
   sellerId: text("seller_id").notNull().references(() => users.id),
   school: text("school").notNull(),

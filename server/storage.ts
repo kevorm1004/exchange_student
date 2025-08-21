@@ -142,14 +142,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUser(id: string, updateData: Partial<User>): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set(updateData)
-      .where(eq(users.id, id))
-      .returning();
-    return user;
-  }
+  // Removed duplicate - see updateUser method at line 547
 
   async getItems(): Promise<Item[]> {
     return await db.select().from(items).orderBy(desc(items.createdAt));
@@ -438,9 +431,9 @@ export class DatabaseStorage implements IStorage {
 
   // Admin methods
   async getAdminStats() {
-    const [usersCount] = await db.select({ count: db.count() }).from(users);
-    const [itemsCount] = await db.select({ count: db.count() }).from(items);
-    const [messagesCount] = await db.select({ count: db.count() }).from(messages);
+    const [usersCount] = await db.select({ count: count() }).from(users);
+    const [itemsCount] = await db.select({ count: count() }).from(items);
+    const [messagesCount] = await db.select({ count: count() }).from(messages);
     
     const totalUsers = usersCount.count;
     const totalItems = itemsCount.count;
@@ -448,8 +441,8 @@ export class DatabaseStorage implements IStorage {
     const activeUsers = totalUsers; // Simplified for now
     
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const recentItems = await db.select({ count: db.count() }).from(items)
-      .where(items.createdAt >= sevenDaysAgo);
+    const [recentItemsResult] = await db.select({ count: count() }).from(items)
+      .where(sql`${items.createdAt} >= ${sevenDaysAgo}`);
     
     // Popular categories (simplified)
     const popularCategories = [
@@ -465,7 +458,7 @@ export class DatabaseStorage implements IStorage {
       totalItems,
       totalMessages,
       activeUsers,
-      recentItems: recentItems[0].count,
+      recentItems: recentItemsResult.count,
       popularCategories
     };
   }
@@ -476,8 +469,8 @@ export class DatabaseStorage implements IStorage {
     
     const dailyVisitors = Math.floor(Math.random() * 100) + 50;
     
-    const [dailyItems] = await db.select({ count: db.count() }).from(items)
-      .where(items.createdAt >= todayStart);
+    const [dailyItems] = await db.select({ count: count() }).from(items)
+      .where(sql`${items.createdAt} >= ${todayStart}`);
     
     const dailyCompletedTrades = Math.floor(Math.random() * 10) + 5;
     
@@ -490,11 +483,8 @@ export class DatabaseStorage implements IStorage {
       const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
       
-      const [itemsCount] = await db.select({ count: db.count() }).from(items)
-        .where(and(
-          items.createdAt >= dayStart,
-          items.createdAt < dayEnd
-        ));
+      const [itemsCount] = await db.select({ count: count() }).from(items)
+        .where(sql`${items.createdAt} >= ${dayStart} AND ${items.createdAt} < ${dayEnd}`);
       
       weeklyStats.push({
         date: dateStr,
@@ -506,7 +496,7 @@ export class DatabaseStorage implements IStorage {
     
     return {
       dailyVisitors,
-      dailyItemRegistrations: dailyItems[0].count,
+      dailyItemRegistrations: dailyItems.count,
       dailyCompletedTrades,
       weeklyStats
     };
