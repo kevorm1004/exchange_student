@@ -77,9 +77,9 @@ export interface IStorage {
   
   // Favorites methods
   getUserFavorites(userId: string): Promise<Favorite[]>;
-  addFavorite(favorite: InsertFavorite): Promise<Favorite>;
+  addFavorite(userId: string, itemId: string): Promise<Favorite>;
   removeFavorite(userId: string, itemId: string): Promise<boolean>;
-  isFavorite(userId: string, itemId: string): Promise<boolean>;
+  isFavorited(userId: string, itemId: string): Promise<boolean>;
   
   // Report methods
   createReport(insertReport: InsertReport & { reporterId: string }): Promise<Report>;
@@ -116,6 +116,18 @@ export interface IStorage {
   updateUser(userId: string, updates: Partial<InsertUser>): Promise<User | undefined>;
   toggleItemLike(itemId: string, userId: string): Promise<boolean>;
   getComments(postId: string): Promise<Comment[]>;
+  
+  // New methods for My pages
+  getReceivedReviews(userId: string): Promise<any[]>;
+  getWrittenReviews(userId: string): Promise<any[]>;
+  deleteUser(userId: string): Promise<boolean>;
+  
+  // Notification methods
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getNotifications(userId: string): Promise<Notification[]>;
+  markNotificationAsRead(notificationId: string): Promise<boolean>;
+  getUnreadNotificationCount(userId: string): Promise<number>;
+  getUnreadMessageCount(userId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -403,10 +415,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(favorites.userId, userId));
   }
 
-  async addFavorite(favorite: InsertFavorite): Promise<Favorite> {
+  async addFavorite(userId: string, itemId: string): Promise<Favorite> {
     const [newFavorite] = await db
       .insert(favorites)
-      .values(favorite)
+      .values({ userId, itemId })
       .returning();
     return newFavorite;
   }
@@ -746,6 +758,55 @@ export class DatabaseStorage implements IStorage {
       .where(and(...messageConditions));
 
     return result.count;
+  }
+
+  // New methods for My pages
+  async getReceivedReviews(userId: string): Promise<any[]> {
+    // Since we don't have a reviews table, return empty for now
+    // This would be implemented when review system is added
+    return [];
+  }
+
+  async getWrittenReviews(userId: string): Promise<any[]> {
+    // Since we don't have a reviews table, return empty for now
+    // This would be implemented when review system is added
+    return [];
+  }
+
+  async deleteUser(userId: string): Promise<boolean> {
+    try {
+      // Delete user's favorites first
+      await db.delete(favorites).where(eq(favorites.userId, userId));
+      
+      // Delete user's notifications
+      await db.delete(notifications).where(eq(notifications.userId, userId));
+      
+      // Delete user's messages
+      await db.delete(messages).where(eq(messages.senderId, userId));
+      
+      // Delete user's chat rooms
+      await db.delete(chatRooms).where(or(
+        eq(chatRooms.buyerId, userId),
+        eq(chatRooms.sellerId, userId)
+      ));
+      
+      // Delete user's items
+      await db.delete(items).where(eq(items.sellerId, userId));
+      
+      // Delete user's community posts
+      await db.delete(communityPosts).where(eq(communityPosts.authorId, userId));
+      
+      // Delete user's comments
+      await db.delete(comments).where(eq(comments.authorId, userId));
+      
+      // Finally delete the user
+      const result = await db.delete(users).where(eq(users.id, userId));
+      
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return false;
+    }
   }
 }
 

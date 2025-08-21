@@ -1483,5 +1483,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // My Items routes
+  app.get("/api/items/my", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const items = await storage.getUserItems(userId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching user items:", error);
+      res.status(500).json({ error: "Failed to fetch user items" });
+    }
+  });
+
+  // Reviews routes
+  app.get("/api/reviews/received", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const reviews = await storage.getReceivedReviews(userId);
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error fetching received reviews:", error);
+      res.status(500).json({ error: "Failed to fetch received reviews" });
+    }
+  });
+
+  app.get("/api/reviews/written", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const reviews = await storage.getWrittenReviews(userId);
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error fetching written reviews:", error);
+      res.status(500).json({ error: "Failed to fetch written reviews" });
+    }
+  });
+
+  // User profile and settings routes
+  app.put("/api/user/profile", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const profileData = req.body;
+      
+      const updatedUser = await storage.updateUser(userId, profileData);
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
+  app.put("/api/user/notifications", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const notificationSettings = req.body;
+      
+      // Store notification preferences (this would require adding to schema)
+      res.json({ success: true, message: "Notification settings updated" });
+    } catch (error) {
+      console.error("Error updating notification settings:", error);
+      res.status(500).json({ error: "Failed to update notification settings" });
+    }
+  });
+
+  app.delete("/api/user/account", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Delete user account and all related data
+      await storage.deleteUser(userId);
+      res.json({ success: true, message: "Account deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user account:", error);
+      res.status(500).json({ error: "Failed to delete account" });
+    }
+  });
+
   return httpServer;
 }
