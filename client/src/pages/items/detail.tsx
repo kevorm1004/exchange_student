@@ -307,7 +307,7 @@ export default function ItemDetail() {
             
             <div className="flex items-center text-gray-600 text-sm mb-4">
               <MapPin className="w-4 h-4 mr-1" />
-              <span>{item.location}</span>
+              <span>{item.country}, {item.location}</span>
               <span className="mx-2">•</span>
               <span>{formatTimeAgo(new Date(item.createdAt))}</span>
             </div>
@@ -325,7 +325,17 @@ export default function ItemDetail() {
                 </div>
                 <div>
                   <span className="text-gray-500">거래 방식</span>
-                  <p className="font-medium">직거래</p>
+                  <p className="font-medium">{item.deliveryMethod || "직거래"}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm mt-4">
+                <div>
+                  <span className="text-gray-500">거래 국가</span>
+                  <p className="font-medium">{item.country}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500">거래 장소</span>
+                  <p className="font-medium">{item.location}</p>
                 </div>
               </div>
             </div>
