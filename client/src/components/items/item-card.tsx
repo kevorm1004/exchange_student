@@ -123,18 +123,13 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
     }
 
     try {
-      console.log('Toggling favorite for item:', item.id);
-      console.log('Current favorite status:', isItemFavorited);
-      
       if (isItemFavorited) {
-        console.log('Removing from favorites...');
         await removeFavorite(item.id);
         toast({
           title: "관심 상품에서 제거되었습니다",
           variant: "default",
         });
       } else {
-        console.log('Adding to favorites...');
         await addFavorite(item.id);
         toast({
           title: "관심 상품에 추가되었습니다",

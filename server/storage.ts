@@ -507,13 +507,13 @@ export class DatabaseStorage implements IStorage {
 
   async toggleItemLike(itemId: string, userId: string): Promise<boolean> {
     // Check if already liked
-    const existingFavorite = await this.isFavorite(userId, itemId);
+    const existingFavorite = await this.isFavorited(userId, itemId);
     
     if (existingFavorite) {
       await this.removeFavorite(userId, itemId);
       return false;
     } else {
-      await this.addFavorite({ userId, itemId });
+      await this.addFavorite(userId, itemId);
       return true;
     }
   }

@@ -28,37 +28,43 @@ class ClientExchangeService {
       SGD: 'S$',
     };
 
-    const symbol = symbols[currency] || currency;
+    // If currency is already KRW, show KRW only
+    if (currency === 'KRW') {
+      return `₩${Math.round(amount).toLocaleString()}`;
+    }
 
-    // If we don't have exchange data or currency is already KRW, format normally
-    if (!this.exchangeData || currency === 'KRW') {
-      if (currency === 'KRW' || currency === 'JPY') {
-        return `${symbol}${Math.round(amount).toLocaleString()}`;
+    // If we don't have exchange data, show original currency only
+    if (!this.exchangeData) {
+      const symbol = symbols[currency] || currency;
+      if (currency === 'JPY') {
+        return `¥${Math.round(amount).toLocaleString()}`;
       }
       return `${symbol}${amount.toFixed(2)}`;
     }
 
-    // Convert to KRW and show both currencies
+    // Convert to KRW and show KRW as primary with original in parentheses
     try {
       const krwAmount = this.convert(amount, currency, 'KRW');
+      const symbol = symbols[currency] || currency;
       
-      // Format original currency
+      // Format KRW amount as primary
+      const krwPrice = `${Math.round(krwAmount).toLocaleString()}원`;
+      
+      // Format original currency in parentheses
       let originalPrice = '';
       if (currency === 'JPY') {
-        originalPrice = `${symbol}${Math.round(amount).toLocaleString()}`;
+        originalPrice = `¥${Math.round(amount).toLocaleString()}`;
       } else {
         originalPrice = `${symbol}${amount.toFixed(2)}`;
       }
       
-      // Format KRW amount
-      const krwPrice = `₩${Math.round(krwAmount).toLocaleString()}`;
-      
-      return `${originalPrice} (${krwPrice})`;
+      return `${krwPrice} (${originalPrice})`;
     } catch (error) {
       console.warn(`Currency conversion failed for ${currency}:`, error);
       // Fallback to original currency only
-      if (currency === 'KRW' || currency === 'JPY') {
-        return `${symbol}${Math.round(amount).toLocaleString()}`;
+      const symbol = symbols[currency] || currency;
+      if (currency === 'JPY') {
+        return `¥${Math.round(amount).toLocaleString()}`;
       }
       return `${symbol}${amount.toFixed(2)}`;
     }
