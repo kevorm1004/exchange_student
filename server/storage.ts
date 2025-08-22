@@ -90,6 +90,9 @@ export interface IStorage {
     itemsPosted: number;
     itemsSold: number;
     itemsPurchased: number;
+    sellingStat: number;
+    soldStat: number;
+    purchasedStat: number;
   }>;
   
   // Chat room management
@@ -807,6 +810,65 @@ export class DatabaseStorage implements IStorage {
       console.error('Error deleting user:', error);
       return false;
     }
+  }
+
+  async getUserStats(userId: string): Promise<{
+    itemsPosted: number;
+    itemsSold: number;
+    itemsPurchased: number;
+    sellingStat: number;
+    soldStat: number;
+    purchasedStat: number;
+  }> {
+    // Get items posted by user
+    const [itemsPostedResult] = await db
+      .select({ count: count() })
+      .from(items)
+      .where(eq(items.sellerId, userId));
+
+    // Get items sold by user (거래완료 status)
+    const [itemsSoldResult] = await db
+      .select({ count: count() })
+      .from(items)
+      .where(and(
+        eq(items.sellerId, userId),
+        eq(items.status, "거래완료")
+      ));
+
+    // Get currently selling items (거래가능 status)
+    const [sellingResult] = await db
+      .select({ count: count() })
+      .from(items)
+      .where(and(
+        eq(items.sellerId, userId),
+        eq(items.status, "거래가능")
+      ));
+
+    // For purchases, we would need to track buyers in a separate table or in chat rooms
+    // For now, use chat rooms where user is buyer as approximation
+    const [chatRoomsAsBuyer] = await db
+      .select({ count: count() })
+      .from(chatRooms)
+      .where(eq(chatRooms.buyerId, userId));
+
+    // Get completed purchases (items from chat rooms where user is buyer and item status is 거래완료)
+    const chatRoomsWithCompletedItems = await db
+      .select({ count: count() })
+      .from(chatRooms)
+      .innerJoin(items, eq(items.id, chatRooms.itemId))
+      .where(and(
+        eq(chatRooms.buyerId, userId),
+        eq(items.status, "거래완료")
+      ));
+
+    return {
+      itemsPosted: itemsPostedResult.count,
+      itemsSold: itemsSoldResult.count,
+      itemsPurchased: chatRoomsAsBuyer.count,
+      sellingStat: sellingResult.count, // 판매중
+      soldStat: itemsSoldResult.count,   // 판매완료
+      purchasedStat: chatRoomsWithCompletedItems[0]?.count || 0, // 구매완료
+    };
   }
 }
 

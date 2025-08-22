@@ -1563,5 +1563,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User statistics route
+  app.get("/api/users/stats", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const stats = await storage.getUserStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+      res.status(500).json({ error: "Failed to fetch user stats" });
+    }
+  });
+
   return httpServer;
 }

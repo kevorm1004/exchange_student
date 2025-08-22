@@ -90,6 +90,7 @@ function Router() {
         <Route path="/community/create" component={CommunityCreate} />
         <Route path="/my" component={MyPage} />
         <Route path="/my/items" component={lazy(() => import("@/pages/my/items"))} />
+        <Route path="/my/favorites" component={lazy(() => import("@/pages/my/favorites"))} />
         <Route path="/my/reviews" component={lazy(() => import("@/pages/my/reviews"))} />
         <Route path="/settings" component={lazy(() => import("@/pages/settings"))} />
         <Route path="/profile" component={Profile} />

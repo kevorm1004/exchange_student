@@ -1,23 +1,39 @@
 import { User, Settings, Heart, MessageSquare, Package, Star, LogOut, Edit } from "lucide-react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
-// import { formatCurrency } from "@/lib/currency";
+import { useToast } from "@/hooks/use-toast";
 
 export default function MyPage() {
   const [, navigate] = useLocation();
   const { user, logout } = useAuth();
+  const { toast } = useToast();
+
+  // Fetch user statistics
+  const { data: stats, isLoading: isStatsLoading } = useQuery({
+    queryKey: ["/api/users/stats"],
+    enabled: !!user,
+  });
 
   if (!user) {
     navigate("/auth/login");
     return null;
   }
 
-  const handleLogout = () => {
-    logout();
-    navigate("/auth/login");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/auth/login");
+    } catch (error) {
+      toast({
+        title: "로그아웃 실패",
+        description: "다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -56,15 +72,21 @@ export default function MyPage() {
           <CardContent>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">12</div>
+                <div className="text-2xl font-bold text-primary">
+                  {isStatsLoading ? "..." : stats?.sellingStat || 0}
+                </div>
                 <div className="text-sm text-gray-600">판매중</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">8</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {isStatsLoading ? "..." : stats?.soldStat || 0}
+                </div>
                 <div className="text-sm text-gray-600">판매완료</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">5</div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {isStatsLoading ? "..." : stats?.purchasedStat || 0}
+                </div>
                 <div className="text-sm text-gray-600">구매완료</div>
               </div>
             </div>
@@ -85,7 +107,7 @@ export default function MyPage() {
                 icon={Heart}
                 title="관심 상품"
                 description="찜한 상품 목록"
-                onClick={() => navigate("/favorites")}
+                onClick={() => navigate("/my/favorites")}
               />
               <MenuItem
                 icon={MessageSquare}
