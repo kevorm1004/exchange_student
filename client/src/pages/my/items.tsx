@@ -32,15 +32,38 @@ const formatTimeAgo = (date: Date) => {
 };
 
 export default function MyItems() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { user } = useAuth();
   const { formatPrice } = useExchangeRates();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: items = [], isLoading } = useQuery<Item[]>({
+  // Parse query parameters
+  const searchParams = new URLSearchParams(location.split('?')[1] || '');
+  const statusFilter = searchParams.get('status');
+
+  const { data: allItems = [], isLoading } = useQuery<Item[]>({
     queryKey: ["/api/items/my"],
     enabled: !!user,
+  });
+
+  // Filter items based on status
+  const items = allItems.filter(item => {
+    if (!statusFilter) return true;
+    
+    const itemStatus = getItemStatus(item);
+    
+    if (statusFilter === 'selling') {
+      return itemStatus === '거래가능';
+    } else if (statusFilter === 'sold') {
+      return itemStatus === '거래완료';
+    } else if (statusFilter === 'purchased') {
+      // For purchased items, we would need a different API endpoint
+      // For now, return empty since this is seller's items
+      return false;
+    }
+    
+    return true;
   });
 
   const deleteItemMutation = useMutation({

@@ -71,24 +71,33 @@ export default function MyPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
+              <button 
+                className="text-center hover:bg-gray-50 rounded p-2 transition-colors"
+                onClick={() => navigate("/my/items?status=selling")}
+              >
                 <div className="text-2xl font-bold text-primary">
                   {isStatsLoading ? "..." : stats?.sellingStat || 0}
                 </div>
                 <div className="text-sm text-gray-600">판매중</div>
-              </div>
-              <div className="text-center">
+              </button>
+              <button 
+                className="text-center hover:bg-gray-50 rounded p-2 transition-colors"
+                onClick={() => navigate("/my/items?status=sold")}
+              >
                 <div className="text-2xl font-bold text-green-600">
                   {isStatsLoading ? "..." : stats?.soldStat || 0}
                 </div>
                 <div className="text-sm text-gray-600">판매완료</div>
-              </div>
-              <div className="text-center">
+              </button>
+              <button 
+                className="text-center hover:bg-gray-50 rounded p-2 transition-colors"
+                onClick={() => navigate("/my/items?status=purchased")}
+              >
                 <div className="text-2xl font-bold text-purple-600">
                   {isStatsLoading ? "..." : stats?.purchasedStat || 0}
                 </div>
                 <div className="text-sm text-gray-600">구매완료</div>
-              </div>
+              </button>
             </div>
           </CardContent>
         </Card>

@@ -29,6 +29,10 @@ import CommunityCreate from "@/pages/community-create";
 import CommunityDetail from "@/pages/community-detail";
 import Favorites from "@/pages/favorites";
 import NotificationsPage from "@/pages/notifications";
+import MyItems from "@/pages/my/items";
+import MyFavorites from "@/pages/my/favorites"; 
+import MyReviews from "@/pages/my/reviews";
+import SettingsPage from "@/pages/settings";
 
 import BottomNav from "@/components/layout/bottom-nav";
 
@@ -89,10 +93,10 @@ function Router() {
         <Route path="/community/post/:id" component={CommunityDetail} />
         <Route path="/community/create" component={CommunityCreate} />
         <Route path="/my" component={MyPage} />
-        <Route path="/my/items" component={lazy(() => import("@/pages/my/items"))} />
-        <Route path="/my/favorites" component={lazy(() => import("@/pages/my/favorites"))} />
-        <Route path="/my/reviews" component={lazy(() => import("@/pages/my/reviews"))} />
-        <Route path="/settings" component={lazy(() => import("@/pages/settings"))} />
+        <Route path="/my/items" component={MyItems} />
+        <Route path="/my/favorites" component={MyFavorites} />
+        <Route path="/my/reviews" component={MyReviews} />
+        <Route path="/settings" component={SettingsPage} />
         <Route path="/profile" component={Profile} />
         <Route path="/favorites" component={Favorites} />
         <Route path="/notifications" component={NotificationsPage} />
