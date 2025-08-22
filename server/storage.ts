@@ -642,28 +642,24 @@ export class DatabaseStorage implements IStorage {
   async getUserFavorites(userId: string): Promise<any[]> {
     const favoriteItems = await db.select({
       id: favorites.id,
+      userId: favorites.userId,
       itemId: favorites.itemId,
       createdAt: favorites.createdAt,
       item: {
         id: items.id,
         title: items.title,
+        description: items.description,
         price: items.price,
         currency: items.currency,
         images: items.images,
+        school: items.school,
         status: items.status,
         location: items.location,
-        createdAt: items.createdAt,
-        seller: {
-          id: users.id,
-          username: users.username,
-          school: users.school,
-          country: users.country
-        }
+        createdAt: items.createdAt
       }
     })
     .from(favorites)
     .leftJoin(items, eq(favorites.itemId, items.id))
-    .leftJoin(users, eq(items.sellerId, users.id))
     .where(eq(favorites.userId, userId))
     .orderBy(desc(favorites.createdAt));
 

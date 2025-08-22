@@ -122,7 +122,12 @@ export default function MyItems() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
-            <h1 className="text-lg font-semibold ml-3">내 상품 관리</h1>
+            <h1 className="text-lg font-semibold ml-3">
+              {statusFilter === 'selling' ? '판매중 상품' :
+               statusFilter === 'sold' ? '판매완료 상품' :
+               statusFilter === 'purchased' ? '구매완료 상품' :
+               '내 상품 관리'}
+            </h1>
           </div>
         </header>
         <div className="max-w-md mx-auto p-4">
@@ -142,7 +147,12 @@ export default function MyItems() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
-            <h1 className="text-lg font-semibold ml-3">내 상품 관리</h1>
+            <h1 className="text-lg font-semibold ml-3">
+              {statusFilter === 'selling' ? '판매중 상품' :
+               statusFilter === 'sold' ? '판매완료 상품' :
+               statusFilter === 'purchased' ? '구매완료 상품' :
+               '내 상품 관리'}
+            </h1>
           </div>
           <Link to="/items/create">
             <Button size="sm">

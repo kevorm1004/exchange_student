@@ -211,7 +211,20 @@ export type CommunityPost = typeof communityPosts.$inferSelect;
 export type InsertCommunityPost = z.infer<typeof insertCommunityPostSchema>;
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
-export type Favorite = typeof favorites.$inferSelect;
+export type Favorite = typeof favorites.$inferSelect & {
+  item?: {
+    id: string;
+    title: string;
+    description: string;
+    price: string;
+    currency?: string;
+    images: string[];
+    school: string;
+    status: string;
+    location: string;
+    createdAt: Date;
+  };
+};
 export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;

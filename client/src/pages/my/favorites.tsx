@@ -113,85 +113,67 @@ export default function MyFavorites() {
         {/* Favorites List */}
         {!isLoading && favorites.length > 0 && (
           <div className="space-y-4">
-            {favorites.map((favorite) => {
-              // Mock item data since we don't have the full item join in the API yet
-              const item = {
-                id: favorite.itemId,
-                title: "관심상품",
-                price: 0,
-                currency: "KRW",
-                images: [],
-                status: "거래가능",
-                createdAt: favorite.createdAt
-              };
-
-              return (
-                <Card key={favorite.id} className="overflow-hidden">
-                  <CardContent className="p-4">
+            {favorites.map((favorite) => (
+              <Card key={favorite.id} className="overflow-hidden">
+                <Link to={`/items/${favorite.itemId}`}>
+                  <CardContent className="p-4 hover:bg-gray-50 transition-colors">
                     <div className="flex gap-3">
                       {/* Image */}
                       <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                        <img
-                          src="/api/placeholder-image.jpg"
-                          alt={item.title}
-                          className="w-full h-full object-cover"
-                        />
+                        {favorite.item?.images && favorite.item.images.length > 0 ? (
+                          <img
+                            src={favorite.item.images[0]}
+                            alt={favorite.item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <img
+                            src="/api/placeholder-image.jpg"
+                            alt="상품 이미지"
+                            className="w-full h-full object-cover"
+                          />
+                        )}
                       </div>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 flex-1">
-                            <h3 className="font-medium text-gray-900 truncate">
-                              {item.title}
-                            </h3>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {formatTimeAgo(new Date(favorite.createdAt))}
-                            </p>
-                            <p className="text-lg font-semibold text-gray-900 mt-2">
-                              {formatPrice(item.price, item.currency)}
-                            </p>
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex gap-2">
-                            <Link href={`/items/${item.id}`}>
-                              <Button size="sm" variant="outline">
-                                <ExternalLink className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => removeFavoriteMutation.mutate(item.id)}
-                              disabled={removeFavoriteMutation.isPending}
-                            >
-                              <Heart className="h-4 w-4 fill-red-500 text-red-500" />
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* Status Badge */}
-                        <div className="mt-3">
-                          <Badge
-                            variant={
-                              item.status === "거래완료"
-                                ? "secondary"
-                                : item.status === "거래기간만료"
-                                ? "destructive"
-                                : "default"
-                            }
-                            className="text-xs"
-                          >
-                            {item.status}
+                        <h3 className="font-medium text-gray-900 truncate">
+                          {favorite.item?.title || "상품"}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                          {favorite.item?.description}
+                        </p>
+                        <div className="flex items-center justify-between mt-2">
+                          <p className="text-lg font-semibold text-primary">
+                            {formatPrice(favorite.item?.price || 0, favorite.item?.currency)}
+                          </p>
+                          <Badge variant="secondary" className="text-xs">
+                            {favorite.item?.school}
                           </Badge>
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-gray-400">
+                            {formatTimeAgo(new Date(favorite.createdAt))}
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              removeFavoriteMutation.mutate(favorite.itemId);
+                            }}
+                            disabled={removeFavoriteMutation.isPending}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 h-auto"
+                          >
+                            <Heart className="h-4 w-4 fill-current" />
+                          </Button>
                         </div>
                       </div>
                     </div>
                   </CardContent>
-                </Card>
-              );
-            })}
+                </Link>
+              </Card>
+            ))}
           </div>
         )}
       </div>
