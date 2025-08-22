@@ -145,7 +145,7 @@ export default function MyFavorites() {
                         </p>
                         <div className="flex items-center justify-between mt-2">
                           <p className="text-lg font-semibold text-primary">
-                            {formatPrice(favorite.item?.price || 0, favorite.item?.currency)}
+                            {formatPrice(Number(favorite.item?.price) || 0, favorite.item?.currency)}
                           </p>
                           <Badge variant="secondary" className="text-xs">
                             {favorite.item?.school}
