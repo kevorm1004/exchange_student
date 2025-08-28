@@ -24,7 +24,7 @@ import type { Item } from "@shared/schema";
 const formatTimeAgo = (date: Date) => {
   const now = new Date();
   const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-  
+
   if (diffInHours < 1) return "방금 전";
   if (diffInHours < 24) return `${diffInHours}시간 전`;
   if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}일 전`;
@@ -32,7 +32,7 @@ const formatTimeAgo = (date: Date) => {
 };
 
 export default function MyItems() {
-  const [location, navigate] = useLocation();
+  const [location] = useLocation();
   const { user } = useAuth();
   const { formatPrice } = useExchangeRates();
   const { toast } = useToast();
@@ -47,22 +47,37 @@ export default function MyItems() {
     enabled: !!user,
   });
 
+  const getItemStatus = (item: Item) => {
+    if (item.status === "거래완료") return "거래완료";
+    if (item.status === "거래기간만료") return "거래기간만료";
+
+    if (item.availableTo) {
+      const now = new Date();
+      const availableTo = new Date(item.availableTo);
+      if (now > availableTo) {
+        return "거래기간만료";
+      }
+    }
+
+    return "거래가능";
+  };
+
   // Filter items based on status
   const items = allItems.filter(item => {
+    // statusFilter가 없으면 모든 아이템을 보여줍니다. (수정된 부분)
     if (!statusFilter) return true;
-    
+
     const itemStatus = getItemStatus(item);
-    
+
     if (statusFilter === 'selling') {
       return itemStatus === '거래가능';
     } else if (statusFilter === 'sold') {
       return itemStatus === '거래완료';
     } else if (statusFilter === 'purchased') {
-      // For purchased items, we would need a different API endpoint
-      // For now, return empty since this is seller's items
+      // 구매 내역은 이 페이지에서 처리하지 않으므로 항상 false를 반환합니다.
       return false;
     }
-    
+
     return true;
   });
 
@@ -86,21 +101,6 @@ export default function MyItems() {
     },
   });
 
-  const getItemStatus = (item: Item) => {
-    if (item.status === "거래완료") return "거래완료";
-    if (item.status === "거래기간만료") return "거래기간만료";
-    
-    if (item.availableTo) {
-      const now = new Date();
-      const availableTo = new Date(item.availableTo);
-      if (now > availableTo) {
-        return "거래기간만료";
-      }
-    }
-    
-    return "거래가능";
-  };
-
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "거래완료":
@@ -112,6 +112,7 @@ export default function MyItems() {
     }
   };
 
+  // 이하 렌더링 로직은 동일합니다.
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -185,7 +186,7 @@ export default function MyItems() {
               return (
                 <Card key={item.id} className="p-4">
                   <div className="flex space-x-3">
-                    <Link 
+                    <Link
                       to={`/items/${item.id}`}
                       className="flex-shrink-0"
                     >
@@ -199,7 +200,7 @@ export default function MyItems() {
                         )}
                       </div>
                     </Link>
-                    
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-2">
                         <Badge className={getStatusBadgeColor(status)} variant="secondary">
@@ -237,14 +238,14 @@ export default function MyItems() {
                           </AlertDialog>
                         </div>
                       </div>
-                      
+
                       <Link to={`/items/${item.id}`}>
                         <h3 className="font-medium text-gray-900 truncate mb-1">{item.title}</h3>
                         <p className="text-lg font-bold text-primary mb-2">
                           {formatPrice(parseFloat(item.price), (item as any).currency || 'KRW')}
                         </p>
                       </Link>
-                      
+
                       <div className="flex items-center justify-between text-sm text-gray-500">
                         <span>{formatTimeAgo(new Date(item.createdAt))}</span>
                         <div className="flex items-center space-x-3">

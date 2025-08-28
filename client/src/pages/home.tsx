@@ -43,7 +43,13 @@ export default function Home() {
     placeholderData: (previousData) => previousData,
   });
 
-  const items = data?.pages.flat() || [];
+  // Flatten pages and deduplicate items by ID to prevent key conflicts
+  const items = data?.pages.flat().reduce((acc: Item[], item: Item) => {
+    if (!acc.some(existingItem => existingItem.id === item.id)) {
+      acc.push(item);
+    }
+    return acc;
+  }, []) || [];
 
   // 스크롤 위치 저장 및 복원
   useEffect(() => {

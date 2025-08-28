@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, timestamp, integer, boolean, decimal } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
@@ -28,7 +28,7 @@ export const items = pgTable("items", {
   description: text("description").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   condition: text("condition").notNull(),
-  category: text("category").default("전자기기").notNull(), // 카테고리 필드 추가
+  category: text("category").default("전자기기").notNull(),
   images: text("images").array().notNull().default(sql`'{}'::text[]`),
   sellerId: text("seller_id").notNull().references(() => users.id),
   school: text("school").notNull(),
@@ -39,7 +39,7 @@ export const items = pgTable("items", {
   customDeliveryMethod: text("custom_delivery_method"),
   availableFrom: timestamp("available_from"),
   availableTo: timestamp("available_to"),
-  status: text("status").default("거래가능").notNull(), // "거래가능", "거래완료", "거래기간만료"
+  status: text("status").default("거래가능").notNull(),
   isAvailable: boolean("is_available").default(true).notNull(),
   views: integer("views").default(0).notNull(),
   likes: integer("likes").default(0).notNull(),
@@ -68,9 +68,9 @@ export const communityPosts = pgTable("community_posts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   content: text("content").notNull(),
-  category: text("category").notNull(), // "이야기방", "모임방"
-  semester: text("semester"), // For meeting posts: "2024-1", "2024-2", etc.
-  openChatLink: text("open_chat_link"), // For meeting posts
+  category: text("category").notNull(),
+  semester: text("semester"),
+  openChatLink: text("open_chat_link"),
   authorId: text("author_id").notNull().references(() => users.id),
   school: text("school").notNull(),
   country: text("country").notNull(),
@@ -90,100 +90,60 @@ export const comments = pgTable("comments", {
 });
 
 export const favorites = pgTable("favorites", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: text("user_id").notNull().references(() => users.id),
-  itemId: text("item_id").notNull().references(() => items.id),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: text("user_id").notNull().references(() => users.id),
+    itemId: text("item_id").notNull().references(() => items.id),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const notifications = pgTable("notifications", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: text("user_id").notNull().references(() => users.id),
-  type: text("type").notNull(), // 'new_message', 'new_comment', 'status_change'
-  content: text("content").notNull(),
-  link: text("link"), // URL to navigate to
-  isRead: boolean("is_read").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: text("user_id").notNull().references(() => users.id),
+    type: text("type").notNull(),
+    content: text("content").notNull(),
+    link: text("link"),
+    isRead: boolean("is_read").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const reports = pgTable("reports", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  reporterId: text("reporter_id").notNull().references(() => users.id),
-  itemId: text("item_id").notNull().references(() => items.id),
-  reason: text("reason").notNull(), // "부적절한 내용", "사기 의심", "스팸/광고", "기타"
-  description: text("description"),
-  status: text("status").default("pending").notNull(), // "pending", "reviewed", "resolved"
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    reporterId: text("reporter_id").notNull().references(() => users.id),
+    itemId: text("item_id").notNull().references(() => items.id),
+    reason: text("reason").notNull(),
+    description: text("description"),
+    status: text("status").default("pending").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Exchange rates table for currency conversion
 export const exchangeRates = pgTable("exchange_rates", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  baseCurrency: text("base_currency").default("KRW").notNull(),
-  rates: text("rates").notNull(), // JSON string of currency rates
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    baseCurrency: text("base_currency").default("KRW").notNull(),
+    rates: text("rates").notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Insert schemas
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-});
 
-export const insertItemSchema = createInsertSchema(items).omit({
-  id: true,
-  sellerId: true,
-  views: true,
-  likes: true,
-  createdAt: true,
-});
+// Zod Schemas for validation
+export const insertUserSchema = createInsertSchema(users);
+export const insertItemSchema = createInsertSchema(items);
+export const insertCommunityPostSchema = createInsertSchema(communityPosts);
+export const insertCommentSchema = createInsertSchema(comments);
 
-export const insertChatRoomSchema = createInsertSchema(chatRooms).omit({
-  id: true,
-  createdAt: true,
-});
+// Select Schemas for types
+export const selectUserSchema = createSelectSchema(users);
+export const selectItemSchema = createSelectSchema(items);
+export const selectFavoriteSchema = createSelectSchema(favorites);
 
-export const insertMessageSchema = createInsertSchema(messages).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertCommunityPostSchema = createInsertSchema(communityPosts).omit({
-  id: true,
-  authorId: true,
-  likes: true,
-  views: true,
-  commentsCount: true,
-  createdAt: true,
-});
-
-export const insertCommentSchema = createInsertSchema(comments).omit({
-  id: true,
-  authorId: true,
-  createdAt: true,
-});
-
-export const insertFavoriteSchema = createInsertSchema(favorites).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertNotificationSchema = createInsertSchema(notifications).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertReportSchema = createInsertSchema(reports).omit({
-  id: true,
-  reporterId: true,
-  status: true,
-  createdAt: true,
-});
-
-export const insertExchangeRateSchema = createInsertSchema(exchangeRates).omit({
-  id: true,
-  updatedAt: true,
-});
+// Types inferred from Zod schemas
+export type User = z.infer<typeof selectUserSchema>;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Item = z.infer<typeof selectItemSchema>;
+export type InsertItem = z.infer<typeof insertItemSchema>;
+export type Favorite = z.infer<typeof selectFavoriteSchema> & { item?: Item };
+export type InsertCommunityPost = z.infer<typeof insertCommunityPostSchema>;
+export type InsertComment = z.infer<typeof insertCommentSchema>;
+// ... other types can be added here as needed
 
 // Auth schemas
 export const loginSchema = z.object({
@@ -198,39 +158,5 @@ export const registerSchema = insertUserSchema.extend({
   path: ["confirmPassword"],
 });
 
-// Types
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type Item = typeof items.$inferSelect;
-export type InsertItem = z.infer<typeof insertItemSchema>;
-export type ChatRoom = typeof chatRooms.$inferSelect;
-export type InsertChatRoom = z.infer<typeof insertChatRoomSchema>;
-export type Message = typeof messages.$inferSelect;
-export type InsertMessage = z.infer<typeof insertMessageSchema>;
-export type CommunityPost = typeof communityPosts.$inferSelect;
-export type InsertCommunityPost = z.infer<typeof insertCommunityPostSchema>;
-export type Comment = typeof comments.$inferSelect;
-export type InsertComment = z.infer<typeof insertCommentSchema>;
-export type Favorite = typeof favorites.$inferSelect & {
-  item?: {
-    id: string;
-    title: string;
-    description: string;
-    price: string;
-    currency?: string;
-    images: string[];
-    school: string;
-    status: string;
-    location: string;
-    createdAt: Date;
-  };
-};
-export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
-export type Notification = typeof notifications.$inferSelect;
-export type InsertNotification = z.infer<typeof insertNotificationSchema>;
-export type Report = typeof reports.$inferSelect;
-export type InsertReport = z.infer<typeof insertReportSchema>;
-export type ExchangeRate = typeof exchangeRates.$inferSelect;
-export type InsertExchangeRate = z.infer<typeof insertExchangeRateSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;

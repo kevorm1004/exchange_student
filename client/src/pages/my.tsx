@@ -7,13 +7,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
+// 추가된 타입 정의
+interface UserStats {
+  sellingStat: number;
+  soldStat: number;
+  purchasedStat: number;
+}
+
 export default function MyPage() {
   const [, navigate] = useLocation();
   const { user, logout } = useAuth();
   const { toast } = useToast();
 
-  // Fetch user statistics
-  const { data: stats, isLoading: isStatsLoading } = useQuery({
+  // useQuery에 <UserStats> 타입 명시
+  const { data: stats, isLoading: isStatsLoading } = useQuery<UserStats>({
     queryKey: ["/api/users/stats"],
     enabled: !!user,
   });
