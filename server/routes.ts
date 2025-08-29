@@ -7,7 +7,7 @@ import session from "express-session";
 import passport from "./passport-config";
 import { storage } from "./storage";
 import { seedDatabase } from "./seed";
-import './exchange'; // Initialize exchange service
+// import './exchange'; // Initialize exchange service - Temporarily disabled
 import {
   registerSchema,
   insertItemSchema,
@@ -66,13 +66,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  if (process.env.NODE_ENV === 'development') {
-    try {
-      await seedDatabase();
-    } catch (error) {
-      console.log("Database already seeded or seeding failed:", error);
-    }
-  }
+  // Temporarily disable seeding until database connection is fixed
+  // if (process.env.NODE_ENV === 'development') {
+  //   try {
+  //     await seedDatabase();
+  //   } catch (error) {
+  //     console.log("Database already seeded or seeding failed:", error);
+  //   }
+  // }
 
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   const clients = new Map<string, WebSocket>();
