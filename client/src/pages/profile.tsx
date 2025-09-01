@@ -10,6 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
@@ -43,7 +54,7 @@ type UpdateProfileForm = z.infer<typeof updateProfileSchema>;
 
 export default function Profile() {
   const [, navigate] = useLocation();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -115,6 +126,24 @@ export default function Profile() {
 
   const onSubmit = (data: UpdateProfileForm) => {
     updateProfileMutation.mutate(data);
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await apiRequest("DELETE", "/api/user/account");
+      toast({
+        title: "계정이 삭제되었습니다",
+        variant: "default",
+      });
+      await logout();
+      navigate("/auth/login");
+    } catch (error) {
+      toast({
+        title: "계정 삭제 실패",
+        description: "문제가 발생했습니다. 고객센터에 문의해주세요.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -358,7 +387,7 @@ export default function Profile() {
                 </div>
 
                 {/* 저장 버튼 */}
-                <div className="pt-4">
+                <div className="pt-4 space-y-4">
                   <Button 
                     type="submit" 
                     className="w-full"
@@ -367,6 +396,39 @@ export default function Profile() {
                     <Save className="w-4 h-4 mr-2" />
                     {updateProfileMutation.isPending ? "저장 중..." : "프로필 저장"}
                   </Button>
+                  
+                  {/* 작고 잘 안 보이는 회원탈퇴 링크 */}
+                  <div className="text-center pt-6 border-t border-gray-100">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button 
+                          type="button"
+                          className="text-xs text-gray-400 hover:text-gray-500 underline"
+                          data-testid="button-delete-account"
+                        >
+                          회원탈퇴
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>정말로 회원탈퇴를 하시겠습니까?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            이 작업은 되돌릴 수 없습니다. 모든 데이터가 영구적으로 삭제되며, 
+                            등록된 상품, 채팅 내역, 리뷰 등이 모두 사라집니다.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>취소</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleDeleteAccount}
+                            className="bg-red-500 hover:bg-red-600"
+                          >
+                            회원탈퇴
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </form>
             </Form>
