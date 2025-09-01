@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, ArrowLeft, Check, X } from "lucide-react";
@@ -16,19 +16,47 @@ import { z } from "zod";
 
 // 각 단계별 스키마
 const emailSchema = z.object({
-  email: z.string().min(1, "이메일을 입력해주세요").email("올바른 이메일 형식이 아닙니다"),
+  email: z.string()
+    .min(1, "이메일을 입력해주세요")
+    .email("올바른 이메일 형식이 아닙니다")
+    .refine((email) => {
+      // 올바른 도메인 검증
+      const domain = email.split('@')[1];
+      return domain && domain.includes('.');
+    }, "올바른 도메인을 입력해주세요"),
 });
 
-const usernameSchema = z.object({
-  username: z.string().min(1, "사용자명을 입력해주세요").min(3, "사용자명은 3글자 이상이어야 합니다"),
+const nicknameSchema = z.object({
+  nickname: z.string()
+    .min(2, "닉네임은 2글자 이상이어야 합니다")
+    .max(15, "닉네임은 15글자 이하로 입력해주세요")
+    .regex(/^[가-힣a-zA-Z0-9]+$/, "한글, 영문, 숫자만 사용 가능합니다"),
 });
 
 const passwordSchema = z.object({
-  password: z.string().min(8, "비밀번호는 8글자 이상이어야 합니다"),
+  password: z.string()
+    .min(8, "비밀번호는 8글자 이상이어야 합니다")
+    .max(20, "비밀번호는 20글자 이하로 입력해주세요")
+    .regex(/^(?=.*[a-z])(?=.*\d)/, "영문 소문자와 숫자를 포함해야 합니다")
+    .refine((password) => {
+      // 연속문자 금지 (1111, abcd 등)
+      const consecutive = /(.)\1{3,}|0123|1234|2345|3456|4567|5678|6789|abcd|bcde|cdef/;
+      return !consecutive.test(password.toLowerCase());
+    }, "연속된 문자나 숫자는 사용할 수 없습니다"),
   confirmPassword: z.string().min(1, "비밀번호 확인을 입력해주세요"),
+  email: z.string().optional(), // 이메일과 비교를 위해 추가
 }).refine((data) => data.password === data.confirmPassword, {
   message: "비밀번호가 일치하지 않습니다",
   path: ["confirmPassword"],
+}).refine((data) => {
+  // 이메일과 비밀번호가 같으면 안됨
+  if (data.email && data.email.split('@')[0] === data.password) {
+    return false;
+  }
+  return true;
+}, {
+  message: "비밀번호는 이메일과 같을 수 없습니다",
+  path: ["password"],
 });
 
 const schoolSchema = z.object({
@@ -39,11 +67,11 @@ const countrySchema = z.object({
   country: z.string().optional(),
 });
 
-type RegisterStep = 'email' | 'username' | 'password' | 'school' | 'country';
+type RegisterStep = 'email' | 'nickname' | 'password' | 'school' | 'country';
 
 interface FormData {
   email: string;
-  username: string;
+  nickname: string;
   password: string;
   confirmPassword: string;
   school?: string;
@@ -62,7 +90,7 @@ export default function Register() {
   const { toast } = useToast();
   const { login } = useAuth();
 
-  const stepOrder: RegisterStep[] = ['email', 'username', 'password', 'school', 'country'];
+  const stepOrder: RegisterStep[] = ['email', 'nickname', 'password', 'school', 'country'];
   const currentStepIndex = stepOrder.indexOf(currentStep);
   const isLastStep = currentStepIndex === stepOrder.length - 1;
   const isOptionalStep = currentStep === 'school' || currentStep === 'country';
@@ -74,9 +102,9 @@ export default function Register() {
     mode: "onChange"
   });
 
-  const usernameForm = useForm({
-    resolver: zodResolver(usernameSchema),
-    defaultValues: { username: formData.username || "" },
+  const nicknameForm = useForm({
+    resolver: zodResolver(nicknameSchema),
+    defaultValues: { nickname: formData.nickname || "" },
     mode: "onChange"
   });
 
@@ -84,7 +112,8 @@ export default function Register() {
     resolver: zodResolver(passwordSchema),
     defaultValues: { 
       password: formData.password || "",
-      confirmPassword: formData.confirmPassword || ""
+      confirmPassword: formData.confirmPassword || "",
+      email: formData.email || ""
     },
     mode: "onChange"
   });
@@ -101,15 +130,35 @@ export default function Register() {
     mode: "onChange"
   });
 
+  // 폼 상태 변화를 감지하기 위한 상태
+  const [forceUpdate, setForceUpdate] = useState(0);
+
+  // 각 폼의 상태 변화를 감지
+  useEffect(() => {
+    const timer = setInterval(() => setForceUpdate(prev => prev + 1), 100);
+    return () => clearInterval(timer);
+  }, []);
+
   // 각 단계별 유효성 검사 함수
   const isStepValid = () => {
     switch (currentStep) {
       case 'email':
-        return emailForm.formState.isValid && emailAvailable === true && !checkingEmail;
-      case 'username':
-        return usernameForm.formState.isValid;
+        const emailValue = emailForm.watch('email');
+        const emailValid = emailSchema.safeParse({ email: emailValue }).success && 
+                          emailAvailable === true && !checkingEmail;
+        return emailValid;
+      case 'nickname':
+        const nicknameValue = nicknameForm.watch('nickname');
+        return nicknameSchema.safeParse({ nickname: nicknameValue }).success;
       case 'password':
-        return passwordForm.formState.isValid;
+        const passwordValue = passwordForm.watch('password');
+        const confirmPasswordValue = passwordForm.watch('confirmPassword');
+        const passwordData = {
+          password: passwordValue,
+          confirmPassword: confirmPasswordValue,
+          email: formData.email || ''
+        };
+        return passwordSchema.safeParse(passwordData).success;
       case 'school':
         return true; // 선택사항이므로 항상 유효
       case 'country':
@@ -173,8 +222,8 @@ export default function Register() {
     setIsLoading(true);
     try {
       const finalData: RegisterData = {
-        fullName: formData.username || "", // username을 fullName으로도 사용
-        username: formData.username!,
+        fullName: formData.nickname || "", // nickname을 fullName으로도 사용
+        username: formData.nickname!, // nickname을 username으로 사용
         email: formData.email!,
         password: formData.password!,
         confirmPassword: formData.confirmPassword!,
@@ -211,7 +260,7 @@ export default function Register() {
   const getStepTitle = () => {
     switch (currentStep) {
       case 'email': return '이메일 입력';
-      case 'username': return '아이디 입력';
+      case 'nickname': return '닉네임 입력';
       case 'password': return '비밀번호 설정';
       case 'school': return '학교 입력';
       case 'country': return '국가 선택';
@@ -222,7 +271,7 @@ export default function Register() {
   const getStepLabel = () => {
     switch (currentStep) {
       case 'email': return '이메일';
-      case 'username': return '아이디';
+      case 'nickname': return '닉네임';
       case 'password': return '비밀번호';
       case 'school': return '학교';
       case 'country': return '국가';
@@ -233,8 +282,8 @@ export default function Register() {
   const getStepPlaceholder = () => {
     switch (currentStep) {
       case 'email': return 'example@email.com';
-      case 'username': return '아이디를 입력해주세요';
-      case 'password': return '8글자 이상 입력하세요';
+      case 'nickname': return '닉네임을 입력해주세요';
+      case 'password': return '영문소문자+숫자 8~20글자';
       case 'school': return '학교명을 입력해주세요';
       case 'country': return '국가를 선택해주세요';
       default: return '';
@@ -298,13 +347,13 @@ export default function Register() {
           </Form>
         );
 
-      case 'username':
+      case 'nickname':
         return (
-          <Form {...usernameForm}>
-            <form onSubmit={usernameForm.handleSubmit(handleNext)} className="space-y-8">
+          <Form {...nicknameForm}>
+            <form onSubmit={nicknameForm.handleSubmit(handleNext)} className="space-y-8">
               <FormField
-                control={usernameForm.control}
-                name="username"
+                control={nicknameForm.control}
+                name="nickname"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
@@ -316,6 +365,9 @@ export default function Register() {
                       />
                     </FormControl>
                     <FormMessage />
+                    <p className="text-xs text-gray-500">
+                      2-15글자, 한글/영문/숫자만 사용 가능. 중복 허용
+                    </p>
                   </FormItem>
                 )}
               />
@@ -353,6 +405,9 @@ export default function Register() {
                       </div>
                     </FormControl>
                     <FormMessage />
+                    <p className="text-xs text-gray-500">
+                      8-20글자, 영문소문자+숫자 필수. 연속문자 금지
+                    </p>
                   </FormItem>
                 )}
               />
@@ -488,7 +543,7 @@ export default function Register() {
         <Button 
           onClick={() => {
             const currentForm = currentStep === 'email' ? emailForm :
-                               currentStep === 'username' ? usernameForm :
+                               currentStep === 'nickname' ? nicknameForm :
                                currentStep === 'password' ? passwordForm :
                                currentStep === 'school' ? schoolForm : countryForm;
             currentForm.handleSubmit(handleNext)();

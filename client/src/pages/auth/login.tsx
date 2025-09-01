@@ -15,7 +15,7 @@ import { z } from "zod";
 
 // Custom login schema for client that doesn't require email format
 const clientLoginSchema = z.object({
-  email: z.string().min(1, "이메일 또는 사용자명을 입력하세요"),
+  email: z.string().min(1, "이메일 또는 닉네임을 입력하세요"),
   password: z.string().min(1, "비밀번호를 입력하세요"),
 });
 
@@ -47,7 +47,7 @@ export default function Login() {
       toast({
         variant: "destructive",
         title: "로그인 실패",
-        description: "이메일 또는 비밀번호를 확인해주세요.",
+        description: "이메일 또는 닉네임, 비밀번호를 확인해주세요.",
       });
     } finally {
       setIsLoading(false);

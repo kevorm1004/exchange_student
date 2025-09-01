@@ -188,10 +188,10 @@ export default function Profile() {
                     name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>사용자명</FormLabel>
+                        <FormLabel>닉네임</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="사용자명을 입력하세요" 
+                            placeholder="닉네임을 입력하세요" 
                             {...field}
                             className="bg-white"
                           />

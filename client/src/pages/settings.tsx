@@ -163,7 +163,7 @@ export default function Settings() {
           <div className="space-y-3">
             <div className="flex items-center justify-between py-2">
               <div>
-                <div className="font-medium">{user?.username || "사용자"}</div>
+                <div className="font-medium">{user?.username || "닉네임"}</div>
                 <div className="text-sm text-gray-500">{user?.email || "이메일 없음"}</div>
               </div>
               <Dialog open={showProfileEdit} onOpenChange={setShowProfileEdit}>
