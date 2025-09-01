@@ -119,30 +119,35 @@ export default function Register() {
 
   // 단계 변경 시 폼 데이터 로드 - 각 단계에 맞는 데이터만 로드
   useEffect(() => {
-    // 약간의 지연을 둬서 폼이 완전히 마운트된 후 값 설정
-    const timer = setTimeout(() => {
-      switch (currentStep) {
-        case 'email':
-          emailForm.setValue('email', formData.email || '');
-          break;
-        case 'nickname':
-          nicknameForm.setValue('nickname', formData.nickname || '');
-          break;
-        case 'password':
-          passwordForm.setValue('password', formData.password || '');
+    switch (currentStep) {
+      case 'email':
+        if (formData.email) {
+          emailForm.setValue('email', formData.email);
+        }
+        break;
+      case 'nickname':
+        if (formData.nickname) {
+          nicknameForm.setValue('nickname', formData.nickname);
+        }
+        break;
+      case 'password':
+        if (formData.password) {
+          passwordForm.setValue('password', formData.password);
           passwordForm.setValue('confirmPassword', formData.confirmPassword || '');
-          break;
-        case 'school':
-          schoolForm.setValue('school', formData.school || '');
-          break;
-        case 'country':
-          countryForm.setValue('country', formData.country || '');
-          break;
-      }
-    }, 50);
-
-    return () => clearTimeout(timer);
-  }, [currentStep]);
+        }
+        break;
+      case 'school':
+        if (formData.school) {
+          schoolForm.setValue('school', formData.school);
+        }
+        break;
+      case 'country':
+        if (formData.country) {
+          countryForm.setValue('country', formData.country);
+        }
+        break;
+    }
+  }, [currentStep, formData]);
 
   // 각 단계별 유효성 검사 함수
   const isStepValid = () => {
@@ -379,8 +384,12 @@ export default function Register() {
                     <FormControl>
                       <Input 
                         placeholder={getStepPlaceholder()} 
-                        {...field}
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
                         className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
+                        data-testid="input-nickname"
                       />
                     </FormControl>
                     <FormMessage />
