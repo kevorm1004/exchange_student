@@ -97,12 +97,13 @@ export default function Register() {
     mode: "onChange"
   });
 
-  // ❌ 문제: 닉네임 폼이 이메일 값을 받아오는 버그 해결
-  // ✅ 해결: defaultValues를 완전히 빈 문자열로 고정하여 다른 단계 데이터 간섭 차단
+  // === 닉네임 입력 폼 설정 ===
+  // 🎯 목적: 사용자 닉네임 입력을 위한 독립적인 폼 관리
+  // 🔧 해결한 문제: 이메일 값이 닉네임 필드에 나타나는 간섭 현상 방지
   const nicknameForm = useForm({
-    resolver: zodResolver(nicknameSchema),
-    defaultValues: { nickname: "" }, // 무조건 빈 문자열로 시작 - 이메일 값 차단
-    mode: "onChange"
+    resolver: zodResolver(nicknameSchema),  // 닉네임 유효성 검사 규칙 적용
+    defaultValues: { nickname: "" },       // 항상 빈 문자열로 시작 (다른 단계 데이터 간섭 차단)
+    mode: "onChange"                       // 타이핑할 때마다 실시간 검증
   });
 
   const passwordForm = useForm({
@@ -126,32 +127,43 @@ export default function Register() {
     mode: "onChange"
   });
 
-  // 단계 변경 시 해당 폼만 초기화
+  // === 단계별 폼 초기화 시스템 ===
+  // 🎯 목적: 각 회원가입 단계로 이동할 때 해당 폼만 독립적으로 초기화
+  // 🔧 핵심 기능: 단계간 데이터 간섭 방지 및 뒤로가기 시 데이터 복원
   useEffect(() => {
     switch (currentStep) {
       case 'email':
+        // 📧 이메일 단계: 저장된 이메일 값으로 폼 초기화
         emailForm.reset({ email: formData.email || "" });
         break;
+        
       case 'nickname':
-        // 닉네임은 항상 빈 상태로 시작 (이메일 값 간섭 방지)
+        // 👤 닉네임 단계: 이메일 값 간섭 방지를 위해 항상 빈 상태로 시작
         nicknameForm.reset({ nickname: "" });
+        
         // 뒤로가기로 돌아온 경우에만 저장된 닉네임 복원
         if (formData.nickname) {
           setTimeout(() => {
             nicknameForm.setValue('nickname', formData.nickname!);
-          }, 50);
+          }, 50);  // 폼 리셋 완료 후 값 설정을 위한 지연
         }
         break;
+        
       case 'password':
+        // 🔐 비밀번호 단계: 두 개의 비밀번호 필드 모두 초기화
         passwordForm.reset({ 
           password: formData.password || "",
           confirmPassword: formData.confirmPassword || ""
         });
         break;
+        
       case 'school':
+        // 🏫 학교 단계: 저장된 학교 정보로 초기화
         schoolForm.reset({ school: formData.school || "" });
         break;
+        
       case 'country':
+        // 🌍 국가 단계: 저장된 국가 선택으로 초기화
         countryForm.reset({ country: formData.country || "" });
         break;
     }
@@ -416,55 +428,28 @@ export default function Register() {
                         value={field.value || ""} // 현재 값 표시
                         onChange={(e) => {
                           const newValue = e.target.value;
-                          console.log('🔤 타이핑 감지:', {
-                            이전값: field.value,
-                            새로운값: newValue,
-                            이벤트타입: e.type,
-                            타겟: e.target.tagName
-                          });
                           
-                          // ✅ 문제 해결: 여러 방법으로 값 설정 시도
+                          // === 닉네임 입력값 처리 ===
+                          // 🔧 3단계 강력한 폼 업데이트 시스템으로 입력 문제 해결
                           try {
-                            // 방법 1: field.onChange 직접 호출
+                            // 1️⃣ react-hook-form 기본 방식
                             field.onChange(newValue);
-                            console.log('✅ field.onChange 완료');
                             
-                            // 방법 2: setValue로 강제 설정
+                            // 2️⃣ 강제 값 설정 (상태 충돌 방지)
                             nicknameForm.setValue('nickname', newValue, { 
-                              shouldValidate: true,
-                              shouldDirty: true,
-                              shouldTouch: true 
+                              shouldValidate: true,  // 즉시 유효성 검사
+                              shouldDirty: true,     // 폼 수정 상태로 표시
+                              shouldTouch: true      // 필드 터치 상태로 표시
                             });
-                            console.log('✅ setValue 완료');
                             
-                            // 방법 3: trigger로 강제 업데이트
+                            // 3️⃣ 폼 재렌더링 강제 실행 (UI 업데이트 보장)
                             nicknameForm.trigger('nickname');
-                            console.log('✅ trigger 완료');
                             
                           } catch (error) {
-                            console.error('❌ 폼 업데이트 실패:', error);
+                            console.error('❌ 닉네임 입력 처리 실패:', error);
                           }
-                          
-                          console.log('🔤 최종 폼 값:', nicknameForm.getValues());
-                          console.log('🔤 현재 field.value:', field.value);
                         }}
-                        onKeyDown={(e) => {
-                          console.log('⌨️ 키 입력:', {
-                            키: e.key,
-                            코드: e.code,
-                            현재값: field.value
-                          });
-                        }}
-                        onFocus={() => {
-                          console.log('🎯 필드 포커스:', {
-                            현재값: field.value,
-                            폼상태: nicknameForm.formState
-                          });
-                        }}
-                        onBlur={(e) => {
-                          console.log('👋 필드 블러:', field.value);
-                          field.onBlur();
-                        }}
+                        onBlur={field.onBlur}
                         name="nickname"
                         className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
                         data-testid="input-nickname"
@@ -502,11 +487,8 @@ export default function Register() {
                           value={field.value || ""}
                           onChange={(e) => {
                             const newValue = e.target.value;
-                            console.log('🔐 비밀번호 타이핑:', {
-                              이전값길이: field.value?.length || 0,
-                              새로운값길이: newValue.length
-                            });
                             
+                            // === 비밀번호 입력값 처리 ===
                             try {
                               field.onChange(newValue);
                               passwordForm.setValue('password', newValue, { 
@@ -515,9 +497,8 @@ export default function Register() {
                                 shouldTouch: true 
                               });
                               passwordForm.trigger('password');
-                              console.log('✅ 비밀번호 업데이트 완료');
                             } catch (error) {
-                              console.error('❌ 비밀번호 업데이트 실패:', error);
+                              console.error('❌ 비밀번호 입력 처리 실패:', error);
                             }
                           }}
                           onBlur={field.onBlur}
@@ -557,11 +538,8 @@ export default function Register() {
                           value={field.value || ""}
                           onChange={(e) => {
                             const newValue = e.target.value;
-                            console.log('🔐 비밀번호 확인 타이핑:', {
-                              이전값길이: field.value?.length || 0,
-                              새로운값길이: newValue.length
-                            });
                             
+                            // === 비밀번호 확인 입력값 처리 ===
                             try {
                               field.onChange(newValue);
                               passwordForm.setValue('confirmPassword', newValue, { 
@@ -570,9 +548,8 @@ export default function Register() {
                                 shouldTouch: true 
                               });
                               passwordForm.trigger('confirmPassword');
-                              console.log('✅ 비밀번호 확인 업데이트 완료');
                             } catch (error) {
-                              console.error('❌ 비밀번호 확인 업데이트 실패:', error);
+                              console.error('❌ 비밀번호 확인 입력 처리 실패:', error);
                             }
                           }}
                           onBlur={field.onBlur}
@@ -614,11 +591,8 @@ export default function Register() {
                         value={field.value || ""}
                         onChange={(e) => {
                           const newValue = e.target.value;
-                          console.log('🏫 학교 타이핑:', {
-                            이전값: field.value,
-                            새로운값: newValue
-                          });
                           
+                          // === 학교 입력값 처리 ===
                           try {
                             field.onChange(newValue);
                             schoolForm.setValue('school', newValue, { 
@@ -627,9 +601,8 @@ export default function Register() {
                               shouldTouch: true 
                             });
                             schoolForm.trigger('school');
-                            console.log('✅ 학교 업데이트 완료');
                           } catch (error) {
-                            console.error('❌ 학교 업데이트 실패:', error);
+                            console.error('❌ 학교 입력 처리 실패:', error);
                           }
                         }}
                         onBlur={field.onBlur}

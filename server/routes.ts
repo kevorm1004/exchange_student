@@ -134,25 +134,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === 회원가입 API ===
+  // 클라이언트에서 온 회원가입 데이터를 처리합니다
   app.post('/api/auth/register', async (req, res) => {
     try {
-      const validatedData = registerSchema.parse(req.body);
-      const existingUser = await storage.getUserByEmail(validatedData.email);
-      if (existingUser) return res.status(400).json({ error: 'User already exists' });
-      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+      console.log('🔄 회원가입 요청 데이터:', req.body);
       
-      // fullName이 비어있으면 username을 사용
-      const userData = {
-        ...validatedData,
-        fullName: validatedData.fullName || validatedData.username,
-        password: hashedPassword
+      // 1️⃣ 클라이언트 데이터를 서버 스키마에 맞게 변환
+      // 프론트엔드에서는 nickname을 보내지만, 데이터베이스에서는 username 필드를 사용
+      const transformedData = {
+        email: req.body.email,
+        username: req.body.nickname,  // nickname → username 변환
+        password: req.body.password,
+        confirmPassword: req.body.confirmPassword,
+        fullName: req.body.nickname,  // fullName을 nickname과 동일하게 설정
+        school: req.body.school || "",  // 선택사항이므로 기본값 설정
+        country: req.body.country || "",  // 선택사항이므로 기본값 설정
       };
       
+      console.log('🔄 변환된 데이터:', transformedData);
+      
+      // 2️⃣ 데이터 유효성 검사
+      const validatedData = registerSchema.parse(transformedData);
+      console.log('✅ 데이터 검증 완료');
+      
+      // 3️⃣ 이메일 중복 확인
+      const existingUser = await storage.getUserByEmail(validatedData.email);
+      if (existingUser) {
+        console.log('❌ 이미 존재하는 이메일:', validatedData.email);
+        return res.status(400).json({ error: 'User already exists' });
+      }
+      
+      // 4️⃣ 비밀번호 해싱 (보안을 위해 암호화)
+      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+      console.log('✅ 비밀번호 해싱 완료');
+      
+      // 5️⃣ 사용자 데이터 준비
+      const userData = {
+        ...validatedData,
+        password: hashedPassword,  // 해싱된 비밀번호로 교체
+        fullName: validatedData.fullName || validatedData.username,  // fullName 기본값 설정
+      };
+      
+      console.log('🔄 최종 사용자 데이터 생성 완료');
+      
+      // 6️⃣ 데이터베이스에 사용자 생성
       const user = await storage.createUser(userData);
+      console.log('✅ 데이터베이스에 사용자 생성 완료:', user.id);
+      
+      // 7️⃣ JWT 토큰 생성 (로그인 상태 유지용)
       const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-      res.json({ token, user: { ...user, password: undefined } });
+      console.log('✅ JWT 토큰 생성 완료');
+      
+      // 8️⃣ 성공 응답 (비밀번호는 제외하고 전송)
+      res.json({ 
+        token, 
+        user: { ...user, password: undefined }  // 보안상 비밀번호는 클라이언트에 전송하지 않음
+      });
+      
     } catch (error) {
+      console.error('❌ 회원가입 처리 중 오류:', error);
       console.log('Database error in /api/auth/register:', (error as Error).message);
+      
+      // 검증 오류인 경우 상세한 오류 메시지 전송
+      if (error instanceof z.ZodError) {
+        console.log('❌ 데이터 검증 실패:', error.errors);
+        return res.status(400).json({ 
+          error: 'Invalid data provided', 
+          details: error.errors 
+        });
+      }
+      
       res.status(500).json({ error: 'Registration failed. Please try again later.' });
     }
   });
