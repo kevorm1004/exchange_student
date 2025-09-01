@@ -17,6 +17,7 @@ import Profile from "@/pages/profile";
 import Login from "@/pages/auth/login";
 import EmailLogin from "@/pages/auth/email-login";
 import Register from "@/pages/auth/register";
+import CompleteRegistration from "@/pages/auth/complete-registration";
 import CreateItem from "@/pages/items/create";
 import ItemDetail from "@/pages/items/detail";
 import SearchPage from "@/pages/search";
@@ -81,6 +82,7 @@ function Router() {
         <Route path="/auth/login" component={Login} />
         <Route path="/auth/email-login" component={EmailLogin} />
         <Route path="/auth/register" component={Register} />
+        <Route path="/auth/complete-registration" component={CompleteRegistration} />
         <Route path="/" component={Home} />
         <Route path="/search" component={SearchPage} />
         <Route path="/search/:query" component={SearchResults} />

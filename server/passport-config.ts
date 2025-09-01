@@ -90,7 +90,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
       let user = await storage.getUserByEmail(email);
       
       if (!user) {
-        // Create new user from Kakao profile
+        // Create new user from Kakao profile - needs additional info
         const username = `kakao_${profile.id}`;
         user = await storage.createUser({
           username,
@@ -104,6 +104,8 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
           authProvider: 'kakao',
           kakaoId: profile.id
         });
+        // Mark as needing additional info
+        (user as any).needsAdditionalInfo = true;
       } else if (!user.kakaoId) {
         // Link existing account with Kakao
         await storage.updateUser(user.id, {

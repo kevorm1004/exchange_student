@@ -107,11 +107,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // OAuth Routes
   const handleOAuthCallback = (req: Request, res: Response) => {
-    const user = req.user as User;
+    const user = req.user as User & { needsAdditionalInfo?: boolean };
     if (!user) return res.redirect('/auth/login?error=auth_failed');
+    
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
     const userPayload = encodeURIComponent(JSON.stringify({ ...user, password: undefined }));
-    res.redirect(`/?token=${token}&user=${userPayload}`);
+    
+    // Check if user needs to complete registration (school/country info)
+    if (user.needsAdditionalInfo || (!user.school || !user.country)) {
+      res.redirect(`/auth/complete-registration?token=${token}&user=${userPayload}`);
+    } else {
+      res.redirect(`/?token=${token}&user=${userPayload}`);
+    }
   };
 
   app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
@@ -234,6 +241,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/auth/me', authenticateToken, (req, res) => res.json({ user: req.user }));
+
+  // OAuth Registration Completion
+  app.post('/api/auth/complete-oauth-registration', authenticateToken, async (req, res) => {
+    try {
+      const { school, country } = req.body;
+      
+      if (!school || !country) {
+        return res.status(400).json({ error: '학교와 국가를 모두 입력해주세요.' });
+      }
+      
+      // Update user with additional info
+      const updatedUser = await storage.updateUser(req.user!.id, {
+        school,
+        country
+      });
+      
+      res.json({ 
+        message: '회원가입이 완료되었습니다!', 
+        user: { ...updatedUser, password: undefined }
+      });
+    } catch (error) {
+      console.error('OAuth registration completion error:', error);
+      res.status(500).json({ error: '회원가입 완료에 실패했습니다.' });
+    }
+  });
 
   // User Routes
   app.put('/api/users/:id', authenticateToken, async (req, res) => {
