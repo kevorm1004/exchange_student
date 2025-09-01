@@ -87,11 +87,6 @@ export default function CompleteRegistration() {
       // Update user in auth context
       login(localStorage.getItem('token')!, updatedUser.user);
       
-      toast({
-        title: "회원가입 완료!",
-        description: "환영합니다! 중고물품에서 거래를 시작해보세요.",
-      });
-
       navigate('/');
     } catch (error: any) {
       toast({

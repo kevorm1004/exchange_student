@@ -298,10 +298,6 @@ export default function Register() {
 
       const response = await authApi.register(finalData as any);
       login(response.token, response.user);
-      toast({
-        title: "회원가입 성공",
-        description: "ExchangeMart에 오신 것을 환영합니다!",
-      });
       navigate('/');
     } catch (error) {
       toast({
