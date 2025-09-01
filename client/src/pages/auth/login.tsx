@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Mail, ArrowLeft } from "lucide-react";
-// import logoImage from "@assets/교환마켓 로고(하얀색 배경)_1756705851621.jpg";
+import logoImage from "@assets/logo.jpg";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,9 +75,11 @@ export default function Login() {
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-6">
         {/* 로고 */}
         <div className="mb-20">
-          <div className="w-48 h-24 bg-blue-600 rounded-3xl flex items-center justify-center shadow-lg">
-            <h1 className="text-white text-3xl font-bold tracking-wide">교환마켓</h1>
-          </div>
+          <img 
+            src={logoImage} 
+            alt="교환마켓 로고" 
+            className="w-48 h-auto"
+          />
         </div>
 
         {/* SNS 로그인 안내 텍스트 */}
