@@ -20,7 +20,6 @@ const emailSchema = z.object({
     .min(1, "이메일을 입력해주세요")
     .email("올바른 이메일 형식이 아닙니다")
     .refine((email) => {
-      // 올바른 도메인 검증
       const domain = email.split('@')[1];
       return domain && domain.includes('.');
     }, "올바른 도메인을 입력해주세요"),
@@ -39,24 +38,13 @@ const passwordSchema = z.object({
     .max(20, "비밀번호는 20글자 이하로 입력해주세요")
     .regex(/^(?=.*[a-z])(?=.*\d)/, "영문 소문자와 숫자를 포함해야 합니다")
     .refine((password) => {
-      // 연속문자 금지 (1111, abcd 등)
       const consecutive = /(.)\1{3,}|0123|1234|2345|3456|4567|5678|6789|abcd|bcde|cdef/;
       return !consecutive.test(password.toLowerCase());
     }, "연속된 문자나 숫자는 사용할 수 없습니다"),
   confirmPassword: z.string().min(1, "비밀번호 확인을 입력해주세요"),
-  email: z.string().optional(), // 이메일과 비교를 위해 추가
 }).refine((data) => data.password === data.confirmPassword, {
   message: "비밀번호가 일치하지 않습니다",
   path: ["confirmPassword"],
-}).refine((data) => {
-  // 이메일과 비밀번호가 같으면 안됨
-  if (data.email && data.email.split('@')[0] === data.password) {
-    return false;
-  }
-  return true;
-}, {
-  message: "비밀번호는 이메일과 같을 수 없습니다",
-  path: ["password"],
 });
 
 const schoolSchema = z.object({
@@ -95,76 +83,104 @@ export default function Register() {
   const isLastStep = currentStepIndex === stepOrder.length - 1;
   const isOptionalStep = currentStep === 'school' || currentStep === 'country';
 
-  // 각 단계별 폼
+  // 각 단계별 폼 - 기본값을 빈 문자열로 설정
   const emailForm = useForm({
     resolver: zodResolver(emailSchema),
-    defaultValues: { email: formData.email || "" },
+    defaultValues: { email: "" },
     mode: "onChange"
   });
 
   const nicknameForm = useForm({
     resolver: zodResolver(nicknameSchema),
-    defaultValues: { nickname: formData.nickname || "" },
+    defaultValues: { nickname: "" },
     mode: "onChange"
   });
 
   const passwordForm = useForm({
     resolver: zodResolver(passwordSchema),
     defaultValues: { 
-      password: formData.password || "",
-      confirmPassword: formData.confirmPassword || "",
-      email: formData.email || ""
+      password: "",
+      confirmPassword: ""
     },
     mode: "onChange"
   });
 
   const schoolForm = useForm({
     resolver: zodResolver(schoolSchema),
-    defaultValues: { school: formData.school || "" },
+    defaultValues: { school: "" },
     mode: "onChange"
   });
 
   const countryForm = useForm({
     resolver: zodResolver(countrySchema),
-    defaultValues: { country: formData.country || "" },
+    defaultValues: { country: "" },
     mode: "onChange"
   });
 
-  // 폼 상태 변화를 감지하기 위한 상태
-  const [forceUpdate, setForceUpdate] = useState(0);
-
-  // 각 폼의 상태 변화를 감지
+  // 단계 변경 시 폼 데이터 로드
   useEffect(() => {
-    const timer = setInterval(() => setForceUpdate(prev => prev + 1), 100);
-    return () => clearInterval(timer);
-  }, []);
+    switch (currentStep) {
+      case 'email':
+        if (formData.email) {
+          emailForm.setValue('email', formData.email);
+        }
+        break;
+      case 'nickname':
+        if (formData.nickname) {
+          nicknameForm.setValue('nickname', formData.nickname);
+        }
+        break;
+      case 'password':
+        if (formData.password) {
+          passwordForm.setValue('password', formData.password);
+          passwordForm.setValue('confirmPassword', formData.confirmPassword || '');
+        }
+        break;
+      case 'school':
+        if (formData.school) {
+          schoolForm.setValue('school', formData.school);
+        }
+        break;
+      case 'country':
+        if (formData.country) {
+          countryForm.setValue('country', formData.country);
+        }
+        break;
+    }
+  }, [currentStep, formData]);
 
   // 각 단계별 유효성 검사 함수
   const isStepValid = () => {
-    switch (currentStep) {
-      case 'email':
-        const emailValue = emailForm.watch('email');
-        const emailValid = emailSchema.safeParse({ email: emailValue }).success && 
-                          emailAvailable === true && !checkingEmail;
-        return emailValid;
-      case 'nickname':
-        const nicknameValue = nicknameForm.watch('nickname');
-        return nicknameSchema.safeParse({ nickname: nicknameValue }).success;
-      case 'password':
-        const passwordValue = passwordForm.watch('password');
-        const confirmPasswordValue = passwordForm.watch('confirmPassword');
-        const passwordData = {
-          password: passwordValue,
-          confirmPassword: confirmPasswordValue,
-          email: formData.email || ''
-        };
-        return passwordSchema.safeParse(passwordData).success;
-      case 'school':
-        return true; // 선택사항이므로 항상 유효
-      case 'country':
-        return true; // 선택사항이므로 항상 유효
-      default:
-        return false;
+    try {
+      switch (currentStep) {
+        case 'email':
+          const emailValue = emailForm.watch('email');
+          return emailSchema.safeParse({ email: emailValue }).success && 
+                 emailAvailable === true && !checkingEmail;
+        case 'nickname':
+          const nicknameValue = nicknameForm.watch('nickname');
+          return nicknameSchema.safeParse({ nickname: nicknameValue }).success;
+        case 'password':
+          const passwordValue = passwordForm.watch('password');
+          const confirmPasswordValue = passwordForm.watch('confirmPassword');
+          const isValid = passwordSchema.safeParse({ 
+            password: passwordValue, 
+            confirmPassword: confirmPasswordValue 
+          }).success;
+          // 이메일과 비밀번호 동일 값 검사
+          if (formData.email && passwordValue === formData.email.split('@')[0]) {
+            return false;
+          }
+          return isValid;
+        case 'school':
+          return true;
+        case 'country':
+          return true;
+        default:
+          return false;
+      }
+    } catch {
+      return false;
     }
   };
 
@@ -182,21 +198,19 @@ export default function Register() {
       const data = await response.json();
       setEmailAvailable(data.available);
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "확인 실패",
-        description: "이메일 중복 확인에 실패했습니다.",
-      });
+      console.error('Email check failed:', error);
+      setEmailAvailable(null);
     } finally {
       setCheckingEmail(false);
     }
   };
 
   const handleNext = async (data: any) => {
+    // 현재 단계 데이터를 formData에 저장
     setFormData(prev => ({ ...prev, ...data }));
     
     if (isLastStep) {
-      await handleSubmit();
+      await handleSubmit({ ...formData, ...data });
     } else {
       setCurrentStep(stepOrder[currentStepIndex + 1]);
     }
@@ -214,21 +228,22 @@ export default function Register() {
     if (isOptionalStep && !isLastStep) {
       setCurrentStep(stepOrder[currentStepIndex + 1]);
     } else if (isLastStep) {
-      handleSubmit();
+      handleSubmit(formData);
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (finalFormData?: Partial<FormData>) => {
+    const submitData = finalFormData || formData;
     setIsLoading(true);
     try {
       const finalData: RegisterData = {
-        fullName: formData.nickname || "", // nickname을 fullName으로도 사용
-        username: formData.nickname!, // nickname을 username으로 사용
-        email: formData.email!,
-        password: formData.password!,
-        confirmPassword: formData.confirmPassword!,
-        school: formData.school || "",
-        country: formData.country || "",
+        fullName: submitData.nickname || "",
+        username: submitData.nickname!,
+        email: submitData.email!,
+        password: submitData.password!,
+        confirmPassword: submitData.confirmPassword!,
+        school: submitData.school || "",
+        country: submitData.country || "",
         profileImage: "",
         preferredCurrency: "USD",
         role: "user",
@@ -480,7 +495,7 @@ export default function Register() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0">
                           <SelectValue placeholder={getStepPlaceholder()} />
@@ -516,6 +531,7 @@ export default function Register() {
           size="sm"
           onClick={handleBack}
           className="p-2 mr-2"
+          data-testid="button-back"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -551,9 +567,10 @@ export default function Register() {
           className={`w-full rounded-xl py-4 text-base font-medium transition-colors ${
             isStepValid() && !isLoading
               ? "bg-blue-500 hover:bg-blue-600 text-white"
-              : "bg-gray-400 hover:bg-gray-500 text-white"
+              : "bg-gray-400 hover:bg-gray-500 text-white cursor-not-allowed"
           }`}
-          disabled={isLoading || (currentStep === 'email' && (emailAvailable === false || checkingEmail))}
+          disabled={isLoading || !isStepValid()}
+          data-testid="button-next"
         >
           {isLoading ? "처리 중..." : isLastStep ? "회원가입 완료" : "다음"}
         </Button>
@@ -565,6 +582,7 @@ export default function Register() {
             onClick={handleSkip}
             className="w-full text-gray-500 py-4 text-base"
             disabled={isLoading}
+            data-testid="button-skip"
           >
             건너뛰기
           </Button>
