@@ -251,9 +251,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = serverLoginSchema.parse(req.body);
       const user = await storage.getUserByEmail(validatedData.email) || await storage.getUserByUsername(validatedData.email);
-      if (!user || !await bcrypt.compare(validatedData.password, user.password)) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+      
+      if (!user) {
+        return res.status(401).json({ 
+          error: '존재하지 않는 계정입니다. 이메일 또는 닉네임을 확인해주세요.' 
+        });
       }
+      
+      if (!await bcrypt.compare(validatedData.password, user.password)) {
+        return res.status(401).json({ 
+          error: '비밀번호가 올바르지 않습니다. 다시 확인해주세요.' 
+        });
+      }
+      
       const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
       res.json({ token, user: { ...user, password: undefined } });
     } catch (error) {
