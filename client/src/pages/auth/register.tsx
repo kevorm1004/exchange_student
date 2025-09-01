@@ -657,11 +657,7 @@ export default function Register() {
                     <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
                     <Select 
                       onValueChange={(value) => {
-                        console.log('🌍 국가 선택 이벤트 발생!', value);
-                        console.log('🌍 이전 값:', field.value);
-                        console.log('🌍 새로운 값:', value);
-                        
-                        // 값 설정
+                        // 폼 값 설정
                         field.onChange(value);
                         
                         // formData에도 저장
@@ -670,36 +666,26 @@ export default function Register() {
                           country: value
                         }));
                         
-                        console.log('✅ 국가 선택 완료:', value);
+                        // 폼 상태 업데이트
+                        countryForm.setValue('country', value, { 
+                          shouldValidate: true,
+                          shouldDirty: true,
+                          shouldTouch: true 
+                        });
                       }}
                       value={field.value || ""}
                     >
                       <FormControl>
-                        <SelectTrigger 
-                          className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
-                          onClick={() => {
-                            console.log('🌍 드롭다운 클릭됨');
-                            console.log('🌍 현재 COUNTRIES 배열:', COUNTRIES);
-                          }}
-                        >
+                        <SelectTrigger className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0">
                           <SelectValue placeholder={getStepPlaceholder()} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {COUNTRIES.map((country, index) => {
-                          console.log(`🌍 SelectItem 생성: ${index} - ${country}`);
-                          return (
-                            <SelectItem 
-                              key={country} 
-                              value={country}
-                              onClick={() => {
-                                console.log('🌍 SelectItem 직접 클릭:', country);
-                              }}
-                            >
-                              {country}
-                            </SelectItem>
-                          );
-                        })}
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country} value={country}>
+                            {country}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
