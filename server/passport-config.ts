@@ -41,6 +41,11 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       // Check if user exists with this email
       let user = await storage.getUserByEmail(email);
       
+      // Check if user was deleted
+      if (user && user.deletedAt) {
+        return done(new Error('삭제된 계정입니다.'), null);
+      }
+      
       if (!user) {
         // Create new user from Google profile
         const username = `google_${profile.id}`;
@@ -88,6 +93,11 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
 
       // Check if user exists with this email
       let user = await storage.getUserByEmail(email);
+      
+      // Check if user was deleted
+      if (user && user.deletedAt) {
+        return done(new Error('삭제된 계정입니다.'), null);
+      }
       
       if (!user) {
         // Create new user from Kakao profile - needs additional info

@@ -144,11 +144,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-  app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/login' }), handleOAuthCallback);
+  app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/login?error=auth_failed' }), handleOAuthCallback);
   app.get('/api/auth/kakao', passport.authenticate('kakao'));
-  app.get('/api/auth/kakao/callback', passport.authenticate('kakao', { failureRedirect: '/auth/login' }), handleOAuthCallback);
+  app.get('/api/auth/kakao/callback', (req, res, next) => {
+    passport.authenticate('kakao', (err, user) => {
+      if (err) {
+        if (err.message === '삭제된 계정입니다.') {
+          return res.redirect('/auth/login?error=deleted_account');
+        }
+        return res.redirect('/auth/login?error=auth_failed');
+      }
+      if (!user) {
+        return res.redirect('/auth/login?error=auth_failed');
+      }
+      req.user = user;
+      handleOAuthCallback(req, res);
+    })(req, res, next);
+  });
   app.get('/api/auth/naver', passport.authenticate('naver'));
-  app.get('/api/auth/naver/callback', passport.authenticate('naver', { failureRedirect: '/auth/login' }), handleOAuthCallback);
+  app.get('/api/auth/naver/callback', passport.authenticate('naver', { failureRedirect: '/auth/login?error=auth_failed' }), handleOAuthCallback);
 
   // Auth Routes
   app.post('/api/auth/check-email', async (req, res) => {

@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { authApi } from "@/lib/auth";
 import { type LoginData } from "@shared/schema";
 import { z } from "zod";
+import { useEffect } from "react";
 
 // Custom login schema for client that doesn't require email format
 const clientLoginSchema = z.object({
@@ -27,6 +28,30 @@ export default function Login() {
   const { toast } = useToast();
   const { login } = useAuth();
 
+  // Check for OAuth error in URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    
+    if (error === 'deleted_account') {
+      toast({
+        variant: "destructive",
+        title: "로그인 실패",
+        description: "삭제된 계정입니다. 새로운 계정으로 회원가입해주세요.",
+      });
+      // Clear the error parameter from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (error === 'auth_failed') {
+      toast({
+        variant: "destructive",
+        title: "로그인 실패",
+        description: "소셜 로그인에 실패했습니다. 다시 시도해주세요.",
+      });
+      // Clear the error parameter from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [toast]);
+
   const form = useForm<LoginData>({
     resolver: zodResolver(clientLoginSchema),
     defaultValues: {
@@ -40,10 +65,6 @@ export default function Login() {
     try {
       const response = await authApi.login(data);
       login(response.token, response.user);
-      toast({
-        title: "로그인 성공",
-        description: "환영합니다!",
-      });
     } catch (error) {
       toast({
         variant: "destructive",
