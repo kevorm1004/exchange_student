@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
-import logoImage from "@assets/logo_1756706278060.png";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,7 @@ import { z } from "zod";
 
 // Custom login schema for client that doesn't require email format
 const clientLoginSchema = z.object({
-  email: z.string().min(1, "이메일 또는 사용자명을 입력하세요"),
+  email: z.string().min(1, "이메일을 입력하세요"),
   password: z.string().min(1, "비밀번호를 입력하세요"),
 });
 
@@ -73,15 +72,6 @@ export default function EmailLogin() {
 
       {/* 메인 컨텐츠 */}
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-6">
-        {/* 로고 */}
-        <div className="mb-12">
-          <img 
-            src={logoImage} 
-            alt="교환마켓 로고" 
-            className="w-48 h-auto"
-          />
-        </div>
-
         {/* 로그인 폼 */}
         <div className="w-full max-w-sm">
           <Form {...form}>
@@ -91,10 +81,10 @@ export default function EmailLogin() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">이메일 또는 사용자명</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium">이메일</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="이메일 또는 사용자명을 입력하세요"
+                        placeholder="이메일을 입력하세요"
                         className="h-12 border-gray-300 rounded-xl"
                         {...field} 
                       />
