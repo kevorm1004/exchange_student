@@ -364,10 +364,6 @@ export default function Register() {
                     {emailAvailable === true && (
                       <p className="text-sm text-green-500">사용 가능한 이메일입니다</p>
                     )}
-                    {emailAvailable === null && !checkingEmail && emailForm.watch('email') && 
-                     emailSchema.safeParse({ email: emailForm.watch('email') }).success && (
-                      <p className="text-sm text-red-500">서버 오류로 중복 확인을 할 수 없습니다</p>
-                    )}
                   </FormItem>
                 )}
               />
