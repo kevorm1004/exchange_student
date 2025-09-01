@@ -75,7 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Database connection successful');
       await seedDatabase();
     } catch (error) {
-      console.log("Database connection failed or seeding failed:", error.message);
+      console.log("Database connection failed or seeding failed:", (error as Error).message);
       console.log('Application will continue but database features may not work');
     }
   }
@@ -122,32 +122,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/naver/callback', passport.authenticate('naver', { failureRedirect: '/auth/login' }), handleOAuthCallback);
 
   // Auth Routes
-  app.post('/api/auth/test-login', async (req, res) => {
-    const { username } = req.body;
-    if (!username) return res.status(400).json({ error: 'Username is required' });
-    const user = await storage.getUserByUsername(username);
-    if (!user) return res.status(404).json({ error: 'Test user not found' });
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, user: { ...user, password: undefined } });
-  });
 
   app.post('/api/auth/register', async (req, res) => {
-    const validatedData = registerSchema.parse(req.body);
-    if (await storage.getUserByEmail(validatedData.email)) return res.status(400).json({ error: 'User already exists' });
-    const hashedPassword = await bcrypt.hash(validatedData.password, 10);
-    const user = await storage.createUser({ ...validatedData, password: hashedPassword });
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, user: { ...user, password: undefined } });
+    try {
+      const validatedData = registerSchema.parse(req.body);
+      const existingUser = await storage.getUserByEmail(validatedData.email);
+      if (existingUser) return res.status(400).json({ error: 'User already exists' });
+      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+      const user = await storage.createUser({ ...validatedData, password: hashedPassword });
+      const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
+      res.json({ token, user: { ...user, password: undefined } });
+    } catch (error) {
+      console.log('Database error in /api/auth/register:', (error as Error).message);
+      res.status(500).json({ error: 'Registration failed. Please try again later.' });
+    }
   });
 
   app.post('/api/auth/login', async (req, res) => {
-    const validatedData = serverLoginSchema.parse(req.body);
-    const user = await storage.getUserByEmail(validatedData.email) || await storage.getUserByUsername(validatedData.email);
-    if (!user || !await bcrypt.compare(validatedData.password, user.password)) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+    try {
+      const validatedData = serverLoginSchema.parse(req.body);
+      const user = await storage.getUserByEmail(validatedData.email) || await storage.getUserByUsername(validatedData.email);
+      if (!user || !await bcrypt.compare(validatedData.password, user.password)) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+      const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
+      res.json({ token, user: { ...user, password: undefined } });
+    } catch (error) {
+      console.log('Database error in /api/auth/login:', (error as Error).message);
+      res.status(500).json({ error: 'Login failed. Please try again later.' });
     }
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, user: { ...user, password: undefined } });
   });
 
   app.get('/api/auth/me', authenticateToken, (req, res) => res.json({ user: req.user }));
@@ -179,7 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       res.json(items);
     } catch (error) {
-      console.log('Database error in /api/items:', error.message);
+      console.log('Database error in /api/items:', (error as Error).message);
       res.json([]); // Return empty array if database is not available
     }
   });
@@ -261,7 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const count = await storage.getUnreadMessageCount(req.user!.id);
       res.json({ count });
     } catch (error) {
-      console.log('Database error in /api/messages/unread-count:', error.message);
+      console.log('Database error in /api/messages/unread-count:', (error as Error).message);
       res.json({ count: 0 }); // Return 0 if database is not available
     }
   });

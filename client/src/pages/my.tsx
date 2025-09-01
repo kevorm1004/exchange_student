@@ -1,6 +1,7 @@
 import { User, Settings, Heart, MessageSquare, Package, Star, LogOut, Edit } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,8 +26,13 @@ export default function MyPage() {
     enabled: !!user,
   });
 
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth/login");
+    }
+  }, [user, navigate]);
+
   if (!user) {
-    navigate("/auth/login");
     return null;
   }
 
