@@ -126,49 +126,32 @@ export default function Register() {
     mode: "onChange"
   });
 
-  // 🐛 디버깅: 단계 변경 및 폼 초기화 로깅
+  // 단계 변경 시 해당 폼만 초기화
   useEffect(() => {
-    console.log('🔄 단계 변경:', currentStep);
-    console.log('📝 현재 formData:', formData);
-    
     switch (currentStep) {
       case 'email':
-        console.log('📧 이메일 단계 초기화');
         emailForm.reset({ email: formData.email || "" });
         break;
       case 'nickname':
-        console.log('👤 닉네임 단계 진입');
-        console.log('👤 저장된 닉네임:', formData.nickname);
-        
-        // 닉네임 폼을 빈 상태로 초기화
-        console.log('👤 닉네임 폼 리셋 시작');
+        // 닉네임은 항상 빈 상태로 시작 (이메일 값 간섭 방지)
         nicknameForm.reset({ nickname: "" });
-        console.log('👤 닉네임 폼 리셋 완료');
-        
-        // 저장된 닉네임이 있다면 복원
+        // 뒤로가기로 돌아온 경우에만 저장된 닉네임 복원
         if (formData.nickname) {
-          console.log('👤 저장된 닉네임 복원:', formData.nickname);
           setTimeout(() => {
             nicknameForm.setValue('nickname', formData.nickname!);
-            console.log('👤 닉네임 값 설정 완료');
           }, 50);
-        } else {
-          console.log('👤 새로운 닉네임 입력 - 빈 상태 유지');
         }
         break;
       case 'password':
-        console.log('🔒 비밀번호 단계 초기화');
         passwordForm.reset({ 
           password: formData.password || "",
           confirmPassword: formData.confirmPassword || ""
         });
         break;
       case 'school':
-        console.log('🏫 학교 단계 초기화');
         schoolForm.reset({ school: formData.school || "" });
         break;
       case 'country':
-        console.log('🌍 국가 단계 초기화');
         countryForm.reset({ country: formData.country || "" });
         break;
     }
@@ -516,7 +499,29 @@ export default function Register() {
                         <Input
                           placeholder={getStepPlaceholder()}
                           type={showPassword ? "text" : "password"}
-                          {...field}
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            const newValue = e.target.value;
+                            console.log('🔐 비밀번호 타이핑:', {
+                              이전값길이: field.value?.length || 0,
+                              새로운값길이: newValue.length
+                            });
+                            
+                            try {
+                              field.onChange(newValue);
+                              passwordForm.setValue('password', newValue, { 
+                                shouldValidate: true,
+                                shouldDirty: true,
+                                shouldTouch: true 
+                              });
+                              passwordForm.trigger('password');
+                              console.log('✅ 비밀번호 업데이트 완료');
+                            } catch (error) {
+                              console.error('❌ 비밀번호 업데이트 실패:', error);
+                            }
+                          }}
+                          onBlur={field.onBlur}
+                          name="password"
                           className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0 pr-12"
                         />
                         <Button
@@ -549,7 +554,29 @@ export default function Register() {
                         <Input
                           placeholder="비밀번호를 다시 입력하세요"
                           type={showConfirmPassword ? "text" : "password"}
-                          {...field}
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            const newValue = e.target.value;
+                            console.log('🔐 비밀번호 확인 타이핑:', {
+                              이전값길이: field.value?.length || 0,
+                              새로운값길이: newValue.length
+                            });
+                            
+                            try {
+                              field.onChange(newValue);
+                              passwordForm.setValue('confirmPassword', newValue, { 
+                                shouldValidate: true,
+                                shouldDirty: true,
+                                shouldTouch: true 
+                              });
+                              passwordForm.trigger('confirmPassword');
+                              console.log('✅ 비밀번호 확인 업데이트 완료');
+                            } catch (error) {
+                              console.error('❌ 비밀번호 확인 업데이트 실패:', error);
+                            }
+                          }}
+                          onBlur={field.onBlur}
+                          name="confirmPassword"
                           className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0 pr-12"
                         />
                         <Button
@@ -584,7 +611,29 @@ export default function Register() {
                     <FormControl>
                       <Input 
                         placeholder={getStepPlaceholder()} 
-                        {...field}
+                        value={field.value || ""}
+                        onChange={(e) => {
+                          const newValue = e.target.value;
+                          console.log('🏫 학교 타이핑:', {
+                            이전값: field.value,
+                            새로운값: newValue
+                          });
+                          
+                          try {
+                            field.onChange(newValue);
+                            schoolForm.setValue('school', newValue, { 
+                              shouldValidate: true,
+                              shouldDirty: true,
+                              shouldTouch: true 
+                            });
+                            schoolForm.trigger('school');
+                            console.log('✅ 학교 업데이트 완료');
+                          } catch (error) {
+                            console.error('❌ 학교 업데이트 실패:', error);
+                          }
+                        }}
+                        onBlur={field.onBlur}
+                        name="school"
                         className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
                       />
                     </FormControl>
@@ -606,7 +655,28 @@ export default function Register() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select 
+                      onValueChange={(value) => {
+                        console.log('🌍 국가 선택:', {
+                          이전값: field.value,
+                          새로운값: value
+                        });
+                        
+                        try {
+                          field.onChange(value);
+                          countryForm.setValue('country', value, { 
+                            shouldValidate: true,
+                            shouldDirty: true,
+                            shouldTouch: true 
+                          });
+                          countryForm.trigger('country');
+                          console.log('✅ 국가 업데이트 완료');
+                        } catch (error) {
+                          console.error('❌ 국가 업데이트 실패:', error);
+                        }
+                      }}
+                      value={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0">
                           <SelectValue placeholder={getStepPlaceholder()} />
