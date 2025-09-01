@@ -122,6 +122,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/naver/callback', passport.authenticate('naver', { failureRedirect: '/auth/login' }), handleOAuthCallback);
 
   // Auth Routes
+  app.post('/api/auth/check-email', async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ error: 'Email is required' });
+      const existingUser = await storage.getUserByEmail(email);
+      res.json({ available: !existingUser });
+    } catch (error) {
+      console.log('Database error in /api/auth/check-email:', (error as Error).message);
+      res.status(500).json({ error: 'Email check failed. Please try again later.' });
+    }
+  });
 
   app.post('/api/auth/register', async (req, res) => {
     try {
