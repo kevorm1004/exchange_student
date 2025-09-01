@@ -6,7 +6,6 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -15,11 +14,7 @@ import { registerSchema, type RegisterData } from "@shared/schema";
 import { COUNTRIES } from "@/lib/countries";
 import { z } from "zod";
 
-// 각 단계별 스키마
-const nameSchema = z.object({
-  fullName: z.string().min(1, "이름을 입력해주세요").min(2, "이름은 2글자 이상이어야 합니다"),
-});
-
+// 각 단계별 스키마 (이름 단계 제거)
 const usernameSchema = z.object({
   username: z.string().min(1, "사용자명을 입력해주세요").min(3, "사용자명은 3글자 이상이어야 합니다"),
 });
@@ -44,10 +39,9 @@ const countrySchema = z.object({
   country: z.string().optional(),
 });
 
-type RegisterStep = 'name' | 'username' | 'email' | 'password' | 'school' | 'country';
+type RegisterStep = 'username' | 'email' | 'password' | 'school' | 'country';
 
 interface FormData {
-  fullName: string;
   username: string;
   email: string;
   password: string;
@@ -57,7 +51,7 @@ interface FormData {
 }
 
 export default function Register() {
-  const [currentStep, setCurrentStep] = useState<RegisterStep>('name');
+  const [currentStep, setCurrentStep] = useState<RegisterStep>('username');
   const [formData, setFormData] = useState<Partial<FormData>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -68,17 +62,12 @@ export default function Register() {
   const { toast } = useToast();
   const { login } = useAuth();
 
-  const stepOrder: RegisterStep[] = ['name', 'username', 'email', 'password', 'school', 'country'];
+  const stepOrder: RegisterStep[] = ['username', 'email', 'password', 'school', 'country'];
   const currentStepIndex = stepOrder.indexOf(currentStep);
   const isLastStep = currentStepIndex === stepOrder.length - 1;
   const isOptionalStep = currentStep === 'school' || currentStep === 'country';
 
   // 각 단계별 폼
-  const nameForm = useForm({
-    resolver: zodResolver(nameSchema),
-    defaultValues: { fullName: formData.fullName || "" }
-  });
-
   const usernameForm = useForm({
     resolver: zodResolver(usernameSchema),
     defaultValues: { username: formData.username || "" }
@@ -135,7 +124,6 @@ export default function Register() {
     setFormData(prev => ({ ...prev, ...data }));
     
     if (isLastStep) {
-      // 최종 회원가입 처리
       await handleSubmit();
     } else {
       setCurrentStep(stepOrder[currentStepIndex + 1]);
@@ -162,7 +150,7 @@ export default function Register() {
     setIsLoading(true);
     try {
       const finalData: RegisterData = {
-        fullName: formData.fullName!,
+        fullName: formData.username || "", // username을 fullName으로도 사용
         username: formData.username!,
         email: formData.email!,
         password: formData.password!,
@@ -170,6 +158,13 @@ export default function Register() {
         school: formData.school || "",
         country: formData.country || "",
         profileImage: "",
+        preferredCurrency: "USD",
+        role: "user",
+        status: "active",
+        authProvider: "email",
+        googleId: null,
+        kakaoId: null,
+        naverId: null,
       };
 
       const response = await authApi.register(finalData);
@@ -192,62 +187,60 @@ export default function Register() {
 
   const getStepTitle = () => {
     switch (currentStep) {
-      case 'name': return '이름을 입력해주세요';
-      case 'username': return '사용자명을 입력해주세요';
-      case 'email': return '이메일을 입력해주세요';
-      case 'password': return '비밀번호를 설정해주세요';
-      case 'school': return '학교를 입력해주세요 (선택)';
-      case 'country': return '국가를 선택해주세요 (선택)';
+      case 'username': return '아이디 입력';
+      case 'email': return '이메일 입력';
+      case 'password': return '비밀번호 설정';
+      case 'school': return '학교 입력';
+      case 'country': return '국가 선택';
+      default: return '';
+    }
+  };
+
+  const getStepLabel = () => {
+    switch (currentStep) {
+      case 'username': return '아이디';
+      case 'email': return '이메일';
+      case 'password': return '비밀번호';
+      case 'school': return '학교';
+      case 'country': return '국가';
+      default: return '';
+    }
+  };
+
+  const getStepPlaceholder = () => {
+    switch (currentStep) {
+      case 'username': return '아이디를 입력해주세요';
+      case 'email': return 'example@email.com';
+      case 'password': return '8글자 이상 입력하세요';
+      case 'school': return '학교명을 입력해주세요';
+      case 'country': return '국가를 선택해주세요';
       default: return '';
     }
   };
 
   const getCurrentForm = () => {
     switch (currentStep) {
-      case 'name':
-        return (
-          <Form {...nameForm}>
-            <form onSubmit={nameForm.handleSubmit(handleNext)} className="space-y-6">
-              <FormField
-                control={nameForm.control}
-                name="fullName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>이름 *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="실명을 입력하세요" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                다음
-              </Button>
-            </form>
-          </Form>
-        );
-
       case 'username':
         return (
           <Form {...usernameForm}>
-            <form onSubmit={usernameForm.handleSubmit(handleNext)} className="space-y-6">
+            <form onSubmit={usernameForm.handleSubmit(handleNext)} className="space-y-8">
               <FormField
                 control={usernameForm.control}
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>사용자명 *</FormLabel>
+                    <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
                     <FormControl>
-                      <Input placeholder="다른 사용자들에게 보여질 이름" {...field} />
+                      <Input 
+                        placeholder={getStepPlaceholder()} 
+                        {...field}
+                        className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                다음
-              </Button>
             </form>
           </Form>
         );
@@ -255,19 +248,20 @@ export default function Register() {
       case 'email':
         return (
           <Form {...emailForm}>
-            <form onSubmit={emailForm.handleSubmit(handleNext)} className="space-y-6">
+            <form onSubmit={emailForm.handleSubmit(handleNext)} className="space-y-8">
               <FormField
                 control={emailForm.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>이메일 *</FormLabel>
+                    <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input 
-                          placeholder="example@email.com"
+                          placeholder={getStepPlaceholder()}
                           type="email"
                           {...field}
+                          className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0 pr-12"
                           onChange={(e) => {
                             field.onChange(e);
                             setEmailAvailable(null);
@@ -280,15 +274,15 @@ export default function Register() {
                           }}
                         />
                         {checkingEmail && (
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
                           </div>
                         )}
                         {emailAvailable === true && (
-                          <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" />
+                          <Check className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-green-500" />
                         )}
                         {emailAvailable === false && (
-                          <X className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-red-500" />
+                          <X className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-red-500" />
                         )}
                       </div>
                     </FormControl>
@@ -302,13 +296,6 @@ export default function Register() {
                   </FormItem>
                 )}
               />
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isLoading || emailAvailable === false || checkingEmail}
-              >
-                다음
-              </Button>
             </form>
           </Form>
         );
@@ -322,19 +309,20 @@ export default function Register() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>비밀번호 *</FormLabel>
+                    <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
-                          placeholder="8글자 이상 입력하세요"
+                          placeholder={getStepPlaceholder()}
                           type={showPassword ? "text" : "password"}
                           {...field}
+                          className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0 pr-12"
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute right-0 top-0 h-full px-3"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
                           onClick={() => setShowPassword(!showPassword)}
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -351,19 +339,20 @@ export default function Register() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>비밀번호 확인 *</FormLabel>
+                    <FormLabel className="text-sm text-blue-500 font-medium">비밀번호 확인</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
                           placeholder="비밀번호를 다시 입력하세요"
                           type={showConfirmPassword ? "text" : "password"}
                           {...field}
+                          className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0 pr-12"
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute right-0 top-0 h-full px-3"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         >
                           {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -374,9 +363,6 @@ export default function Register() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                다음
-              </Button>
             </form>
           </Form>
         );
@@ -384,33 +370,24 @@ export default function Register() {
       case 'school':
         return (
           <Form {...schoolForm}>
-            <form onSubmit={schoolForm.handleSubmit(handleNext)} className="space-y-6">
+            <form onSubmit={schoolForm.handleSubmit(handleNext)} className="space-y-8">
               <FormField
                 control={schoolForm.control}
                 name="school"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>학교</FormLabel>
+                    <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
                     <FormControl>
-                      <Input placeholder="소속 학교를 입력하세요" {...field} />
+                      <Input 
+                        placeholder={getStepPlaceholder()} 
+                        {...field}
+                        className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <div className="space-y-3">
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  다음
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full" 
-                  onClick={handleSkip}
-                >
-                  건너뛰기
-                </Button>
-              </div>
             </form>
           </Form>
         );
@@ -418,17 +395,17 @@ export default function Register() {
       case 'country':
         return (
           <Form {...countryForm}>
-            <form onSubmit={countryForm.handleSubmit(handleNext)} className="space-y-6">
+            <form onSubmit={countryForm.handleSubmit(handleNext)} className="space-y-8">
               <FormField
                 control={countryForm.control}
                 name="country"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>국가</FormLabel>
+                    <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="국가를 선택하세요" />
+                        <SelectTrigger className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0">
+                          <SelectValue placeholder={getStepPlaceholder()} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -443,20 +420,6 @@ export default function Register() {
                   </FormItem>
                 )}
               />
-              <div className="space-y-3">
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "가입 중..." : "회원가입 완료"}
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full" 
-                  onClick={handleSkip}
-                  disabled={isLoading}
-                >
-                  건너뛰기
-                </Button>
-              </div>
             </form>
           </Form>
         );
@@ -467,67 +430,69 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBack}
-              className="p-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex-1">
-              <CardTitle className="text-lg font-semibold">
-                회원가입
-              </CardTitle>
-              <p className="text-sm text-gray-500">
-                {currentStepIndex + 1} / {stepOrder.length}
-              </p>
-            </div>
-          </div>
-          
-          {/* 진행 바 */}
-          <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
-            <div 
-              className="bg-primary h-2 rounded-full transition-all duration-300"
-              style={{ width: `${((currentStepIndex + 1) / stepOrder.length) * 100}%` }}
-            />
-          </div>
-        </CardHeader>
-        
-        <CardContent>
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              {getStepTitle()}
-            </h2>
-            {isOptionalStep && (
-              <p className="text-sm text-gray-600">
-                이 정보는 나중에 설정할 수 있습니다
-              </p>
-            )}
-          </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* 헤더 */}
+      <div className="flex items-center p-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleBack}
+          className="p-2 mr-2"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+      </div>
 
-          {getCurrentForm()}
-
-          {currentStep === 'name' && (
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                이미 계정이 있으신가요?{" "}
-                <Button
-                  variant="link"
-                  className="p-0 text-primary"
-                  onClick={() => navigate("/auth/login")}
-                >
-                  로그인
-                </Button>
-              </p>
-            </div>
+      {/* 콘텐츠 */}
+      <div className="flex-1 px-6 py-8">
+        <div className="mb-12">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            {getStepTitle()}
+          </h1>
+          {isOptionalStep && (
+            <p className="text-gray-600">
+              선택 사항입니다. 나중에 설정할 수 있어요.
+            </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {getCurrentForm()}
+      </div>
+
+      {/* 하단 고정 영역 */}
+      <div className="bg-white border-t border-gray-200 p-6 space-y-4">
+        {/* 다음/완료 버튼 */}
+        <Button 
+          onClick={() => {
+            const currentForm = currentStep === 'username' ? usernameForm :
+                               currentStep === 'email' ? emailForm :
+                               currentStep === 'password' ? passwordForm :
+                               currentStep === 'school' ? schoolForm : countryForm;
+            currentForm.handleSubmit(handleNext)();
+          }}
+          className="w-full bg-gray-400 hover:bg-gray-500 text-white rounded-xl py-4 text-base font-medium"
+          disabled={isLoading || (currentStep === 'email' && (emailAvailable === false || checkingEmail))}
+        >
+          {isLoading ? "처리 중..." : isLastStep ? "회원가입 완료" : "다음"}
+        </Button>
+
+        {/* 건너뛰기 버튼 (선택 단계에서만) */}
+        {isOptionalStep && (
+          <Button 
+            variant="ghost"
+            onClick={handleSkip}
+            className="w-full text-gray-500 py-4 text-base"
+            disabled={isLoading}
+          >
+            건너뛰기
+          </Button>
+        )}
+
+        {/* 진행 표시줄 */}
+        <div className="flex justify-center">
+          <div className="w-12 h-1 bg-black rounded-full" />
+        </div>
+      </div>
     </div>
   );
 }

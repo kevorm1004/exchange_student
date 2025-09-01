@@ -140,7 +140,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingUser = await storage.getUserByEmail(validatedData.email);
       if (existingUser) return res.status(400).json({ error: 'User already exists' });
       const hashedPassword = await bcrypt.hash(validatedData.password, 10);
-      const user = await storage.createUser({ ...validatedData, password: hashedPassword });
+      
+      // fullName이 비어있으면 username을 사용
+      const userData = {
+        ...validatedData,
+        fullName: validatedData.fullName || validatedData.username,
+        password: hashedPassword
+      };
+      
+      const user = await storage.createUser(userData);
       const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
       res.json({ token, user: { ...user, password: undefined } });
     } catch (error) {

@@ -151,10 +151,13 @@ export const loginSchema = z.object({
   password: z.string().min(1, "비밀번호를 입력하세요"),
 });
 
-export const registerSchema = insertUserSchema.extend({
-  confirmPassword: z.string(),
+export const registerSchema = insertUserSchema.omit({
+  fullName: true // fullName을 제외하고 나중에 username으로 대체
+}).extend({
+  fullName: z.string().default(""), // fullName을 선택적으로 만들고 기본값을 빈 문자열로 설정
+  confirmPassword: z.string().min(1, "비밀번호 확인을 입력해주세요"),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: "비밀번호가 일치하지 않습니다",
   path: ["confirmPassword"],
 });
 
