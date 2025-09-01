@@ -126,41 +126,53 @@ export default function Register() {
     mode: "onChange"
   });
 
-  // ❌ 문제 1: 이메일 페이지에서 입력한 값이 닉네임 필드에 나타남
-  // ❌ 문제 2: 닉네임 필드에서 타이핑이 안 됨 (폼 상태 충돌)
-  // ✅ 해결: 각 단계별로 완전히 독립적인 폼 초기화 + 타이밍 문제 해결
+  // 🐛 디버깅: 단계 변경 및 폼 초기화 로깅
   useEffect(() => {
+    console.log('🔄 단계 변경:', currentStep);
+    console.log('📝 현재 formData:', formData);
+    
     switch (currentStep) {
       case 'email':
-        // 이메일 단계: 저장된 이메일만 복원
+        console.log('📧 이메일 단계 초기화');
         emailForm.reset({ email: formData.email || "" });
         break;
       case 'nickname':
-        // ✅ 핵심 수정: 닉네임 단계는 무조건 빈 상태로 시작
-        // 이전 단계의 어떤 값도 가져오지 않음 (이메일 값 완전 차단)
+        console.log('👤 닉네임 단계 진입');
+        console.log('👤 저장된 닉네임:', formData.nickname);
+        
+        // 닉네임 폼을 빈 상태로 초기화
+        console.log('👤 닉네임 폼 리셋 시작');
         nicknameForm.reset({ nickname: "" });
-        // 뒤로가기로 돌아온 경우에만 저장된 닉네임 복원
+        console.log('👤 닉네임 폼 리셋 완료');
+        
+        // 저장된 닉네임이 있다면 복원
         if (formData.nickname) {
-          // 약간의 지연을 두어 reset 완료 후 값 설정 (입력 가능 상태 보장)
+          console.log('👤 저장된 닉네임 복원:', formData.nickname);
           setTimeout(() => {
-            nicknameForm.setValue('nickname', formData.nickname);
+            nicknameForm.setValue('nickname', formData.nickname!);
+            console.log('👤 닉네임 값 설정 완료');
           }, 50);
+        } else {
+          console.log('👤 새로운 닉네임 입력 - 빈 상태 유지');
         }
         break;
       case 'password':
+        console.log('🔒 비밀번호 단계 초기화');
         passwordForm.reset({ 
           password: formData.password || "",
           confirmPassword: formData.confirmPassword || ""
         });
         break;
       case 'school':
+        console.log('🏫 학교 단계 초기화');
         schoolForm.reset({ school: formData.school || "" });
         break;
       case 'country':
+        console.log('🌍 국가 단계 초기화');
         countryForm.reset({ country: formData.country || "" });
         break;
     }
-  }, [currentStep]); // formData 의존성 제거하여 불필요한 재실행 방지
+  }, [currentStep]);
 
   // 각 단계별 유효성 검사 함수
   const isStepValid = () => {
@@ -415,23 +427,48 @@ export default function Register() {
                   <FormItem>
                     <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
                     <FormControl>
-                      {/* ✅ 핵심 수정: 입력 필드 완전 독립화 */}
-                      {/* - value 명시적 설정으로 상태 충돌 방지 */}
-                      {/* - onChange 직접 처리로 타이핑 문제 해결 */}
+                      {/* 🐛 디버깅이 가능한 닉네임 입력 필드 */}
                       <Input 
                         placeholder={getStepPlaceholder()} 
-                        value={field.value || ""} // 명시적 value 설정 (undefined 방지)
+                        value={field.value || ""} // 현재 값 표시
                         onChange={(e) => {
-                          // 직접 onChange 처리로 타이핑 즉시 반영
-                          field.onChange(e.target.value);
+                          const newValue = e.target.value;
+                          console.log('🔤 타이핑 감지:', {
+                            이전값: field.value,
+                            새로운값: newValue,
+                            이벤트타입: e.type,
+                            타겟: e.target.tagName
+                          });
+                          
+                          // react-hook-form에 값 전달
+                          field.onChange(newValue);
+                          
+                          console.log('🔤 폼 상태 업데이트 완료');
+                          console.log('🔤 현재 폼 값:', nicknameForm.getValues());
                         }}
-                        onBlur={field.onBlur} // 폼 검증을 위한 onBlur 유지
-                        name="nickname" // 고유 name 속성 설정
+                        onKeyDown={(e) => {
+                          console.log('⌨️ 키 입력:', {
+                            키: e.key,
+                            코드: e.code,
+                            현재값: field.value
+                          });
+                        }}
+                        onFocus={() => {
+                          console.log('🎯 필드 포커스:', {
+                            현재값: field.value,
+                            폼상태: nicknameForm.formState
+                          });
+                        }}
+                        onBlur={(e) => {
+                          console.log('👋 필드 블러:', field.value);
+                          field.onBlur();
+                        }}
+                        name="nickname"
                         className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
                         data-testid="input-nickname"
-                        autoComplete="off" // 브라우저 자동완성 방지
-                        autoCorrect="off" // 모바일 자동수정 방지
-                        spellCheck={false} // 맞춤법 검사 방지
+                        autoComplete="off"
+                        autoCorrect="off"
+                        spellCheck={false}
                       />
                     </FormControl>
                     <FormMessage />
