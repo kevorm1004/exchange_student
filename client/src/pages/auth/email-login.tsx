@@ -2,11 +2,11 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+import logoImage from "@assets/logo_1756706278060.png";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { authApi } from "@/lib/auth";
@@ -56,37 +56,46 @@ export default function EmailLogin() {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex items-center p-4">
-      <Card className="w-full border-0 shadow-none">
-        <CardHeader className="text-center space-y-2 pb-6">
-          <div className="flex items-center justify-between mb-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/auth/login')}
-              className="p-2"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex-1" />
-          </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">
-            이메일 로그인
-          </CardTitle>
-          <p className="text-gray-600">이메일과 비밀번호를 입력하세요</p>
-        </CardHeader>
-        <CardContent>
+    <div className="min-h-screen bg-white">
+      {/* 상단 헤더 */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-100">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/auth/login')}
+          className="flex items-center gap-2 text-gray-700 hover:text-gray-900"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <h1 className="text-sm font-medium text-gray-700">이메일 로그인</h1>
+        <div className="w-8"></div> {/* 균형을 위한 빈 공간 */}
+      </div>
+
+      {/* 메인 컨텐츠 */}
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-6">
+        {/* 로고 */}
+        <div className="mb-12">
+          <img 
+            src={logoImage} 
+            alt="교환마켓 로고" 
+            className="w-48 h-auto"
+          />
+        </div>
+
+        {/* 로그인 폼 */}
+        <div className="w-full max-w-sm">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>이메일 또는 사용자명</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium">이메일 또는 사용자명</FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="이메일 또는 사용자명을 입력하세요"
+                        className="h-12 border-gray-300 rounded-xl"
                         {...field} 
                       />
                     </FormControl>
@@ -100,25 +109,26 @@ export default function EmailLogin() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>비밀번호</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium">비밀번호</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
                           placeholder="비밀번호를 입력하세요"
                           type={showPassword ? "text" : "password"}
+                          className="h-12 border-gray-300 rounded-xl pr-12"
                           {...field}
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute right-0 top-0 h-full px-3"
+                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                           onClick={() => setShowPassword(!showPassword)}
                         >
                           {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
+                            <EyeOff className="h-5 w-5 text-gray-400" />
                           ) : (
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-5 w-5 text-gray-400" />
                           )}
                         </Button>
                       </div>
@@ -130,28 +140,15 @@ export default function EmailLogin() {
 
               <Button 
                 type="submit" 
-                className="w-full marketplace-button-primary"
+                className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white text-base font-medium rounded-xl mt-8"
                 disabled={isLoading}
               >
                 {isLoading ? "로그인 중..." : "로그인"}
               </Button>
             </form>
           </Form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              계정이 없으시나요?{" "}
-              <Button
-                variant="link"
-                className="p-0 h-auto font-normal text-blue-600"
-                onClick={() => navigate('/auth/register')}
-              >
-                회원가입
-              </Button>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
