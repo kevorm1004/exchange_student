@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import type { User } from "@shared/schema";
+import { setGlobalLogoutHandler } from "@/lib/queryClient";
 
 interface AuthContextType {
   user: User | null;
@@ -19,6 +20,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [, navigate] = useLocation();
 
+  const logout = () => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/auth/login");
+  };
+
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
@@ -29,6 +38,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     setIsLoading(false);
+    
+    // 글로벌 로그아웃 핸들러 설정
+    setGlobalLogoutHandler(logout);
   }, []);
 
   const login = (newToken: string, newUser: User) => {
@@ -45,14 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateUser = (userData: User) => {
     setUser(userData);
     localStorage.setItem("user", JSON.stringify(userData));
-  };
-
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/auth/login");
   };
 
   return (

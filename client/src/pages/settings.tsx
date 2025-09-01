@@ -90,12 +90,18 @@ export default function Settings() {
 
   const handleDeleteAccount = async () => {
     try {
-      await apiRequest("DELETE", "/api/user/account");
+      const response = await apiRequest("DELETE", "/api/user/account");
+      const result = await response.json();
+      
       toast({
         title: "계정이 삭제되었습니다",
         variant: "default",
       });
-      await logout();
+      
+      // 강제 로그아웃 처리는 이미 API에서 처리됨
+      if (result.forceLogout) {
+        await logout();
+      }
     } catch (error) {
       toast({
         title: "계정 삭제 실패",

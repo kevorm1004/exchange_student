@@ -45,7 +45,15 @@ const authenticateToken = async (req: Request, res: Response, next: NextFunction
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
     const user = await storage.getUser(decoded.id);
-    if (!user) return res.status(403).json({ error: 'User not found' });
+    
+    // 사용자가 존재하지 않으면 (삭제된 경우) 401 에러로 처리
+    if (!user) {
+      return res.status(401).json({ 
+        error: 'User account not found or has been deleted',
+        forceLogout: true 
+      });
+    }
+    
     req.user = user;
     next();
   } catch (error) {
@@ -318,7 +326,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Delete the user account
       await storage.deleteUser(userId);
       
-      res.json({ message: '계정이 성공적으로 삭제되었습니다.' });
+      // 로그아웃 처리: 세션 종료
+      if (req.session) {
+        req.session.destroy((err) => {
+          if (err) console.error('Session destruction error:', err);
+        });
+      }
+      
+      // 클라이언트에게 강제 로그아웃 지시
+      res.json({ 
+        message: '계정이 성공적으로 삭제되었습니다.',
+        forceLogout: true 
+      });
     } catch (error) {
       console.error('Account deletion error:', error);
       res.status(500).json({ error: '계정 삭제에 실패했습니다.' });

@@ -1,8 +1,27 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// 강제 로그아웃을 위한 글로벌 핸들러
+let globalLogoutHandler: (() => void) | null = null;
+
+export const setGlobalLogoutHandler = (handler: () => void) => {
+  globalLogoutHandler = handler;
+};
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
+    let errorData;
+    try {
+      errorData = await res.json();
+    } catch {
+      errorData = { error: res.statusText };
+    }
+    
+    // 강제 로그아웃이 필요한 경우 처리
+    if (errorData.forceLogout && globalLogoutHandler) {
+      globalLogoutHandler();
+    }
+    
+    const text = errorData.error || errorData.message || res.statusText;
     throw new Error(`${res.status}: ${text}`);
   }
 }
@@ -29,6 +48,18 @@ export async function apiRequest(
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
+
+  // 응답이 성공이고 forceLogout이 있으면 처리
+  if (res.ok) {
+    try {
+      const responseData = await res.clone().json();
+      if (responseData.forceLogout && globalLogoutHandler) {
+        globalLogoutHandler();
+      }
+    } catch {
+      // JSON이 아닌 응답인 경우 무시
+    }
+  }
 
   await throwIfResNotOk(res);
   return res;
