@@ -14,13 +14,13 @@ import { registerSchema, type RegisterData } from "@shared/schema";
 import { COUNTRIES } from "@/lib/countries";
 import { z } from "zod";
 
-// 각 단계별 스키마 (이름 단계 제거)
-const usernameSchema = z.object({
-  username: z.string().min(1, "사용자명을 입력해주세요").min(3, "사용자명은 3글자 이상이어야 합니다"),
-});
-
+// 각 단계별 스키마
 const emailSchema = z.object({
   email: z.string().min(1, "이메일을 입력해주세요").email("올바른 이메일 형식이 아닙니다"),
+});
+
+const usernameSchema = z.object({
+  username: z.string().min(1, "사용자명을 입력해주세요").min(3, "사용자명은 3글자 이상이어야 합니다"),
 });
 
 const passwordSchema = z.object({
@@ -39,11 +39,11 @@ const countrySchema = z.object({
   country: z.string().optional(),
 });
 
-type RegisterStep = 'username' | 'email' | 'password' | 'school' | 'country';
+type RegisterStep = 'email' | 'username' | 'password' | 'school' | 'country';
 
 interface FormData {
-  username: string;
   email: string;
+  username: string;
   password: string;
   confirmPassword: string;
   school?: string;
@@ -51,7 +51,7 @@ interface FormData {
 }
 
 export default function Register() {
-  const [currentStep, setCurrentStep] = useState<RegisterStep>('username');
+  const [currentStep, setCurrentStep] = useState<RegisterStep>('email');
   const [formData, setFormData] = useState<Partial<FormData>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -62,20 +62,22 @@ export default function Register() {
   const { toast } = useToast();
   const { login } = useAuth();
 
-  const stepOrder: RegisterStep[] = ['username', 'email', 'password', 'school', 'country'];
+  const stepOrder: RegisterStep[] = ['email', 'username', 'password', 'school', 'country'];
   const currentStepIndex = stepOrder.indexOf(currentStep);
   const isLastStep = currentStepIndex === stepOrder.length - 1;
   const isOptionalStep = currentStep === 'school' || currentStep === 'country';
 
   // 각 단계별 폼
-  const usernameForm = useForm({
-    resolver: zodResolver(usernameSchema),
-    defaultValues: { username: formData.username || "" }
-  });
-
   const emailForm = useForm({
     resolver: zodResolver(emailSchema),
-    defaultValues: { email: formData.email || "" }
+    defaultValues: { email: formData.email || "" },
+    mode: "onChange"
+  });
+
+  const usernameForm = useForm({
+    resolver: zodResolver(usernameSchema),
+    defaultValues: { username: formData.username || "" },
+    mode: "onChange"
   });
 
   const passwordForm = useForm({
@@ -83,18 +85,39 @@ export default function Register() {
     defaultValues: { 
       password: formData.password || "",
       confirmPassword: formData.confirmPassword || ""
-    }
+    },
+    mode: "onChange"
   });
 
   const schoolForm = useForm({
     resolver: zodResolver(schoolSchema),
-    defaultValues: { school: formData.school || "" }
+    defaultValues: { school: formData.school || "" },
+    mode: "onChange"
   });
 
   const countryForm = useForm({
     resolver: zodResolver(countrySchema),
-    defaultValues: { country: formData.country || "" }
+    defaultValues: { country: formData.country || "" },
+    mode: "onChange"
   });
+
+  // 각 단계별 유효성 검사 함수
+  const isStepValid = () => {
+    switch (currentStep) {
+      case 'email':
+        return emailForm.formState.isValid && emailAvailable === true && !checkingEmail;
+      case 'username':
+        return usernameForm.formState.isValid;
+      case 'password':
+        return passwordForm.formState.isValid;
+      case 'school':
+        return true; // 선택사항이므로 항상 유효
+      case 'country':
+        return true; // 선택사항이므로 항상 유효
+      default:
+        return false;
+    }
+  };
 
   // 이메일 중복 확인
   const checkEmailAvailability = async (email: string) => {
@@ -187,8 +210,8 @@ export default function Register() {
 
   const getStepTitle = () => {
     switch (currentStep) {
-      case 'username': return '아이디 입력';
       case 'email': return '이메일 입력';
+      case 'username': return '아이디 입력';
       case 'password': return '비밀번호 설정';
       case 'school': return '학교 입력';
       case 'country': return '국가 선택';
@@ -198,8 +221,8 @@ export default function Register() {
 
   const getStepLabel = () => {
     switch (currentStep) {
-      case 'username': return '아이디';
       case 'email': return '이메일';
+      case 'username': return '아이디';
       case 'password': return '비밀번호';
       case 'school': return '학교';
       case 'country': return '국가';
@@ -209,8 +232,8 @@ export default function Register() {
 
   const getStepPlaceholder = () => {
     switch (currentStep) {
-      case 'username': return '아이디를 입력해주세요';
       case 'email': return 'example@email.com';
+      case 'username': return '아이디를 입력해주세요';
       case 'password': return '8글자 이상 입력하세요';
       case 'school': return '학교명을 입력해주세요';
       case 'country': return '국가를 선택해주세요';
@@ -220,31 +243,6 @@ export default function Register() {
 
   const getCurrentForm = () => {
     switch (currentStep) {
-      case 'username':
-        return (
-          <Form {...usernameForm}>
-            <form onSubmit={usernameForm.handleSubmit(handleNext)} className="space-y-8">
-              <FormField
-                control={usernameForm.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder={getStepPlaceholder()} 
-                        {...field}
-                        className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </form>
-          </Form>
-        );
-
       case 'email':
         return (
           <Form {...emailForm}>
@@ -293,6 +291,31 @@ export default function Register() {
                     {emailAvailable === true && (
                       <p className="text-sm text-green-500">사용 가능한 이메일입니다</p>
                     )}
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+        );
+
+      case 'username':
+        return (
+          <Form {...usernameForm}>
+            <form onSubmit={usernameForm.handleSubmit(handleNext)} className="space-y-8">
+              <FormField
+                control={usernameForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder={getStepPlaceholder()} 
+                        {...field}
+                        className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
+                      />
+                    </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -464,13 +487,17 @@ export default function Register() {
         {/* 다음/완료 버튼 */}
         <Button 
           onClick={() => {
-            const currentForm = currentStep === 'username' ? usernameForm :
-                               currentStep === 'email' ? emailForm :
+            const currentForm = currentStep === 'email' ? emailForm :
+                               currentStep === 'username' ? usernameForm :
                                currentStep === 'password' ? passwordForm :
                                currentStep === 'school' ? schoolForm : countryForm;
             currentForm.handleSubmit(handleNext)();
           }}
-          className="w-full bg-gray-400 hover:bg-gray-500 text-white rounded-xl py-4 text-base font-medium"
+          className={`w-full rounded-xl py-4 text-base font-medium transition-colors ${
+            isStepValid() && !isLoading
+              ? "bg-blue-500 hover:bg-blue-600 text-white"
+              : "bg-gray-400 hover:bg-gray-500 text-white"
+          }`}
           disabled={isLoading || (currentStep === 'email' && (emailAvailable === false || checkingEmail))}
         >
           {isLoading ? "처리 중..." : isLastStep ? "회원가입 완료" : "다음"}
