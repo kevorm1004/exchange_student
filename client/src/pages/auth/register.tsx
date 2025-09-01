@@ -99,7 +99,7 @@ export default function Register() {
 
   const nicknameForm = useForm({
     resolver: zodResolver(nicknameSchema),
-    defaultValues: { nickname: getInitialNickname() },
+    defaultValues: { nickname: "" }, // 항상 빈 문자열로 시작
     mode: "onChange"
   });
 
@@ -126,27 +126,36 @@ export default function Register() {
 
   // 단계 변경 시 해당 폼만 초기화
   useEffect(() => {
-    switch (currentStep) {
-      case 'email':
-        emailForm.reset({ email: formData.email || "" });
-        break;
-      case 'nickname':
-        // 닉네임 폼은 항상 저장된 닉네임 값으로만 초기화 (이메일 값 차단)
-        nicknameForm.reset({ nickname: formData.nickname || "" });
-        break;
-      case 'password':
-        passwordForm.reset({ 
-          password: formData.password || "",
-          confirmPassword: formData.confirmPassword || ""
-        });
-        break;
-      case 'school':
-        schoolForm.reset({ school: formData.school || "" });
-        break;
-      case 'country':
-        countryForm.reset({ country: formData.country || "" });
-        break;
-    }
+    // 약간의 지연을 두어 폼이 완전히 렌더링된 후 초기화
+    const timer = setTimeout(() => {
+      switch (currentStep) {
+        case 'email':
+          emailForm.reset({ email: formData.email || "" });
+          break;
+        case 'nickname':
+          // 닉네임은 빈 문자열로 강제 초기화 (이메일 값 완전 차단)
+          nicknameForm.reset({ nickname: "" });
+          // 저장된 닉네임이 있다면 그것만 설정
+          if (formData.nickname) {
+            nicknameForm.setValue('nickname', formData.nickname);
+          }
+          break;
+        case 'password':
+          passwordForm.reset({ 
+            password: formData.password || "",
+            confirmPassword: formData.confirmPassword || ""
+          });
+          break;
+        case 'school':
+          schoolForm.reset({ school: formData.school || "" });
+          break;
+        case 'country':
+          countryForm.reset({ country: formData.country || "" });
+          break;
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [currentStep]);
 
   // 각 단계별 유효성 검사 함수
