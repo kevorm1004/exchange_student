@@ -92,11 +92,7 @@ export default function Login() {
           {/* 카카오 로그인 버튼 */}
           <Button 
             onClick={() => {
-              toast({
-                title: "준비 중",
-                description: "카카오 로그인 기능은 현재 준비 중입니다.",
-                variant: "default",
-              });
+              window.location.href = '/api/auth/kakao';
             }}
             className="w-full h-14 bg-[#FEE500] hover:bg-[#FADA0C] text-black text-base font-medium rounded-xl flex items-center justify-center gap-3"
           >
