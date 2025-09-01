@@ -97,9 +97,11 @@ export default function Register() {
     mode: "onChange"
   });
 
+  // ❌ 문제: 닉네임 폼이 이메일 값을 받아오는 버그 해결
+  // ✅ 해결: defaultValues를 완전히 빈 문자열로 고정하여 다른 단계 데이터 간섭 차단
   const nicknameForm = useForm({
     resolver: zodResolver(nicknameSchema),
-    defaultValues: { nickname: "" }, // 항상 빈 문자열로 시작
+    defaultValues: { nickname: "" }, // 무조건 빈 문자열로 시작 - 이메일 값 차단
     mode: "onChange"
   });
 
@@ -124,39 +126,41 @@ export default function Register() {
     mode: "onChange"
   });
 
-  // 단계 변경 시 해당 폼만 초기화
+  // ❌ 문제 1: 이메일 페이지에서 입력한 값이 닉네임 필드에 나타남
+  // ❌ 문제 2: 닉네임 필드에서 타이핑이 안 됨 (폼 상태 충돌)
+  // ✅ 해결: 각 단계별로 완전히 독립적인 폼 초기화 + 타이밍 문제 해결
   useEffect(() => {
-    // 약간의 지연을 두어 폼이 완전히 렌더링된 후 초기화
-    const timer = setTimeout(() => {
-      switch (currentStep) {
-        case 'email':
-          emailForm.reset({ email: formData.email || "" });
-          break;
-        case 'nickname':
-          // 닉네임은 빈 문자열로 강제 초기화 (이메일 값 완전 차단)
-          nicknameForm.reset({ nickname: "" });
-          // 저장된 닉네임이 있다면 그것만 설정
-          if (formData.nickname) {
+    switch (currentStep) {
+      case 'email':
+        // 이메일 단계: 저장된 이메일만 복원
+        emailForm.reset({ email: formData.email || "" });
+        break;
+      case 'nickname':
+        // ✅ 핵심 수정: 닉네임 단계는 무조건 빈 상태로 시작
+        // 이전 단계의 어떤 값도 가져오지 않음 (이메일 값 완전 차단)
+        nicknameForm.reset({ nickname: "" });
+        // 뒤로가기로 돌아온 경우에만 저장된 닉네임 복원
+        if (formData.nickname) {
+          // 약간의 지연을 두어 reset 완료 후 값 설정 (입력 가능 상태 보장)
+          setTimeout(() => {
             nicknameForm.setValue('nickname', formData.nickname);
-          }
-          break;
-        case 'password':
-          passwordForm.reset({ 
-            password: formData.password || "",
-            confirmPassword: formData.confirmPassword || ""
-          });
-          break;
-        case 'school':
-          schoolForm.reset({ school: formData.school || "" });
-          break;
-        case 'country':
-          countryForm.reset({ country: formData.country || "" });
-          break;
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [currentStep]);
+          }, 50);
+        }
+        break;
+      case 'password':
+        passwordForm.reset({ 
+          password: formData.password || "",
+          confirmPassword: formData.confirmPassword || ""
+        });
+        break;
+      case 'school':
+        schoolForm.reset({ school: formData.school || "" });
+        break;
+      case 'country':
+        countryForm.reset({ country: formData.country || "" });
+        break;
+    }
+  }, [currentStep]); // formData 의존성 제거하여 불필요한 재실행 방지
 
   // 각 단계별 유효성 검사 함수
   const isStepValid = () => {
@@ -411,12 +415,23 @@ export default function Register() {
                   <FormItem>
                     <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
                     <FormControl>
+                      {/* ✅ 핵심 수정: 입력 필드 완전 독립화 */}
+                      {/* - value 명시적 설정으로 상태 충돌 방지 */}
+                      {/* - onChange 직접 처리로 타이핑 문제 해결 */}
                       <Input 
                         placeholder={getStepPlaceholder()} 
-                        {...field}
+                        value={field.value || ""} // 명시적 value 설정 (undefined 방지)
+                        onChange={(e) => {
+                          // 직접 onChange 처리로 타이핑 즉시 반영
+                          field.onChange(e.target.value);
+                        }}
+                        onBlur={field.onBlur} // 폼 검증을 위한 onBlur 유지
+                        name="nickname" // 고유 name 속성 설정
                         className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
                         data-testid="input-nickname"
-                        autoComplete="off"
+                        autoComplete="off" // 브라우저 자동완성 방지
+                        autoCorrect="off" // 모바일 자동수정 방지
+                        spellCheck={false} // 맞춤법 검사 방지
                       />
                     </FormControl>
                     <FormMessage />
