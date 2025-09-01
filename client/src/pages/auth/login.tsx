@@ -67,7 +67,7 @@ export default function Login() {
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-sm font-medium text-gray-700">회원가입 및 로그인</h1>
+        <h1 className="text-xs font-normal text-gray-500">회원가입 및 로그인</h1>
         <div className="w-8"></div> {/* 균형을 위한 빈 공간 */}
       </div>
 
