@@ -134,7 +134,7 @@ export default function Home() {
 
   return (
     <>
-      <Header title="ExchangeMart" />
+      <Header title="중고물품" />
       <FilterBar 
         filter={filter} 
         onFilterChange={setFilter}

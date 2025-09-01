@@ -69,45 +69,45 @@ export default function Community() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header with Logo */}
-      <div className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center justify-center">
-          <h1 className="text-xl font-bold text-gray-900">커뮤니티</h1>
-        </div>
-      </div>
-
-      {/* Tab Navigation */}
-      <header className="bg-white border-b px-4 py-3">
+      {/* Header with consistent layout */}
+      <header className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-50 h-16">
         <div className="flex items-center justify-between">
-          <div className="flex space-x-1">
-            <button
-              onClick={() => setActiveTab("이야기방")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === "이야기방" 
-                  ? "bg-gray-200 text-gray-900" 
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              이야기방
-            </button>
-            <button
-              onClick={() => setActiveTab("모임방")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === "모임방" 
-                  ? "bg-gray-200 text-gray-900" 
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              모임방
-            </button>
+          <div className="flex items-center">
+            <h1 className="text-xl font-bold text-gray-900">커뮤니티</h1>
           </div>
-          
-          {/* Search Icon */}
-          <Button variant="ghost" size="sm" className="p-2">
-            <Search className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-primary">
+              <Search className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
+
+      {/* Tab Navigation */}
+      <div className="bg-white border-b px-4 py-3">
+        <div className="flex space-x-1">
+          <button
+            onClick={() => setActiveTab("이야기방")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === "이야기방" 
+                ? "bg-gray-200 text-gray-900" 
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            이야기방
+          </button>
+          <button
+            onClick={() => setActiveTab("모임방")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === "모임방" 
+                ? "bg-gray-200 text-gray-900" 
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            모임방
+          </button>
+        </div>
+      </div>
 
       {/* Country Filter */}
       <div className="px-4 py-3 bg-white border-b">
