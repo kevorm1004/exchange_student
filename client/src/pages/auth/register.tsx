@@ -155,8 +155,11 @@ export default function Register() {
       switch (currentStep) {
         case 'email':
           const emailValue = emailForm.watch('email');
-          return emailSchema.safeParse({ email: emailValue }).success && 
-                 emailAvailable === true && !checkingEmail;
+          const isEmailValid = emailSchema.safeParse({ email: emailValue }).success;
+          // 이메일 형식이 올바르면 중복 확인 상태와 관계없이 진행 허용
+          // (데이터베이스 오류 시에도 회원가입이 가능하도록)
+          return isEmailValid && !checkingEmail && 
+                 (emailAvailable === true || emailAvailable === null);
         case 'nickname':
           const nicknameValue = nicknameForm.watch('nickname');
           return nicknameSchema.safeParse({ nickname: nicknameValue }).success;
@@ -354,6 +357,9 @@ export default function Register() {
                     )}
                     {emailAvailable === true && (
                       <p className="text-sm text-green-500">사용 가능한 이메일입니다</p>
+                    )}
+                    {emailAvailable === null && !checkingEmail && emailForm.watch('email') && (
+                      <p className="text-sm text-yellow-600">중복 확인을 할 수 없지만 진행 가능합니다</p>
                     )}
                   </FormItem>
                 )}
