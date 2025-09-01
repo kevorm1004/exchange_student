@@ -126,8 +126,10 @@ export default function Register() {
         }
         break;
       case 'nickname':
-        // 닉네임 단계에서는 저장된 닉네임만 설정, 없으면 빈 상태
-        nicknameForm.setValue('nickname', formData.nickname || '');
+        // 닉네임은 저장된 값이 있을 때만 설정
+        if (formData.nickname) {
+          nicknameForm.setValue('nickname', formData.nickname);
+        }
         break;
       case 'password':
         if (formData.password) {
@@ -136,13 +138,17 @@ export default function Register() {
         }
         break;
       case 'school':
-        schoolForm.setValue('school', formData.school || '');
+        if (formData.school) {
+          schoolForm.setValue('school', formData.school);
+        }
         break;
       case 'country':
-        countryForm.setValue('country', formData.country || '');
+        if (formData.country) {
+          countryForm.setValue('country', formData.country);
+        }
         break;
     }
-  }, [currentStep]); // formData 의존성 제거
+  }, [currentStep]);
 
   // 각 단계별 유효성 검사 함수
   const isStepValid = () => {
@@ -379,10 +385,7 @@ export default function Register() {
                     <FormControl>
                       <Input 
                         placeholder={getStepPlaceholder()} 
-                        value={field.value || ''}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        onBlur={field.onBlur}
-                        name="nickname"
+                        {...field}
                         className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
                         data-testid="input-nickname"
                         autoComplete="off"
