@@ -117,7 +117,7 @@ export default function Register() {
     mode: "onChange"
   });
 
-  // 단계 변경 시 폼 데이터 로드 - 각 단계에 맞는 데이터만 로드
+  // 단계 변경 시 한번만 실행되는 폼 초기화
   useEffect(() => {
     switch (currentStep) {
       case 'email':
@@ -126,9 +126,8 @@ export default function Register() {
         }
         break;
       case 'nickname':
-        if (formData.nickname) {
-          nicknameForm.setValue('nickname', formData.nickname);
-        }
+        // 닉네임 단계에서는 저장된 닉네임만 설정, 없으면 빈 상태
+        nicknameForm.setValue('nickname', formData.nickname || '');
         break;
       case 'password':
         if (formData.password) {
@@ -137,17 +136,13 @@ export default function Register() {
         }
         break;
       case 'school':
-        if (formData.school) {
-          schoolForm.setValue('school', formData.school);
-        }
+        schoolForm.setValue('school', formData.school || '');
         break;
       case 'country':
-        if (formData.country) {
-          countryForm.setValue('country', formData.country);
-        }
+        countryForm.setValue('country', formData.country || '');
         break;
     }
-  }, [currentStep, formData]);
+  }, [currentStep]); // formData 의존성 제거
 
   // 각 단계별 유효성 검사 함수
   const isStepValid = () => {
@@ -385,11 +380,12 @@ export default function Register() {
                       <Input 
                         placeholder={getStepPlaceholder()} 
                         value={field.value || ''}
-                        onChange={field.onChange}
+                        onChange={(e) => field.onChange(e.target.value)}
                         onBlur={field.onBlur}
-                        name={field.name}
+                        name="nickname"
                         className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
                         data-testid="input-nickname"
+                        autoComplete="off"
                       />
                     </FormControl>
                     <FormMessage />
