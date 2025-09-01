@@ -83,69 +83,68 @@ export default function Register() {
   const isLastStep = currentStepIndex === stepOrder.length - 1;
   const isOptionalStep = currentStep === 'school' || currentStep === 'country';
 
-  // 각 단계별 폼 - 기본값을 빈 문자열로 설정
+  // 각 단계별 폼 - 초기값 설정
+  const getInitialEmail = () => formData.email || "";
+  const getInitialNickname = () => formData.nickname || "";
+  const getInitialPassword = () => formData.password || "";
+  const getInitialConfirmPassword = () => formData.confirmPassword || "";
+  const getInitialSchool = () => formData.school || "";
+  const getInitialCountry = () => formData.country || "";
+
   const emailForm = useForm({
     resolver: zodResolver(emailSchema),
-    defaultValues: { email: "" },
+    defaultValues: { email: getInitialEmail() },
     mode: "onChange"
   });
 
   const nicknameForm = useForm({
     resolver: zodResolver(nicknameSchema),
-    defaultValues: { nickname: "" },
+    defaultValues: { nickname: getInitialNickname() },
     mode: "onChange"
   });
 
   const passwordForm = useForm({
     resolver: zodResolver(passwordSchema),
     defaultValues: { 
-      password: "",
-      confirmPassword: ""
+      password: getInitialPassword(),
+      confirmPassword: getInitialConfirmPassword()
     },
     mode: "onChange"
   });
 
   const schoolForm = useForm({
     resolver: zodResolver(schoolSchema),
-    defaultValues: { school: "" },
+    defaultValues: { school: getInitialSchool() },
     mode: "onChange"
   });
 
   const countryForm = useForm({
     resolver: zodResolver(countrySchema),
-    defaultValues: { country: "" },
+    defaultValues: { country: getInitialCountry() },
     mode: "onChange"
   });
 
-  // 단계 변경 시 한번만 실행되는 폼 초기화
+  // 단계 변경 시 해당 폼만 초기화
   useEffect(() => {
     switch (currentStep) {
       case 'email':
-        if (formData.email) {
-          emailForm.setValue('email', formData.email);
-        }
+        emailForm.reset({ email: formData.email || "" });
         break;
       case 'nickname':
-        // 닉네임은 저장된 값이 있을 때만 설정
-        if (formData.nickname) {
-          nicknameForm.setValue('nickname', formData.nickname);
-        }
+        // 닉네임 폼은 항상 저장된 닉네임 값으로만 초기화 (이메일 값 차단)
+        nicknameForm.reset({ nickname: formData.nickname || "" });
         break;
       case 'password':
-        if (formData.password) {
-          passwordForm.setValue('password', formData.password);
-          passwordForm.setValue('confirmPassword', formData.confirmPassword || '');
-        }
+        passwordForm.reset({ 
+          password: formData.password || "",
+          confirmPassword: formData.confirmPassword || ""
+        });
         break;
       case 'school':
-        if (formData.school) {
-          schoolForm.setValue('school', formData.school);
-        }
+        schoolForm.reset({ school: formData.school || "" });
         break;
       case 'country':
-        if (formData.country) {
-          countryForm.setValue('country', formData.country);
-        }
+        countryForm.reset({ country: formData.country || "" });
         break;
     }
   }, [currentStep]);
@@ -157,7 +156,6 @@ export default function Register() {
         case 'email':
           const emailValue = emailForm.watch('email');
           const isEmailValid = emailSchema.safeParse({ email: emailValue }).success;
-          // 이메일 형식이 올바르고, 중복 확인이 성공적으로 완료되었을 때만 진행 허용
           return isEmailValid && !checkingEmail && emailAvailable === true;
         case 'nickname':
           const nicknameValue = nicknameForm.watch('nickname');
@@ -216,11 +214,32 @@ export default function Register() {
   };
 
   const handleNext = async (data: any) => {
-    // 현재 단계 데이터를 formData에 저장
-    setFormData(prev => ({ ...prev, ...data }));
+    // 현재 단계 데이터만 저장
+    const newData = { ...formData };
+    
+    switch (currentStep) {
+      case 'email':
+        newData.email = data.email;
+        break;
+      case 'nickname':
+        newData.nickname = data.nickname;
+        break;
+      case 'password':
+        newData.password = data.password;
+        newData.confirmPassword = data.confirmPassword;
+        break;
+      case 'school':
+        newData.school = data.school;
+        break;
+      case 'country':
+        newData.country = data.country;
+        break;
+    }
+    
+    setFormData(newData);
     
     if (isLastStep) {
-      await handleSubmit({ ...formData, ...data });
+      await handleSubmit(newData);
     } else {
       setCurrentStep(stepOrder[currentStepIndex + 1]);
     }
