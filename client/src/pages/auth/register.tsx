@@ -440,11 +440,30 @@ export default function Register() {
                             타겟: e.target.tagName
                           });
                           
-                          // react-hook-form에 값 전달
-                          field.onChange(newValue);
+                          // ✅ 문제 해결: 여러 방법으로 값 설정 시도
+                          try {
+                            // 방법 1: field.onChange 직접 호출
+                            field.onChange(newValue);
+                            console.log('✅ field.onChange 완료');
+                            
+                            // 방법 2: setValue로 강제 설정
+                            nicknameForm.setValue('nickname', newValue, { 
+                              shouldValidate: true,
+                              shouldDirty: true,
+                              shouldTouch: true 
+                            });
+                            console.log('✅ setValue 완료');
+                            
+                            // 방법 3: trigger로 강제 업데이트
+                            nicknameForm.trigger('nickname');
+                            console.log('✅ trigger 완료');
+                            
+                          } catch (error) {
+                            console.error('❌ 폼 업데이트 실패:', error);
+                          }
                           
-                          console.log('🔤 폼 상태 업데이트 완료');
-                          console.log('🔤 현재 폼 값:', nicknameForm.getValues());
+                          console.log('🔤 최종 폼 값:', nicknameForm.getValues());
+                          console.log('🔤 현재 field.value:', field.value);
                         }}
                         onKeyDown={(e) => {
                           console.log('⌨️ 키 입력:', {
