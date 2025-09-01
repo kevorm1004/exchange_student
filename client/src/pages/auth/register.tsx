@@ -657,37 +657,49 @@ export default function Register() {
                     <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
                     <Select 
                       onValueChange={(value) => {
-                        console.log('🌍 국가 선택:', {
-                          이전값: field.value,
-                          새로운값: value
-                        });
+                        console.log('🌍 국가 선택 이벤트 발생!', value);
+                        console.log('🌍 이전 값:', field.value);
+                        console.log('🌍 새로운 값:', value);
                         
-                        try {
-                          field.onChange(value);
-                          countryForm.setValue('country', value, { 
-                            shouldValidate: true,
-                            shouldDirty: true,
-                            shouldTouch: true 
-                          });
-                          countryForm.trigger('country');
-                          console.log('✅ 국가 업데이트 완료');
-                        } catch (error) {
-                          console.error('❌ 국가 업데이트 실패:', error);
-                        }
+                        // 값 설정
+                        field.onChange(value);
+                        
+                        // formData에도 저장
+                        setFormData(prev => ({
+                          ...prev,
+                          country: value
+                        }));
+                        
+                        console.log('✅ 국가 선택 완료:', value);
                       }}
-                      value={field.value}
+                      value={field.value || ""}
                     >
                       <FormControl>
-                        <SelectTrigger className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0">
+                        <SelectTrigger 
+                          className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
+                          onClick={() => {
+                            console.log('🌍 드롭다운 클릭됨');
+                            console.log('🌍 현재 COUNTRIES 배열:', COUNTRIES);
+                          }}
+                        >
                           <SelectValue placeholder={getStepPlaceholder()} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {COUNTRIES.map((country) => (
-                          <SelectItem key={country} value={country}>
-                            {country}
-                          </SelectItem>
-                        ))}
+                        {COUNTRIES.map((country, index) => {
+                          console.log(`🌍 SelectItem 생성: ${index} - ${country}`);
+                          return (
+                            <SelectItem 
+                              key={country} 
+                              value={country}
+                              onClick={() => {
+                                console.log('🌍 SelectItem 직접 클릭:', country);
+                              }}
+                            >
+                              {country}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                     <FormMessage />
