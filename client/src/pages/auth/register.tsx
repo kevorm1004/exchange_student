@@ -119,50 +119,29 @@ export default function Register() {
 
   // 단계 변경 시 폼 데이터 로드 - 각 단계에 맞는 데이터만 로드
   useEffect(() => {
-    switch (currentStep) {
-      case 'email':
-        // 이메일 단계에서는 이메일 데이터만 로드
-        if (formData.email) {
-          emailForm.setValue('email', formData.email);
-        } else {
-          emailForm.setValue('email', '');
-        }
-        break;
-      case 'nickname':
-        // 닉네임 단계에서는 닉네임 데이터만 로드, 다른 필드 초기화
-        if (formData.nickname) {
-          nicknameForm.setValue('nickname', formData.nickname);
-        } else {
-          nicknameForm.setValue('nickname', '');
-        }
-        break;
-      case 'password':
-        // 비밀번호 단계에서는 비밀번호 데이터만 로드
-        if (formData.password) {
-          passwordForm.setValue('password', formData.password);
+    // 약간의 지연을 둬서 폼이 완전히 마운트된 후 값 설정
+    const timer = setTimeout(() => {
+      switch (currentStep) {
+        case 'email':
+          emailForm.setValue('email', formData.email || '');
+          break;
+        case 'nickname':
+          nicknameForm.setValue('nickname', formData.nickname || '');
+          break;
+        case 'password':
+          passwordForm.setValue('password', formData.password || '');
           passwordForm.setValue('confirmPassword', formData.confirmPassword || '');
-        } else {
-          passwordForm.setValue('password', '');
-          passwordForm.setValue('confirmPassword', '');
-        }
-        break;
-      case 'school':
-        // 학교 단계에서는 학교 데이터만 로드
-        if (formData.school) {
-          schoolForm.setValue('school', formData.school);
-        } else {
-          schoolForm.setValue('school', '');
-        }
-        break;
-      case 'country':
-        // 국가 단계에서는 국가 데이터만 로드
-        if (formData.country) {
-          countryForm.setValue('country', formData.country);
-        } else {
-          countryForm.setValue('country', '');
-        }
-        break;
-    }
+          break;
+        case 'school':
+          schoolForm.setValue('school', formData.school || '');
+          break;
+        case 'country':
+          countryForm.setValue('country', formData.country || '');
+          break;
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
   }, [currentStep]);
 
   // 각 단계별 유효성 검사 함수
@@ -237,27 +216,7 @@ export default function Register() {
     if (isLastStep) {
       await handleSubmit({ ...formData, ...data });
     } else {
-      const nextStep = stepOrder[currentStepIndex + 1];
-      setCurrentStep(nextStep);
-      
-      // 다음 단계로 이동할 때 해당 폼 초기화
-      switch (nextStep) {
-        case 'nickname':
-          nicknameForm.reset({ nickname: formData.nickname || '' });
-          break;
-        case 'password':
-          passwordForm.reset({ 
-            password: formData.password || '', 
-            confirmPassword: formData.confirmPassword || '' 
-          });
-          break;
-        case 'school':
-          schoolForm.reset({ school: formData.school || '' });
-          break;
-        case 'country':
-          countryForm.reset({ country: formData.country || '' });
-          break;
-      }
+      setCurrentStep(stepOrder[currentStepIndex + 1]);
     }
   };
 
