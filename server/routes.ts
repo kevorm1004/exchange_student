@@ -110,13 +110,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const user = req.user as User & { needsAdditionalInfo?: boolean };
     if (!user) return res.redirect('/auth/login?error=auth_failed');
     
+    console.log('🔍 OAuth 콜백 사용자 정보:', { 
+      id: user.id, 
+      email: user.email, 
+      school: user.school, 
+      country: user.country, 
+      needsAdditionalInfo: user.needsAdditionalInfo,
+      authProvider: user.authProvider 
+    });
+    
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
     const userPayload = encodeURIComponent(JSON.stringify({ ...user, password: undefined }));
     
     // Check if user needs to complete registration (school/country info)
-    if (user.needsAdditionalInfo || (!user.school || !user.country)) {
+    const needsInfo = user.needsAdditionalInfo || !user.school || !user.country || user.school === '' || user.country === '';
+    console.log('🔍 추가 정보 필요 여부:', needsInfo);
+    
+    if (needsInfo) {
+      console.log('➡️ 회원가입 완료 페이지로 리다이렉트');
       res.redirect(`/auth/complete-registration?token=${token}&user=${userPayload}`);
     } else {
+      console.log('➡️ 홈페이지로 리다이렉트');
       res.redirect(`/?token=${token}&user=${userPayload}`);
     }
   };
@@ -283,6 +297,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/users/stats', authenticateToken, async (req, res) => res.json(await storage.getUserStats(req.user!.id)));
   app.get('/api/users/items', authenticateToken, async (req, res) => res.json(await storage.getUserItems(req.user!.id)));
+
+  // User Account Deletion
+  app.delete('/api/user/account', authenticateToken, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Delete all user's items first
+      const userItems = await storage.getUserItems(userId);
+      for (const item of userItems) {
+        await storage.deleteItem(item.id);
+      }
+      
+      // Delete user's favorites
+      const userFavorites = await storage.getUserFavorites(userId);
+      for (const favorite of userFavorites) {
+        await storage.removeFavorite(userId, favorite.id);
+      }
+      
+      // Delete the user account
+      await storage.deleteUser(userId);
+      
+      res.json({ message: '계정이 성공적으로 삭제되었습니다.' });
+    } catch (error) {
+      console.error('Account deletion error:', error);
+      res.status(500).json({ error: '계정 삭제에 실패했습니다.' });
+    }
+  });
 
   // Item Routes
   app.get('/api/items', async (req, res) => {
