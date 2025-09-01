@@ -285,25 +285,18 @@ export default function Register() {
     const submitData = finalFormData || formData;
     setIsLoading(true);
     try {
-      const finalData: RegisterData = {
-        fullName: submitData.nickname || "",
-        username: submitData.nickname!,
+      // === 회원가입 최종 데이터 준비 ===
+      // 🔧 핵심: 서버에서 기대하는 필드명과 구조에 맞춰 데이터 전송
+      const finalData = {
         email: submitData.email!,
+        nickname: submitData.nickname!,      // 서버에서 nickname으로 받음
         password: submitData.password!,
         confirmPassword: submitData.confirmPassword!,
         school: submitData.school || "",
         country: submitData.country || "",
-        profileImage: "",
-        preferredCurrency: "USD",
-        role: "user",
-        status: "active",
-        authProvider: "email",
-        googleId: null,
-        kakaoId: null,
-        naverId: null,
       };
 
-      const response = await authApi.register(finalData);
+      const response = await authApi.register(finalData as any);
       login(response.token, response.user);
       toast({
         title: "회원가입 성공",

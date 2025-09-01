@@ -144,13 +144,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 프론트엔드에서는 nickname을 보내지만, 데이터베이스에서는 username 필드를 사용
       const transformedData = {
         email: req.body.email,
-        username: req.body.nickname,  // nickname → username 변환
+        username: req.body.nickname || req.body.username,  // nickname 또는 username 사용
         password: req.body.password,
         confirmPassword: req.body.confirmPassword,
-        fullName: req.body.nickname,  // fullName을 nickname과 동일하게 설정
+        fullName: req.body.nickname || req.body.username || "",  // fullName을 nickname과 동일하게 설정
         school: req.body.school || "",  // 선택사항이므로 기본값 설정
         country: req.body.country || "",  // 선택사항이므로 기본값 설정
       };
+      
+      // username이 여전히 없다면 오류
+      if (!transformedData.username) {
+        console.log('❌ nickname/username이 누락됨');
+        return res.status(400).json({ 
+          error: 'Nickname is required',
+          details: [{ message: 'Nickname is required', path: ['nickname'] }]
+        });
+      }
       
       console.log('🔄 변환된 데이터:', transformedData);
       
