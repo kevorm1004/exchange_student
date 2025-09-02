@@ -6,6 +6,9 @@ import { Strategy as KakaoStrategy } from 'passport-kakao';
 // @ts-ignore
 import { Strategy as NaverStrategy } from 'passport-naver-v2';
 import { storage } from './storage';
+import { db } from './db';
+import { users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 import type { User } from '@shared/schema';
 
 // Serialize user for session
@@ -92,18 +95,13 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
       }
 
       // Check if user exists with this email (including deleted users)
-      const { users: usersTable } = await import('@shared/schema');
-      const { db } = await import('./db');
-      const { eq } = await import('drizzle-orm');
-      
-      const allUsers = await db.select().from(usersTable).where(eq(usersTable.email, email));
+      const allUsers = await db.select().from(users).where(eq(users.email, email));
       let user = allUsers.find(u => u.status === 'active');
       const deletedUser = allUsers.find(u => u.status === 'deleted');
       
       // If user was deleted, allow new account creation
       if (!user && deletedUser) {
         console.log('🔄 삭제된 카카오 계정 발견, 새 계정 생성 허용:', email);
-        user = null; // Force new account creation
       }
       
       if (!user) {
@@ -112,20 +110,26 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
         const timestamp = Date.now();
         const username = deletedUser ? `${baseUsername}_${timestamp}` : baseUsername;
         
-        user = await storage.createUser({
-          username,
-          email,
-          password: '', // OAuth users don't need password
-          fullName: nickname || username,
-          school: '',
-          country: '',
-          location: '',
-          profileImage: profile._json?.properties?.profile_image || null,
-          authProvider: 'kakao',
-          kakaoId: profile.id
-        });
-        // Mark as needing additional info
-        (user as any).needsAdditionalInfo = true;
+        console.log('🔄 새 카카오 사용자 생성 시도:', { username, email });
+        try {
+          user = await storage.createUser({
+            username,
+            email,
+            password: '', // OAuth users don't need password
+            fullName: nickname || username,
+            school: '',
+            country: '',
+            profileImage: profile._json?.properties?.profile_image || null,
+            authProvider: 'kakao',
+            kakaoId: profile.id
+          });
+          console.log('✅ 새 카카오 사용자 생성 성공:', user.id);
+          // Mark as needing additional info
+          (user as any).needsAdditionalInfo = true;
+        } catch (createError) {
+          console.error('❌ 카카오 사용자 생성 실패:', createError);
+          return done(createError, null);
+        }
       } else if (!user.kakaoId) {
         // Link existing account with Kakao
         await storage.updateUser(user.id, {
