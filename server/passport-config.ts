@@ -91,17 +91,27 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
         return done(new Error('카카오 계정에서 이메일을 가져올 수 없습니다.'), null);
       }
 
-      // Check if user exists with this email
-      let user = await storage.getUserByEmail(email);
+      // Check if user exists with this email (including deleted users)
+      const { users: usersTable } = await import('@shared/schema');
+      const { db } = await import('./db');
+      const { eq } = await import('drizzle-orm');
       
-      // Check if user was deleted
-      if (user && user.status === 'deleted') {
-        return done(new Error('삭제된 계정입니다.'), null);
+      const allUsers = await db.select().from(usersTable).where(eq(usersTable.email, email));
+      let user = allUsers.find(u => u.status === 'active');
+      const deletedUser = allUsers.find(u => u.status === 'deleted');
+      
+      // If user was deleted, allow new account creation
+      if (!user && deletedUser) {
+        console.log('🔄 삭제된 카카오 계정 발견, 새 계정 생성 허용:', email);
+        user = null; // Force new account creation
       }
       
       if (!user) {
         // Create new user from Kakao profile - needs additional info
-        const username = `kakao_${profile.id}`;
+        const baseUsername = `kakao_${profile.id}`;
+        const timestamp = Date.now();
+        const username = deletedUser ? `${baseUsername}_${timestamp}` : baseUsername;
+        
         user = await storage.createUser({
           username,
           email,
