@@ -29,7 +29,7 @@ import {
   type Report,
   type InsertReport
 } from "@shared/schema";
-import { eq, and, or, desc, like, count, sql } from "drizzle-orm";
+import { eq, and, or, desc, like, count, sql, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -135,32 +135,17 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(
-      and(
-        eq(users.id, id),
-        eq(users.status, 'active')
-      )
-    );
+    const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(
-      and(
-        eq(users.username, username),
-        eq(users.status, 'active')
-      )
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
     return user || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(
-      and(
-        eq(users.email, email),
-        eq(users.status, 'active')
-      )
-    );
+    const [user] = await db.select().from(users).where(eq(users.email, email));
     return user || undefined;
   }
 
@@ -789,15 +774,47 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(userId: string): Promise<boolean> {
     try {
-      // Soft delete: Mark user as deleted instead of hard delete
-      const result = await db
-        .update(users)
-        .set({ status: 'deleted' })
-        .where(eq(users.id, userId));
+      console.log('🗑️ 사용자 완전 삭제 시작:', userId);
+      
+      // 1. Delete all favorites first (foreign key constraint)
+      await db.delete(favorites).where(eq(favorites.userId, userId));
+      console.log('✅ 찜 목록 삭제 완료');
+      
+      // 2. Delete all messages in rooms where user participated
+      const userRooms = await db.select({ id: chatRooms.id })
+        .from(chatRooms)
+        .where(or(eq(chatRooms.sellerId, userId), eq(chatRooms.buyerId, userId)));
+      
+      if (userRooms.length > 0) {
+        const roomIds = userRooms.map(room => room.id);
+        await db.delete(messages).where(inArray(messages.roomId, roomIds));
+        console.log('✅ 채팅 메시지 삭제 완료');
+        
+        // 3. Delete chat rooms
+        await db.delete(chatRooms)
+          .where(or(eq(chatRooms.sellerId, userId), eq(chatRooms.buyerId, userId)));
+        console.log('✅ 채팅방 삭제 완료');
+      }
+      
+      // 4. Delete community post comments
+      await db.delete(comments).where(eq(comments.authorId, userId));
+      console.log('✅ 커뮤니티 댓글 삭제 완료');
+      
+      // 5. Delete community posts
+      await db.delete(communityPosts).where(eq(communityPosts.authorId, userId));
+      console.log('✅ 커뮤니티 글 삭제 완료');
+      
+      // 6. Delete all items posted by user
+      await db.delete(items).where(eq(items.sellerId, userId));
+      console.log('✅ 등록 물품 삭제 완료');
+      
+      // 7. Finally delete the user
+      const result = await db.delete(users).where(eq(users.id, userId));
+      console.log('✅ 사용자 계정 삭제 완료');
       
       return result.rowCount > 0;
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error('❌ 사용자 삭제 중 오류:', error);
       return false;
     }
   }

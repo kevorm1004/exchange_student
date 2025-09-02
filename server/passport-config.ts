@@ -94,21 +94,20 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
         return done(new Error('카카오 계정에서 이메일을 가져올 수 없습니다.'), null);
       }
 
-      // Check if user exists with this email (including deleted users)
-      const allUsers = await db.select().from(users).where(eq(users.email, email));
-      let user = allUsers.find(u => u.status === 'active');
-      const deletedUser = allUsers.find(u => u.status === 'deleted');
-      
-      // If user was deleted, allow new account creation
-      if (!user && deletedUser) {
-        console.log('🔄 삭제된 카카오 계정 발견, 새 계정 생성 허용:', email);
-      }
+      // Check if user exists with this email
+      const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      let user = existingUser[0] || null;
       
       if (!user) {
         // Create new user from Kakao profile - needs additional info
         const baseUsername = `kakao_${profile.id}`;
-        const timestamp = Date.now();
-        const username = deletedUser ? `${baseUsername}_${timestamp}` : baseUsername;
+        let username = baseUsername;
+        
+        // Check if username already exists and generate unique one if needed
+        const existingUsername = await db.select().from(users).where(eq(users.username, username)).limit(1);
+        if (existingUsername.length > 0) {
+          username = `${baseUsername}_${Date.now()}`;
+        }
         
         console.log('🔄 새 카카오 사용자 생성 시도:', { username, email });
         try {
@@ -162,23 +161,40 @@ if (process.env.NAVER_CLIENT_ID && process.env.NAVER_CLIENT_SECRET) {
       }
 
       // Check if user exists with this email
-      let user = await storage.getUserByEmail(email);
+      const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      let user = existingUser[0] || null;
       
       if (!user) {
-        // Create new user from Naver profile
-        const username = `naver_${profile.id}`;
-        user = await storage.createUser({
-          username,
-          email,
-          password: '', // OAuth users don't need password
-          fullName: nickname || username,
-          school: '',
-          country: '',
-          location: '',
-          profileImage: profile.profile_image || null,
-          authProvider: 'naver',
-          naverId: profile.id
-        });
+        // Create new user from Naver profile - needs additional info
+        const baseUsername = `naver_${profile.id}`;
+        let username = baseUsername;
+        
+        // Check if username already exists and generate unique one if needed
+        const existingUsername = await db.select().from(users).where(eq(users.username, username)).limit(1);
+        if (existingUsername.length > 0) {
+          username = `${baseUsername}_${Date.now()}`;
+        }
+        
+        console.log('🔄 새 네이버 사용자 생성 시도:', { username, email });
+        try {
+          user = await storage.createUser({
+            username,
+            email,
+            password: '', // OAuth users don't need password
+            fullName: nickname || username,
+            school: '',
+            country: '',
+            profileImage: profile.profile_image || null,
+            authProvider: 'naver',
+            naverId: profile.id
+          });
+          console.log('✅ 새 네이버 사용자 생성 성공:', user.id);
+          // Mark as needing additional info
+          (user as any).needsAdditionalInfo = true;
+        } catch (createError) {
+          console.error('❌ 네이버 사용자 생성 실패:', createError);
+          return done(createError, null);
+        }
       } else if (!user.naverId) {
         // Link existing account with Naver
         await storage.updateUser(user.id, {

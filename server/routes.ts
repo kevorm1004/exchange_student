@@ -210,11 +210,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = registerSchema.parse(transformedData);
       console.log('✅ 데이터 검증 완료');
       
-      // 3️⃣ 이메일 중복 확인
+      // 3️⃣ 이메일과 username 중복 확인
       const existingUser = await storage.getUserByEmail(validatedData.email);
       if (existingUser) {
         console.log('❌ 이미 존재하는 이메일:', validatedData.email);
         return res.status(400).json({ error: 'User already exists' });
+      }
+      
+      const existingUsername = await storage.getUserByUsername(validatedData.username);
+      if (existingUsername) {
+        console.log('❌ 이미 존재하는 닉네임:', validatedData.username);
+        return res.status(400).json({ error: 'Username already exists. Please choose a different nickname.' });
       }
       
       // 4️⃣ 비밀번호 해싱 (보안을 위해 암호화)
