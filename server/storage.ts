@@ -135,17 +135,32 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await db.select().from(users).where(
+      and(
+        eq(users.id, id),
+        eq(users.status, 'active')
+      )
+    );
     return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db.select().from(users).where(
+      and(
+        eq(users.username, username),
+        eq(users.status, 'active')
+      )
+    );
     return user || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
+    const [user] = await db.select().from(users).where(
+      and(
+        eq(users.email, email),
+        eq(users.status, 'active')
+      )
+    );
     return user || undefined;
   }
 
@@ -774,32 +789,11 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(userId: string): Promise<boolean> {
     try {
-      // Delete user's favorites first
-      await db.delete(favorites).where(eq(favorites.userId, userId));
-      
-      // Delete user's notifications
-      await db.delete(notifications).where(eq(notifications.userId, userId));
-      
-      // Delete user's messages
-      await db.delete(messages).where(eq(messages.senderId, userId));
-      
-      // Delete user's chat rooms
-      await db.delete(chatRooms).where(or(
-        eq(chatRooms.buyerId, userId),
-        eq(chatRooms.sellerId, userId)
-      ));
-      
-      // Delete user's items
-      await db.delete(items).where(eq(items.sellerId, userId));
-      
-      // Delete user's community posts
-      await db.delete(communityPosts).where(eq(communityPosts.authorId, userId));
-      
-      // Delete user's comments
-      await db.delete(comments).where(eq(comments.authorId, userId));
-      
-      // Finally delete the user
-      const result = await db.delete(users).where(eq(users.id, userId));
+      // Soft delete: Mark user as deleted instead of hard delete
+      const result = await db
+        .update(users)
+        .set({ status: 'deleted' })
+        .where(eq(users.id, userId));
       
       return result.rowCount > 0;
     } catch (error) {

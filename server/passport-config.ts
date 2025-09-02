@@ -42,7 +42,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       let user = await storage.getUserByEmail(email);
       
       // Check if user was deleted
-      if (user && user.deletedAt) {
+      if (user && user.status === 'deleted') {
         return done(new Error('삭제된 계정입니다.'), null);
       }
       
@@ -95,7 +95,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
       let user = await storage.getUserByEmail(email);
       
       // Check if user was deleted
-      if (user && user.deletedAt) {
+      if (user && user.status === 'deleted') {
         return done(new Error('삭제된 계정입니다.'), null);
       }
       
