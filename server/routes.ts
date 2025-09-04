@@ -162,15 +162,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
   app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/login?error=auth_failed' }), handleOAuthCallback);
-  app.get('/api/auth/kakao', (req, res, next) => {
+  // 카카오 OAuth 콜백 프록시 - 고정 URL에서 현재 도메인으로 리다이렉트
+  app.get('/api/auth/kakao/proxy', (req, res) => {
     const host = req.get('host');
     const protocol = req.get('x-forwarded-proto') || 'https';
-    const currentURL = `${protocol}://${host}/api/auth/kakao/callback`;
+    const currentDomain = `${protocol}://${host}`;
     
-    console.log('🔧 현재 요청 도메인:', host);
-    console.log('🔧 예상 콜백 URL:', currentURL);
+    console.log('🔄 카카오 프록시 콜백 - 현재 도메인:', currentDomain);
     
-    // 카카오 강제 재동의를 위한 파라미터
+    // 케리 파라미터를 그대로 전달하면서 진짜 콜백으로 리다이렉트
+    const queryString = req.url.split('?')[1] || '';
+    res.redirect(`${currentDomain}/api/auth/kakao/callback?${queryString}`);
+  });
+
+  app.get('/api/auth/kakao', (req, res, next) => {
     const authOptions = {
       scope: ['profile_nickname', 'account_email'],
       prompt: 'login consent',
@@ -180,11 +185,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     passport.authenticate('kakao', authOptions)(req, res, next);
   });
   app.get('/api/auth/kakao/callback', (req, res, next) => {
-    const host = req.get('host');
-    console.log('🟢 카카오 콜백 수신 - Host:', host);
-    console.log('🟢 Query params:', req.query);
+    console.log('🟢 카카오 진짜 콜백 수신:', req.query);
     
     passport.authenticate('kakao', (err, user, info) => {
+      console.log('🟢 카카오 인증 결과:', { 
+        error: err?.message, 
+        user: user ? { id: user.id, email: user.email } : null 
+      });
+      
       if (err) {
         if (err.message.includes('삭제된 계정입니다')) {
           return res.redirect('/auth/login?error=deleted_account&message=' + encodeURIComponent('삭제된 계정입니다. 카카오 연동을 해제하고 다시 시도해주세요.'));
