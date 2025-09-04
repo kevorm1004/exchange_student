@@ -173,6 +173,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     passport.authenticate('kakao', authOptions)(req, res, next);
   });
   app.get('/api/auth/kakao/callback', (req, res, next) => {
+    console.log('🟢 카카오 콜백 요청 수신:', req.url);
+    console.log('🟢 Query params:', req.query);
+    
     passport.authenticate('kakao', (err, user, info) => {
       if (err) {
         if (err.message.includes('삭제된 계정입니다')) {

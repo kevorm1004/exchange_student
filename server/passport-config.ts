@@ -92,6 +92,10 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
     : 'http://localhost:5000';
   const kakaoCallbackURL = `${baseURL}/api/auth/kakao/callback`;
   
+  console.log('🔧 카카오 OAuth 설정:');
+  console.log('  - Base URL:', baseURL);
+  console.log('  - Callback URL:', kakaoCallbackURL);
+  
   
   passport.use(new KakaoStrategy({
     clientID: process.env.KAKAO_CLIENT_ID,
