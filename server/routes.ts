@@ -174,18 +174,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
   app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/login?error=auth_failed' }), handleOAuthCallback);
-  app.get('/api/auth/kakao', passport.authenticate('kakao'));
+  app.get('/api/auth/kakao', (req, res, next) => {
+    // 카카오 강제 재동의를 위한 파라미터 추가
+    passport.authenticate('kakao', {
+      scope: ['profile_nickname', 'account_email'], // 명시적 스코프 지정
+      prompt: 'login consent' // 로그인과 동의 둘 다 강제
+    })(req, res, next);
+  });
   app.get('/api/auth/kakao/callback', (req, res, next) => {
     passport.authenticate('kakao', (err, user) => {
       if (err) {
-        if (err.message === '삭제된 계정입니다.') {
-          return res.redirect('/auth/login?error=deleted_account');
+        console.log('❌ 카카오 OAuth 인증 오류:', err.message);
+        if (err.message.includes('삭제된 계정입니다')) {
+          return res.redirect('/auth/login?error=deleted_account&message=' + encodeURIComponent('삭제된 계정입니다. 카카오 연동을 해제하고 다시 시도해주세요.'));
         }
         return res.redirect('/auth/login?error=auth_failed');
       }
       if (!user) {
+        console.log('❌ 카카오 OAuth 사용자 정보 없음');
         return res.redirect('/auth/login?error=auth_failed');
       }
+      
+      console.log('✅ 카카오 OAuth 인증 성공:', user.id);
       req.user = user;
       handleOAuthCallback(req, res);
     })(req, res, next);
@@ -369,21 +379,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/user/account', authenticateToken, async (req, res) => {
     try {
       const userId = req.user!.id;
+      const user = req.user!;
+      
+      console.log(`🗑️ 계정 삭제 시작: ${userId}`);
       
       // Delete all user's items first
       const userItems = await storage.getUserItems(userId);
       for (const item of userItems) {
         await storage.deleteItem(item.id);
       }
+      console.log(`✅ 사용자 아이템 ${userItems.length}개 삭제 완료`);
       
       // Delete user's favorites
       const userFavorites = await storage.getUserFavorites(userId);
       for (const favorite of userFavorites) {
         await storage.removeFavorite(userId, favorite.id);
       }
+      console.log(`✅ 즐겨찾기 ${userFavorites.length}개 삭제 완료`);
       
       // Delete the user account
       await storage.deleteUser(userId);
+      console.log(`✅ 계정 삭제 완료: ${userId}`);
       
       // 로그아웃 처리: 세션 종료
       if (req.session) {
@@ -392,9 +408,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // OAuth 계정 연동 해제 가이드 메시지 준비
+      let oauthGuideMessage = '';
+      if (user.authProvider?.includes('kakao')) {
+        oauthGuideMessage = '카카오 연동이 해제되었습니다. 다시 가입하시려면 카카오 계정에서 연동을 해제하고 새로 동의해주세요.';
+      } else if (user.authProvider?.includes('google')) {
+        oauthGuideMessage = '구글 연동이 해제되었습니다. 다시 가입하시려면 구글 계정에서 연동을 해제하고 새로 동의해주세요.';
+      } else if (user.authProvider?.includes('naver')) {
+        oauthGuideMessage = '네이버 연동이 해제되었습니다. 다시 가입하시려면 네이버 계정에서 연동을 해제하고 새로 동의해주세요.';
+      }
+      
       // 클라이언트에게 강제 로그아웃 지시
       res.json({ 
         message: '계정이 성공적으로 삭제되었습니다.',
+        oauthGuide: oauthGuideMessage,
         forceLogout: true 
       });
     } catch (error) {

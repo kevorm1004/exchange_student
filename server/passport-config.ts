@@ -83,20 +83,32 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
   passport.use(new KakaoStrategy({
     clientID: process.env.KAKAO_CLIENT_ID,
     clientSecret: process.env.KAKAO_CLIENT_SECRET,
-    callbackURL: "/api/auth/kakao/callback"
+    callbackURL: "/api/auth/kakao/callback",
+    passReqToCallback: true // 요청 객체를 콜백에 전달
   },
-  async (accessToken, refreshToken, profile, done) => {
+  async (req, accessToken, refreshToken, profile, done) => {
     try {
       const email = profile._json?.kakao_account?.email;
       const nickname = profile.displayName || profile._json?.properties?.nickname;
+      const kakaoId = profile.id;
       
       if (!email) {
         return done(new Error('카카오 계정에서 이메일을 가져올 수 없습니다.'), null);
       }
 
-      // Check if user exists with this email
-      const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
-      let user = existingUser[0] || null;
+      console.log('🔍 카카오 OAuth 로그인 시도:', { email, kakaoId });
+
+      // Check if user exists with this email or kakaoId
+      const existingUserByEmail = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      const existingUserByKakaoId = await db.select().from(users).where(eq(users.kakaoId, kakaoId)).limit(1);
+      
+      let user = existingUserByEmail[0] || existingUserByKakaoId[0] || null;
+      
+      // 삭제된 사용자인지 확인
+      if (user && user.status === 'deleted') {
+        console.log('⚠️ 삭제된 계정으로 로그인 시도:', user.id);
+        return done(new Error('삭제된 계정입니다. 카카오 연동을 해제하고 다시 시도해주세요.'), null);
+      }
       
       if (!user) {
         // Create new user from Kakao profile - needs additional info
