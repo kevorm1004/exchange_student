@@ -162,20 +162,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
   app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/login?error=auth_failed' }), handleOAuthCallback);
-  // 카카오 OAuth 콜백 프록시 - 고정 URL에서 현재 도메인으로 리다이렉트
-  app.get('/api/auth/kakao/proxy', (req, res) => {
-    const host = req.get('host');
-    const protocol = req.get('x-forwarded-proto') || 'https';
-    const currentDomain = `${protocol}://${host}`;
-    
-    console.log('🔄 카카오 프록시 콜백 - 현재 도메인:', currentDomain);
-    
-    // 케리 파라미터를 그대로 전달하면서 진짜 콜백으로 리다이렉트
-    const queryString = req.url.split('?')[1] || '';
-    res.redirect(`${currentDomain}/api/auth/kakao/callback?${queryString}`);
-  });
-
   app.get('/api/auth/kakao', (req, res, next) => {
+    console.log('🟡 카카오 로그인 시작 - Host:', req.get('host'));
+    
     const authOptions = {
       scope: ['profile_nickname', 'account_email'],
       prompt: 'login consent',
@@ -185,24 +174,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     passport.authenticate('kakao', authOptions)(req, res, next);
   });
   app.get('/api/auth/kakao/callback', (req, res, next) => {
-    console.log('🟢 카카오 진짜 콜백 수신:', req.query);
+    console.log('🟢 카카오 콜백 수신! Host:', req.get('host'));
+    console.log('🟢 Query params:', req.query);
     
     passport.authenticate('kakao', (err, user, info) => {
-      console.log('🟢 카카오 인증 결과:', { 
-        error: err?.message, 
-        user: user ? { id: user.id, email: user.email } : null 
-      });
+      console.log('🟢 카카오 passport 결과:');
+      console.log('  - Error:', err?.message || 'None');
+      console.log('  - User:', user ? `${user.id} (${user.email})` : 'None');
       
       if (err) {
+        console.log('❌ 카카오 OAuth 오류:', err.message);
         if (err.message.includes('삭제된 계정입니다')) {
           return res.redirect('/auth/login?error=deleted_account&message=' + encodeURIComponent('삭제된 계정입니다. 카카오 연동을 해제하고 다시 시도해주세요.'));
         }
         return res.redirect('/auth/login?error=auth_failed');
       }
+      
       if (!user) {
+        console.log('❌ 카카오 OAuth - 사용자 정보 없음');
         return res.redirect('/auth/login?error=auth_failed');
       }
       
+      console.log('✅ 카카오 OAuth 성공 - 콜백 처리 시작');
       req.user = user;
       handleOAuthCallback(req, res);
     })(req, res, next);
