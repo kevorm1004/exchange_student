@@ -60,6 +60,13 @@ export async function seedDatabase() {
       }
     ];
 
+    // Check if users already exist and skip seeding if they do
+    const existingUsers = await db.select().from(users);
+    if (existingUsers.length > 0) {
+      console.log('Users already exist, skipping user seeding');
+      return; // Skip seeding completely
+    }
+
     // Insert users
     const insertedUsers = await db.insert(users).values(testUsers).returning();
     console.log(`Created ${insertedUsers.length} test users`);

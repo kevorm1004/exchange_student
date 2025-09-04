@@ -44,6 +44,12 @@ const authenticateToken = async (req: Request, res: Response, next: NextFunction
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
+    
+    // JWT 토큰에서 사용자 ID 추출 및 검증
+    if (!decoded.id || typeof decoded.id !== 'string') {
+      return res.status(403).json({ error: 'Invalid token format' });
+    }
+    
     const user = await storage.getUser(decoded.id);
     
     // 사용자가 존재하지 않으면 (삭제된 경우) 401 에러로 처리
@@ -54,11 +60,34 @@ const authenticateToken = async (req: Request, res: Response, next: NextFunction
       });
     }
     
+    // 사용자 정보를 req.user에 설정
     req.user = user;
+    console.log(`🔐 인증된 사용자: ${user.id} (${user.email})`);
     next();
   } catch (error) {
+    console.error('토큰 검증 실패:', error);
     return res.status(403).json({ error: 'Invalid token' });
   }
+};
+
+// 사용자 소유권 검증 헬퍼 함수
+const verifyResourceOwnership = (resourceOwnerId: string, currentUserId: string): boolean => {
+  return resourceOwnerId === currentUserId;
+};
+
+// 사용자별 데이터 분리를 위한 보안 검증
+const ensureDataSeparation = (req: Request, res: Response, resourceOwnerId?: string): boolean => {
+  if (!req.user) {
+    res.status(401).json({ error: 'Authentication required' });
+    return false;
+  }
+  
+  if (resourceOwnerId && !verifyResourceOwnership(resourceOwnerId, req.user.id)) {
+    res.status(403).json({ error: 'Access denied - insufficient permissions' });
+    return false;
+  }
+  
+  return true;
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -405,7 +434,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/items/:id', authenticateToken, async (req, res) => {
     const item = await storage.getItem(req.params.id);
-    if (!item || item.sellerId !== req.user!.id) return res.status(403).json({ error: 'Access denied' });
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+    
+    // 사용자별 데이터 분리: 아이템 소유자만 수정 가능
+    if (!ensureDataSeparation(req, res, item.sellerId)) return;
+    
+    console.log(`📋 아이템 수정: ${req.user!.id} -> ${req.params.id}`);
     res.json(await storage.updateItemStatus(req.params.id, req.body.status));
   });
 
@@ -425,15 +461,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(201).json({ message: '신고가 접수되었습니다', report });
   });
 
-  // Community Routes
-  app.get('/api/community/posts', async (req, res) => {
+  // Community Routes - 인증 필수
+  app.get('/api/community/posts', authenticateToken, async (req, res) => {
     const { category, country } = req.query;
+    // 로그인한 사용자만 커뮤니티 글 조회 가능
     res.json(await storage.getCommunityPostsByQuery({ category: category as string, country: country as string }));
   });
 
-  app.get('/api/community/posts/:id', async (req, res) => {
+  app.get('/api/community/posts/:id', authenticateToken, async (req, res) => {
     const post = await storage.getCommunityPost(req.params.id);
     if (!post) return res.status(404).json({ error: 'Post not found' });
+    // 로그인한 사용자만 게시글 조회 및 조회수 증가
     await storage.incrementCommunityPostViews(req.params.id);
     res.json(post);
   });
@@ -444,7 +482,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(201).json(post);
   });
 
-  app.get('/api/community/posts/:id/comments', async (req, res) => res.json(await storage.getComments(req.params.id)));
+  app.get('/api/community/posts/:id/comments', authenticateToken, async (req, res) => {
+    // 로그인한 사용자만 댓글 조회 가능
+    res.json(await storage.getComments(req.params.id));
+  });
 
   app.post('/api/community/posts/:id/comments', authenticateToken, async (req, res) => {
     const commentData = insertCommentSchema.parse({ ...req.body, postId: req.params.id, authorId: req.user!.id });
@@ -467,6 +508,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ count });
     } catch (error) {
       console.log('Database error in /api/messages/unread-count:', (error as Error).message);
+      res.json({ count: 0 }); // Return 0 if database is not available
+    }
+  });
+
+  // Notification Routes - 사용자별 알림 관리
+  app.get('/api/notifications/unread-count', authenticateToken, async (req, res) => {
+    try {
+      const count = await storage.getUnreadNotificationCount(req.user!.id);
+      res.json({ count });
+    } catch (error) {
+      console.log('Database error in /api/notifications/unread-count:', (error as Error).message);
       res.json({ count: 0 }); // Return 0 if database is not available
     }
   });
