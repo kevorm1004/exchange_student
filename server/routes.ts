@@ -163,17 +163,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
   app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/login?error=auth_failed' }), handleOAuthCallback);
   app.get('/api/auth/kakao', (req, res, next) => {
-    // 카카오 강제 재동의를 위한 파라미터 추가
+    const host = req.get('host');
+    const protocol = req.get('x-forwarded-proto') || 'https';
+    const currentURL = `${protocol}://${host}/api/auth/kakao/callback`;
+    
+    console.log('🔧 현재 요청 도메인:', host);
+    console.log('🔧 예상 콜백 URL:', currentURL);
+    
+    // 카카오 강제 재동의를 위한 파라미터
     const authOptions = {
-      scope: ['profile_nickname', 'account_email'], // 명시적 스코프 지정
-      prompt: 'login consent', // 로그인과 동의 둘 다 강제
-      state: Date.now().toString() // 상태값 추가로 캐시 방지
+      scope: ['profile_nickname', 'account_email'],
+      prompt: 'login consent',
+      state: Date.now().toString()
     };
     
     passport.authenticate('kakao', authOptions)(req, res, next);
   });
   app.get('/api/auth/kakao/callback', (req, res, next) => {
-    console.log('🟢 카카오 콜백 요청 수신:', req.url);
+    const host = req.get('host');
+    console.log('🟢 카카오 콜백 수신 - Host:', host);
     console.log('🟢 Query params:', req.query);
     
     passport.authenticate('kakao', (err, user, info) => {

@@ -86,15 +86,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
 // Kakao OAuth Strategy
 if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
-  // Deploy 환경에 맞는 콜백 URL 설정
-  const baseURL = process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-    : 'http://localhost:5000';
-  const kakaoCallbackURL = `${baseURL}/api/auth/kakao/callback`;
-  
-  console.log('🔧 카카오 OAuth 설정:');
-  console.log('  - Base URL:', baseURL);
-  console.log('  - Callback URL:', kakaoCallbackURL);
+  // 실행 시점의 실제 요청 Host를 기반으로 동적 콜백 URL 생성
+  const kakaoCallbackURL = '/api/auth/kakao/callback'; // 상대 경로로 변경
   
   
   passport.use(new KakaoStrategy({
