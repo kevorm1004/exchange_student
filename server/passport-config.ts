@@ -28,11 +28,18 @@ passport.deserializeUser(async (id: string, done) => {
 
 // Google OAuth Strategy
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-  console.log('Configuring Google OAuth with callback URL: https://1b996db4-2b46-4043-bd81-c1a3847beff0-00-2akh5nzv1zwuu.spock.replit.dev/api/auth/google/callback');
+  // Deploy 환경에 맞는 콜백 URL 설정
+  const baseURL = process.env.REPLIT_DEV_DOMAIN 
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+    : 'http://localhost:5000';
+  const googleCallbackURL = `${baseURL}/api/auth/google/callback`;
+  
+  console.log('🔧 구글 콜백 URL:', googleCallbackURL);
+  
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "https://1b996db4-2b46-4043-bd81-c1a3847beff0-00-2akh5nzv1zwuu.spock.replit.dev/api/auth/google/callback"
+    callbackURL: googleCallbackURL
   },
   async (accessToken: any, refreshToken: any, profile: any, done: any) => {
     try {
@@ -85,10 +92,18 @@ console.log('  - KAKAO_CLIENT_SECRET:', process.env.KAKAO_CLIENT_SECRET ? 'Prese
 
 if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
   console.log('✅ 카카오 Strategy 초기화 중...');
+  // Deploy 환경에 맞는 콜백 URL 설정
+  const baseURL = process.env.REPLIT_DEV_DOMAIN 
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+    : 'http://localhost:5000';
+  const kakaoCallbackURL = `${baseURL}/api/auth/kakao/callback`;
+  
+  console.log('🔧 카카오 콜백 URL:', kakaoCallbackURL);
+  
   passport.use(new KakaoStrategy({
     clientID: process.env.KAKAO_CLIENT_ID,
     clientSecret: process.env.KAKAO_CLIENT_SECRET,
-    callbackURL: "/api/auth/kakao/callback",
+    callbackURL: kakaoCallbackURL,
     passReqToCallback: true, // 요청 객체를 콜백에 전달
     authorizationURL: 'https://kauth.kakao.com/oauth/authorize?prompt=login'
   },
