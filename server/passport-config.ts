@@ -86,16 +86,17 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
 // Kakao OAuth Strategy
 if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
-  // 현재 실제 도메인 사용
-  const kakaoCallbackURL = 'https://ee021417-85ad-4dc9-9eaf-f2faff19bd8f-00-3215l6su4201w.spock.replit.dev/api/auth/kakao/callback';
+  // 절대 경로 사용 - Replit에서 자동으로 현재 도메인 적용
+  const kakaoCallbackURL = '/api/auth/kakao/callback';
   
-  console.log('🔧 카카오 현재 도메인 콜백 URL:', kakaoCallbackURL);
+  console.log('🔧 카카오 콜백 URL (상대경로):', kakaoCallbackURL);
   
   passport.use(new KakaoStrategy({
     clientID: process.env.KAKAO_CLIENT_ID,
     clientSecret: process.env.KAKAO_CLIENT_SECRET,
     callbackURL: kakaoCallbackURL,
-    passReqToCallback: true
+    passReqToCallback: true,
+    skipUserProfile: false
   },
   async (req, accessToken, refreshToken, profile, done) => {
     try {

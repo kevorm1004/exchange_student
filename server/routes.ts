@@ -162,43 +162,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
   app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/login?error=auth_failed' }), handleOAuthCallback);
-  app.get('/api/auth/kakao', (req, res, next) => {
-    console.log('🟡 카카오 로그인 시작 - Host:', req.get('host'));
+  // 카카오 OAuth 직접 구현
+  app.get('/api/auth/kakao', (req, res) => {
+    const host = req.get('host');
+    const protocol = req.get('x-forwarded-proto') || 'https';
+    const redirectUri = `${protocol}://${host}/api/auth/kakao/callback`;
     
-    const authOptions = {
-      scope: ['profile_nickname', 'account_email'],
-      prompt: 'login consent',
-      state: Date.now().toString()
-    };
-    
-    passport.authenticate('kakao', authOptions)(req, res, next);
+    const kakaoAuthUrl = 'https://kauth.kakao.com/oauth/authorize?' + 
+      `client_id=${process.env.KAKAO_CLIENT_ID}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      'response_type=code&' +
+      'scope=profile_nickname,account_email&' +
+      'prompt=login';
+    res.redirect(kakaoAuthUrl);
   });
-  app.get('/api/auth/kakao/callback', (req, res, next) => {
-    console.log('🟢 카카오 콜백 수신! Host:', req.get('host'));
-    console.log('🟢 Query params:', req.query);
+  // 카카오 OAuth 콜백 직접 처리
+  app.get('/api/auth/kakao/callback', async (req, res) => {
     
-    passport.authenticate('kakao', (err, user, info) => {
-      console.log('🟢 카카오 passport 결과:');
-      console.log('  - Error:', err?.message || 'None');
-      console.log('  - User:', user ? `${user.id} (${user.email})` : 'None');
+    const { code, error } = req.query;
+    
+    if (error || !code) {
+      return res.redirect('/auth/login?error=auth_failed');
+    }
+    
+    try {
+      const host = req.get('host');
+      const protocol = req.get('x-forwarded-proto') || 'https';
+      const redirectUri = `${protocol}://${host}/api/auth/kakao/callback`;
       
-      if (err) {
-        console.log('❌ 카카오 OAuth 오류:', err.message);
-        if (err.message.includes('삭제된 계정입니다')) {
-          return res.redirect('/auth/login?error=deleted_account&message=' + encodeURIComponent('삭제된 계정입니다. 카카오 연동을 해제하고 다시 시도해주세요.'));
+      // 1. 액세스 토큰 발급
+      const tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          client_id: process.env.KAKAO_CLIENT_ID!,
+          client_secret: process.env.KAKAO_CLIENT_SECRET!,
+          redirect_uri: redirectUri,
+          code: code as string
+        })
+      });
+      
+      const tokenData = await tokenResponse.json();
+      
+      if (!tokenData.access_token) {
+        throw new Error('카카오 액세스 토큰 발급 실패');
+      }
+      
+      // 2. 사용자 정보 가져오기
+      const userResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`
         }
-        return res.redirect('/auth/login?error=auth_failed');
+      });
+      
+      const userData = await userResponse.json();
+      
+      const email = userData.kakao_account?.email;
+      const nickname = userData.properties?.nickname;
+      const kakaoId = userData.id.toString();
+      
+      if (!email) {
+        throw new Error('카카오 계정에서 이메일을 가져올 수 없습니다.');
+      }
+      
+      // 3. 사용자 처리
+      let user = await storage.getUserByEmail(email);
+      
+      if (user && user.status === 'deleted') {
+        return res.redirect('/auth/login?error=deleted_account&message=' + encodeURIComponent('삭제된 계정입니다. 카카오 연동을 해제하고 다시 시도해주세요.'));
       }
       
       if (!user) {
-        console.log('❌ 카카오 OAuth - 사용자 정보 없음');
-        return res.redirect('/auth/login?error=auth_failed');
+        // 새 사용자 생성
+        const username = `kakao_${kakaoId}`;
+        user = await storage.createUser({
+          username,
+          email,
+          password: '',
+          fullName: nickname || username,
+          school: '',
+          country: '',
+          profileImage: userData.properties?.profile_image || null,
+          authProvider: 'kakao',
+          kakaoId,
+          kakaoAccessToken: tokenData.access_token
+        });
+        
       }
       
-      console.log('✅ 카카오 OAuth 성공 - 콜백 처리 시작');
-      req.user = user;
-      handleOAuthCallback(req, res);
-    })(req, res, next);
+      // 4. JWT 토큰 생성 및 리다이렉트
+      const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
+      const userPayload = encodeURIComponent(JSON.stringify({ ...user, password: undefined }));
+      
+      const needsInfo = !user.school || !user.country || user.school === '' || user.country === '';
+      
+      if (needsInfo) {
+        res.redirect(`/auth/complete-registration?token=${token}&user=${userPayload}`);
+      } else {
+        res.redirect(`/?token=${token}&user=${userPayload}`);
+      }
+      
+    } catch (error) {
+      res.redirect('/auth/login?error=auth_failed');
+    }
   });
   app.get('/api/auth/naver', passport.authenticate('naver'));
   app.get('/api/auth/naver/callback', passport.authenticate('naver', { failureRedirect: '/auth/login?error=auth_failed' }), handleOAuthCallback);
