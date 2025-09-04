@@ -34,7 +34,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     : 'http://localhost:5000';
   const googleCallbackURL = `${baseURL}/api/auth/google/callback`;
   
-  console.log('🔧 구글 콜백 URL:', googleCallbackURL);
   
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
@@ -86,19 +85,13 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 }
 
 // Kakao OAuth Strategy
-console.log('🔧 카카오 환경변수 체크:');
-console.log('  - KAKAO_CLIENT_ID:', process.env.KAKAO_CLIENT_ID ? 'Present' : 'Missing');
-console.log('  - KAKAO_CLIENT_SECRET:', process.env.KAKAO_CLIENT_SECRET ? 'Present' : 'Missing');
-
 if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
-  console.log('✅ 카카오 Strategy 초기화 중...');
   // Deploy 환경에 맞는 콜백 URL 설정
   const baseURL = process.env.REPLIT_DEV_DOMAIN 
     ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
     : 'http://localhost:5000';
   const kakaoCallbackURL = `${baseURL}/api/auth/kakao/callback`;
   
-  console.log('🔧 카카오 콜백 URL:', kakaoCallbackURL);
   
   passport.use(new KakaoStrategy({
     clientID: process.env.KAKAO_CLIENT_ID,
@@ -109,46 +102,22 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
   },
   async (req, accessToken, refreshToken, profile, done) => {
     try {
-      console.log('🔵 카카오 Passport Strategy 시작');
-      console.log('🔵 Access Token:', accessToken ? 'Present' : 'Missing');
-      console.log('🔵 Profile Data:', JSON.stringify(profile, null, 2));
-      
       const email = profile._json?.kakao_account?.email;
       const nickname = profile.displayName || profile._json?.properties?.nickname;
       const kakaoId = profile.id;
       
-      console.log('🔵 추출된 정보:', { email, nickname, kakaoId });
-      
       if (!email) {
-        console.log('❌ 카카오 계정에서 이메일을 가져올 수 없습니다.');
         return done(new Error('카카오 계정에서 이메일을 가져올 수 없습니다.'), null);
       }
-
-      console.log('🔍 카카오 OAuth 로그인 시도:', { email, kakaoId });
 
       // Check if user exists with this email or kakaoId
       const existingUserByEmail = await db.select().from(users).where(eq(users.email, email)).limit(1);
       const existingUserByKakaoId = await db.select().from(users).where(eq(users.kakaoId, kakaoId)).limit(1);
       
-      console.log('🔵 기존 사용자 조회 결과:');
-      console.log('  - 이메일로 조회:', existingUserByEmail.length > 0 ? 'Found' : 'Not found');
-      console.log('  - 카카오ID로 조회:', existingUserByKakaoId.length > 0 ? 'Found' : 'Not found');
-      
       let user = existingUserByEmail[0] || existingUserByKakaoId[0] || null;
-      
-      if (user) {
-        console.log('🔵 기존 사용자 정보:', { 
-          id: user.id, 
-          email: user.email, 
-          status: user.status, 
-          kakaoId: user.kakaoId,
-          authProvider: user.authProvider 
-        });
-      }
       
       // 삭제된 사용자인지 확인
       if (user && user.status === 'deleted') {
-        console.log('⚠️ 삭제된 계정으로 로그인 시도:', user.id);
         return done(new Error('삭제된 계정입니다. 카카오 연동을 해제하고 다시 시도해주세요.'), null);
       }
       
@@ -163,7 +132,6 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
           username = `${baseUsername}_${Date.now()}`;
         }
         
-        console.log('🔄 새 카카오 사용자 생성 시도:', { username, email });
         try {
           user = await storage.createUser({
             username,
@@ -177,11 +145,9 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
             kakaoId: profile.id,
             kakaoAccessToken: accessToken // 연결 해제용 토큰 저장
           });
-          console.log('✅ 새 카카오 사용자 생성 성공:', user.id);
           // Mark as needing additional info
           (user as any).needsAdditionalInfo = true;
         } catch (createError) {
-          console.error('❌ 카카오 사용자 생성 실패:', createError);
           return done(createError, null);
         }
       } else if (!user.kakaoId) {
@@ -200,21 +166,24 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
 
       return done(null, user);
     } catch (error) {
-      console.error('❌ 카카오 Strategy 오류:', error);
       return done(error, null);
     }
   }));
-  console.log('✅ 카카오 Strategy 등록 완료');
-} else {
-  console.log('❌ 카카오 Strategy 초기화 실패 - 환경변수 누락');
 }
 
 // Naver OAuth Strategy
 if (process.env.NAVER_CLIENT_ID && process.env.NAVER_CLIENT_SECRET) {
+  // Deploy 환경에 맞는 콜백 URL 설정
+  const baseURL = process.env.REPLIT_DEV_DOMAIN 
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+    : 'http://localhost:5000';
+  const naverCallbackURL = `${baseURL}/api/auth/naver/callback`;
+  
+  
   passport.use(new NaverStrategy({
     clientID: process.env.NAVER_CLIENT_ID,
     clientSecret: process.env.NAVER_CLIENT_SECRET,
-    callbackURL: "/api/auth/naver/callback"
+    callbackURL: naverCallbackURL
   },
   async (accessToken, refreshToken, profile, done) => {
     try {

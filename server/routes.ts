@@ -147,81 +147,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const user = req.user as User & { needsAdditionalInfo?: boolean };
     if (!user) return res.redirect('/auth/login?error=auth_failed');
     
-    console.log('🔍 OAuth 콜백 사용자 정보:', { 
-      id: user.id, 
-      email: user.email, 
-      school: user.school, 
-      country: user.country, 
-      needsAdditionalInfo: user.needsAdditionalInfo,
-      authProvider: user.authProvider 
-    });
-    
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
     const userPayload = encodeURIComponent(JSON.stringify({ ...user, password: undefined }));
     
     // Check if user needs to complete registration (school/country info)
     const needsInfo = user.needsAdditionalInfo || !user.school || !user.country || user.school === '' || user.country === '';
-    console.log('🔍 추가 정보 필요 여부:', needsInfo);
     
     if (needsInfo) {
-      console.log('➡️ 회원가입 완료 페이지로 리다이렉트');
       res.redirect(`/auth/complete-registration?token=${token}&user=${userPayload}`);
     } else {
-      console.log('➡️ 홈페이지로 리다이렉트');
       res.redirect(`/?token=${token}&user=${userPayload}`);
     }
   };
 
   app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
   app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/login?error=auth_failed' }), handleOAuthCallback);
-  console.log('🔧 카카오 OAuth 라우트 등록 중...');
   app.get('/api/auth/kakao', (req, res, next) => {
-    console.log('🟡 카카오 OAuth 로그인 시작 요청');
-    console.log('🟡 Request Headers:', JSON.stringify(req.headers, null, 2));
-    console.log('🟡 Request Query:', JSON.stringify(req.query, null, 2));
-    
-    // 카카오 강제 재동의를 위한 파라미터 추가 - 여러 방법 시도
+    // 카카오 강제 재동의를 위한 파라미터 추가
     const authOptions = {
       scope: ['profile_nickname', 'account_email'], // 명시적 스코프 지정
       prompt: 'login consent', // 로그인과 동의 둘 다 강제
       state: Date.now().toString() // 상태값 추가로 캐시 방지
     };
     
-    console.log('🟡 카카오 인증 파라미터:', JSON.stringify(authOptions, null, 2));
-    
-    // 응답 헤더를 가로채서 실제 리다이렉트 URL 확인
-    const originalRedirect = res.redirect;
-    res.redirect = function(url) {
-      console.log('🟡 카카오 인증 리다이렉트 URL:', url);
-      return originalRedirect.call(this, url);
-    };
-    
     passport.authenticate('kakao', authOptions)(req, res, next);
   });
   app.get('/api/auth/kakao/callback', (req, res, next) => {
-    console.log('🟢 카카오 OAuth 콜백 시작');
-    console.log('🟢 Callback Query Parameters:', JSON.stringify(req.query, null, 2));
-    console.log('🟢 Callback Headers:', JSON.stringify(req.headers, null, 2));
-    
     passport.authenticate('kakao', (err, user, info) => {
-      console.log('🟢 Passport 인증 결과:');
-      console.log('  - 오류:', err ? err.message : 'None');
-      console.log('  - 사용자:', user ? { id: user.id, email: user.email, kakaoId: user.kakaoId } : 'None');
-      console.log('  - 추가 정보:', info || 'None');
-      
       if (err) {
-        console.log('❌ 카카오 OAuth 인증 오류:', err.message);
         if (err.message.includes('삭제된 계정입니다')) {
           return res.redirect('/auth/login?error=deleted_account&message=' + encodeURIComponent('삭제된 계정입니다. 카카오 연동을 해제하고 다시 시도해주세요.'));
         }
         return res.redirect('/auth/login?error=auth_failed');
       }
       if (!user) {
-        console.log('❌ 카카오 OAuth 사용자 정보 없음');
         return res.redirect('/auth/login?error=auth_failed');
       }
       
-      console.log('✅ 카카오 OAuth 인증 성공:', user.id);
       req.user = user;
       handleOAuthCallback(req, res);
     })(req, res, next);
