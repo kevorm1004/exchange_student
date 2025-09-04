@@ -132,7 +132,8 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
             country: '',
             profileImage: profile._json?.properties?.profile_image || null,
             authProvider: 'kakao',
-            kakaoId: profile.id
+            kakaoId: profile.id,
+            kakaoAccessToken: accessToken // 연결 해제용 토큰 저장
           });
           console.log('✅ 새 카카오 사용자 생성 성공:', user.id);
           // Mark as needing additional info
@@ -145,7 +146,13 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
         // Link existing account with Kakao
         await storage.updateUser(user.id, {
           kakaoId: profile.id,
+          kakaoAccessToken: accessToken, // 연결 해제용 토큰 저장
           authProvider: user.authProvider === 'email' ? 'email,kakao' : user.authProvider + ',kakao'
+        });
+      } else {
+        // 기존 카카오 연동 사용자 - 토큰 업데이트
+        await storage.updateUser(user.id, {
+          kakaoAccessToken: accessToken
         });
       }
 

@@ -18,6 +18,7 @@ export const users = pgTable("users", {
   authProvider: text("auth_provider").default("email").notNull(),
   googleId: text("google_id"),
   kakaoId: text("kakao_id"),
+  kakaoAccessToken: text("kakao_access_token"), // 카카오 연결 해제용 토큰
   naverId: text("naver_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

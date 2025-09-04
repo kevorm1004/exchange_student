@@ -375,6 +375,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/users/stats', authenticateToken, async (req, res) => res.json(await storage.getUserStats(req.user!.id)));
   app.get('/api/users/items', authenticateToken, async (req, res) => res.json(await storage.getUserItems(req.user!.id)));
 
+  // 카카오 연결 해제 함수
+  const disconnectKakaoAccount = async (accessToken: string): Promise<boolean> => {
+    try {
+      const response = await fetch('https://kapi.kakao.com/v1/user/unlink', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ 카카오 연결 해제 성공:', result);
+        return true;
+      } else {
+        console.error('❌ 카카오 연결 해제 실패:', response.status, await response.text());
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ 카카오 연결 해제 API 호출 오류:', error);
+      return false;
+    }
+  };
+
   // User Account Deletion
   app.delete('/api/user/account', authenticateToken, async (req, res) => {
     try {
@@ -397,6 +422,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.log(`✅ 즐겨찾기 ${userFavorites.length}개 삭제 완료`);
       
+      // OAuth 연동 해제 처리
+      let oauthGuideMessage = '';
+      let kakaoDisconnectSuccess = false;
+      
+      if (user.authProvider?.includes('kakao') && user.kakaoAccessToken) {
+        console.log('🔄 카카오 연결 해제 시도');
+        kakaoDisconnectSuccess = await disconnectKakaoAccount(user.kakaoAccessToken);
+        if (kakaoDisconnectSuccess) {
+          oauthGuideMessage = '카카오 연동이 완전히 해제되었습니다. 다시 가입 시 새로운 동의 과정을 거치게 됩니다.';
+        } else {
+          oauthGuideMessage = '카카오 연동 해제 중 오류가 발생했습니다. 카카오 계정에서 수동으로 연동을 해제해주세요.';
+        }
+      } else if (user.authProvider?.includes('google')) {
+        oauthGuideMessage = '구글 연동이 해제되었습니다. 다시 가입하시려면 구글 계정에서 연동을 해제하고 새로 동의해주세요.';
+      } else if (user.authProvider?.includes('naver')) {
+        oauthGuideMessage = '네이버 연동이 해제되었습니다. 다시 가입하시려면 네이버 계정에서 연동을 해제하고 새로 동의해주세요.';
+      }
+      
       // Delete the user account
       await storage.deleteUser(userId);
       console.log(`✅ 계정 삭제 완료: ${userId}`);
@@ -408,20 +451,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // OAuth 계정 연동 해제 가이드 메시지 준비
-      let oauthGuideMessage = '';
-      if (user.authProvider?.includes('kakao')) {
-        oauthGuideMessage = '카카오 연동이 해제되었습니다. 다시 가입하시려면 카카오 계정에서 연동을 해제하고 새로 동의해주세요.';
-      } else if (user.authProvider?.includes('google')) {
-        oauthGuideMessage = '구글 연동이 해제되었습니다. 다시 가입하시려면 구글 계정에서 연동을 해제하고 새로 동의해주세요.';
-      } else if (user.authProvider?.includes('naver')) {
-        oauthGuideMessage = '네이버 연동이 해제되었습니다. 다시 가입하시려면 네이버 계정에서 연동을 해제하고 새로 동의해주세요.';
-      }
-      
       // 클라이언트에게 강제 로그아웃 지시
       res.json({ 
         message: '계정이 성공적으로 삭제되었습니다.',
         oauthGuide: oauthGuideMessage,
+        kakaoDisconnected: kakaoDisconnectSuccess,
         forceLogout: true 
       });
     } catch (error) {
