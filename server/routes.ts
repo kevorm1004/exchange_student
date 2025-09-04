@@ -174,6 +174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
   app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/login?error=auth_failed' }), handleOAuthCallback);
+  console.log('🔧 카카오 OAuth 라우트 등록 중...');
   app.get('/api/auth/kakao', (req, res, next) => {
     console.log('🟡 카카오 OAuth 로그인 시작 요청');
     console.log('🟡 Request Headers:', JSON.stringify(req.headers, null, 2));

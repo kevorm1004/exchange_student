@@ -79,7 +79,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 }
 
 // Kakao OAuth Strategy
+console.log('🔧 카카오 환경변수 체크:');
+console.log('  - KAKAO_CLIENT_ID:', process.env.KAKAO_CLIENT_ID ? 'Present' : 'Missing');
+console.log('  - KAKAO_CLIENT_SECRET:', process.env.KAKAO_CLIENT_SECRET ? 'Present' : 'Missing');
+
 if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
+  console.log('✅ 카카오 Strategy 초기화 중...');
   passport.use(new KakaoStrategy({
     clientID: process.env.KAKAO_CLIENT_ID,
     clientSecret: process.env.KAKAO_CLIENT_SECRET,
@@ -180,9 +185,13 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
 
       return done(null, user);
     } catch (error) {
+      console.error('❌ 카카오 Strategy 오류:', error);
       return done(error, null);
     }
   }));
+  console.log('✅ 카카오 Strategy 등록 완료');
+} else {
+  console.log('❌ 카카오 Strategy 초기화 실패 - 환경변수 누락');
 }
 
 // Naver OAuth Strategy
