@@ -84,15 +84,23 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
     clientID: process.env.KAKAO_CLIENT_ID,
     clientSecret: process.env.KAKAO_CLIENT_SECRET,
     callbackURL: "/api/auth/kakao/callback",
-    passReqToCallback: true // 요청 객체를 콜백에 전달
+    passReqToCallback: true, // 요청 객체를 콜백에 전달
+    authorizationURL: 'https://kauth.kakao.com/oauth/authorize?prompt=login'
   },
   async (req, accessToken, refreshToken, profile, done) => {
     try {
+      console.log('🔵 카카오 Passport Strategy 시작');
+      console.log('🔵 Access Token:', accessToken ? 'Present' : 'Missing');
+      console.log('🔵 Profile Data:', JSON.stringify(profile, null, 2));
+      
       const email = profile._json?.kakao_account?.email;
       const nickname = profile.displayName || profile._json?.properties?.nickname;
       const kakaoId = profile.id;
       
+      console.log('🔵 추출된 정보:', { email, nickname, kakaoId });
+      
       if (!email) {
+        console.log('❌ 카카오 계정에서 이메일을 가져올 수 없습니다.');
         return done(new Error('카카오 계정에서 이메일을 가져올 수 없습니다.'), null);
       }
 
@@ -102,7 +110,21 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
       const existingUserByEmail = await db.select().from(users).where(eq(users.email, email)).limit(1);
       const existingUserByKakaoId = await db.select().from(users).where(eq(users.kakaoId, kakaoId)).limit(1);
       
+      console.log('🔵 기존 사용자 조회 결과:');
+      console.log('  - 이메일로 조회:', existingUserByEmail.length > 0 ? 'Found' : 'Not found');
+      console.log('  - 카카오ID로 조회:', existingUserByKakaoId.length > 0 ? 'Found' : 'Not found');
+      
       let user = existingUserByEmail[0] || existingUserByKakaoId[0] || null;
+      
+      if (user) {
+        console.log('🔵 기존 사용자 정보:', { 
+          id: user.id, 
+          email: user.email, 
+          status: user.status, 
+          kakaoId: user.kakaoId,
+          authProvider: user.authProvider 
+        });
+      }
       
       // 삭제된 사용자인지 확인
       if (user && user.status === 'deleted') {

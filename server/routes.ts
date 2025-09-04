@@ -175,14 +175,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
   app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/login?error=auth_failed' }), handleOAuthCallback);
   app.get('/api/auth/kakao', (req, res, next) => {
-    // 카카오 강제 재동의를 위한 파라미터 추가
-    passport.authenticate('kakao', {
+    console.log('🟡 카카오 OAuth 로그인 시작 요청');
+    console.log('🟡 Request Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('🟡 Request Query:', JSON.stringify(req.query, null, 2));
+    
+    // 카카오 강제 재동의를 위한 파라미터 추가 - 여러 방법 시도
+    const authOptions = {
       scope: ['profile_nickname', 'account_email'], // 명시적 스코프 지정
-      prompt: 'login consent' // 로그인과 동의 둘 다 강제
-    })(req, res, next);
+      prompt: 'login consent', // 로그인과 동의 둘 다 강제
+      state: Date.now().toString() // 상태값 추가로 캐시 방지
+    };
+    
+    console.log('🟡 카카오 인증 파라미터:', JSON.stringify(authOptions, null, 2));
+    
+    // 응답 헤더를 가로채서 실제 리다이렉트 URL 확인
+    const originalRedirect = res.redirect;
+    res.redirect = function(url) {
+      console.log('🟡 카카오 인증 리다이렉트 URL:', url);
+      return originalRedirect.call(this, url);
+    };
+    
+    passport.authenticate('kakao', authOptions)(req, res, next);
   });
   app.get('/api/auth/kakao/callback', (req, res, next) => {
-    passport.authenticate('kakao', (err, user) => {
+    console.log('🟢 카카오 OAuth 콜백 시작');
+    console.log('🟢 Callback Query Parameters:', JSON.stringify(req.query, null, 2));
+    console.log('🟢 Callback Headers:', JSON.stringify(req.headers, null, 2));
+    
+    passport.authenticate('kakao', (err, user, info) => {
+      console.log('🟢 Passport 인증 결과:');
+      console.log('  - 오류:', err ? err.message : 'None');
+      console.log('  - 사용자:', user ? { id: user.id, email: user.email, kakaoId: user.kakaoId } : 'None');
+      console.log('  - 추가 정보:', info || 'None');
+      
       if (err) {
         console.log('❌ 카카오 OAuth 인증 오류:', err.message);
         if (err.message.includes('삭제된 계정입니다')) {
@@ -378,6 +403,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 카카오 연결 해제 함수
   const disconnectKakaoAccount = async (accessToken: string): Promise<boolean> => {
     try {
+      console.log('🟠 카카오 연결 해제 시작');
+      console.log('🟠 Access Token:', accessToken ? `Present (${accessToken.substring(0, 10)}...)` : 'Missing');
+      
       const response = await fetch('https://kapi.kakao.com/v1/user/unlink', {
         method: 'POST',
         headers: {
@@ -386,12 +414,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
+      console.log('🟠 카카오 API 응답 상태:', response.status);
+      console.log('🟠 카카오 API 응답 헤더:', JSON.stringify([...response.headers.entries()], null, 2));
+
       if (response.ok) {
         const result = await response.json();
         console.log('✅ 카카오 연결 해제 성공:', result);
         return true;
       } else {
-        console.error('❌ 카카오 연결 해제 실패:', response.status, await response.text());
+        const errorText = await response.text();
+        console.error('❌ 카카오 연결 해제 실패:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
         return false;
       }
     } catch (error) {
@@ -426,13 +462,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let oauthGuideMessage = '';
       let kakaoDisconnectSuccess = false;
       
-      if (user.authProvider?.includes('kakao') && user.kakaoAccessToken) {
-        console.log('🔄 카카오 연결 해제 시도');
-        kakaoDisconnectSuccess = await disconnectKakaoAccount(user.kakaoAccessToken);
-        if (kakaoDisconnectSuccess) {
-          oauthGuideMessage = '카카오 연동이 완전히 해제되었습니다. 다시 가입 시 새로운 동의 과정을 거치게 됩니다.';
+      console.log('🟣 사용자 OAuth 정보 확인:');
+      console.log('  - authProvider:', user.authProvider);
+      console.log('  - kakaoId:', user.kakaoId);
+      console.log('  - kakaoAccessToken:', user.kakaoAccessToken ? 'Present' : 'Missing');
+      
+      if (user.authProvider?.includes('kakao')) {
+        if (user.kakaoAccessToken) {
+          console.log('🔄 카카오 연결 해제 시도');
+          kakaoDisconnectSuccess = await disconnectKakaoAccount(user.kakaoAccessToken);
+          if (kakaoDisconnectSuccess) {
+            oauthGuideMessage = '카카오 연동이 완전히 해제되었습니다. 다시 가입 시 새로운 동의 과정을 거치게 됩니다.';
+          } else {
+            oauthGuideMessage = '카카오 연동 해제 중 오류가 발생했습니다. 카카오 계정에서 수동으로 연동을 해제해주세요.';
+          }
         } else {
-          oauthGuideMessage = '카카오 연동 해제 중 오류가 발생했습니다. 카카오 계정에서 수동으로 연동을 해제해주세요.';
+          console.log('⚠️ 카카오 액세스 토큰이 없어 연결 해제를 건너뜁니다.');
+          oauthGuideMessage = '카카오 액세스 토큰이 없어 자동 연동 해제를 할 수 없습니다. 카카오 계정에서 수동으로 연동을 해제해주세요.';
         }
       } else if (user.authProvider?.includes('google')) {
         oauthGuideMessage = '구글 연동이 해제되었습니다. 다시 가입하시려면 구글 계정에서 연동을 해제하고 새로 동의해주세요.';
