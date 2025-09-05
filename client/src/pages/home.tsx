@@ -12,6 +12,7 @@ import type { Item } from "@shared/schema";
 export default function Home() {
   const [filter, setFilter] = useState("all");
   const [selectedCountry, setSelectedCountry] = useState("all");
+  const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [, navigate] = useLocation();
   const { user } = useAuth();
 
@@ -23,11 +24,12 @@ export default function Home() {
     isLoading,
     isError,
   } = useInfiniteQuery({
-    queryKey: ["/api/items", filter, user?.school, selectedCountry],
+    queryKey: ["/api/items", filter, user?.school, selectedCountry, onlyAvailable],
     queryFn: async ({ pageParam = 0 }) => {
       const params = new URLSearchParams();
       if (filter === "school" && user?.school) params.append("school", user.school);
       if (filter === "country" && selectedCountry !== "all") params.append("country", selectedCountry);
+      if (onlyAvailable) params.append("onlyAvailable", "true");
       params.append("page", pageParam.toString());
       params.append("limit", "10");
       
@@ -140,6 +142,8 @@ export default function Home() {
         onFilterChange={setFilter}
         selectedCountry={selectedCountry}
         onCountryChange={setSelectedCountry}
+        onlyAvailable={onlyAvailable}
+        onToggleAvailable={setOnlyAvailable}
       />
       
       <main className="pb-20 pt-4">

@@ -563,10 +563,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Item Routes
   app.get('/api/items', async (req, res) => {
     try {
-      const { school, country, category, search, page = '0', limit = '10' } = req.query;
+      const { school, country, category, search, page = '0', limit = '10', onlyAvailable } = req.query;
       const items = await storage.getItemsWithFilters({
-        school: school as string, country: country as string, category: category as string,
-        search: search as string, page: parseInt(page as string), limit: parseInt(limit as string)
+        school: school as string, 
+        country: country as string, 
+        category: category as string,
+        search: search as string, 
+        page: parseInt(page as string), 
+        limit: parseInt(limit as string),
+        onlyAvailable: onlyAvailable === 'true'
       });
       res.json(items);
     } catch (error) {

@@ -170,6 +170,7 @@ export class DatabaseStorage implements IStorage {
     search?: string;
     page?: number;
     limit?: number;
+    onlyAvailable?: boolean;
   }): Promise<Item[]> {
     let query = db.select().from(items);
     const conditions = [];
@@ -190,6 +191,11 @@ export class DatabaseStorage implements IStorage {
         sql`LOWER(${items.title}) LIKE ${searchTerm}`,
         sql`LOWER(${items.description}) LIKE ${searchTerm}`
       ));
+    }
+    
+    // 거래 가능 상품만 필터링
+    if (filters.onlyAvailable) {
+      conditions.push(eq(items.status, '거래가능'));
     }
 
     // Apply conditions if any
