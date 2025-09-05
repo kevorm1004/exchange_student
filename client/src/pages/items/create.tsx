@@ -766,8 +766,6 @@ export default function CreateItem() {
                             to: form.watch("availableTo") || undefined
                           } as DateRange}
                           onSelect={(range: DateRange | undefined) => {
-                            console.log('📅 달력 선택 이벤트:', range);
-                            
                             if (!range) {
                               form.setValue("availableFrom", undefined);
                               form.setValue("availableTo", undefined);
@@ -776,15 +774,19 @@ export default function CreateItem() {
                             
                             if (range.from) {
                               form.setValue("availableFrom", range.from);
-                              console.log('✅ 시작일 설정:', range.from);
                             }
                             
                             if (range.to) {
                               form.setValue("availableTo", range.to);
-                              console.log('✅ 종료일 설정:', range.to);
+                              // 종료일이 선택되면 달력을 자동으로 닫기
+                              const popoverTrigger = document.querySelector('[data-state="open"]');
+                              if (popoverTrigger) {
+                                setTimeout(() => {
+                                  (popoverTrigger as HTMLElement).click();
+                                }, 100);
+                              }
                             } else {
                               form.setValue("availableTo", undefined);
-                              console.log('⚠️ 종료일 초기화');
                             }
                           }}
                           disabled={(date) =>
