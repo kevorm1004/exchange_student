@@ -732,55 +732,76 @@ export default function CreateItem() {
                 <div className="space-y-4">
                   <label className="text-sm font-medium">거래가능기간</label>
                   <div className="space-y-2">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal justify-start",
-                            (!form.getValues("availableFrom") && !form.getValues("availableTo")) && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {form.getValues("availableFrom") && form.getValues("availableTo") ? (
-                            <span>
-                              {format(form.getValues("availableFrom")!, "yyyy-MM-dd")} ~ {format(form.getValues("availableTo")!, "yyyy-MM-dd")}
-                            </span>
-                          ) : form.getValues("availableFrom") ? (
-                            <span>
-                              {format(form.getValues("availableFrom")!, "yyyy-MM-dd")} ~ 종료일 선택
-                            </span>
-                          ) : (
-                            <span>거래가능기간 선택</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="range"
-                          selected={{
-                            from: form.getValues("availableFrom") || undefined,
-                            to: form.getValues("availableTo") || undefined
-                          }}
-                          onSelect={(range) => {
-                            if (range?.from) {
-                              form.setValue("availableFrom", range.from);
-                            }
-                            if (range?.to) {
-                              form.setValue("availableTo", range.to);
-                            } else if (range?.from && !range?.to) {
-                              // 시작일만 선택된 경우 종료일 초기화
-                              form.setValue("availableTo", undefined);
-                            }
-                          }}
-                          disabled={(date) =>
-                            date < new Date(new Date().setHours(0, 0, 0, 0))
-                          }
-                          numberOfMonths={1}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormField
+                      control={form.control}
+                      name="availableFrom"
+                      render={({ field }) => {
+                        const fromDate = form.watch("availableFrom");
+                        const toDate = form.watch("availableTo");
+                        
+                        return (
+                          <FormItem className="flex flex-col">
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                      "w-full pl-3 text-left font-normal justify-start",
+                                      (!fromDate && !toDate) && "text-muted-foreground"
+                                    )}
+                                  >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {fromDate && toDate ? (
+                                      <span>
+                                        {format(fromDate, "yyyy-MM-dd")} ~ {format(toDate, "yyyy-MM-dd")}
+                                      </span>
+                                    ) : fromDate ? (
+                                      <span>
+                                        {format(fromDate, "yyyy-MM-dd")} ~ 종료일 선택
+                                      </span>
+                                    ) : (
+                                      <span>거래가능기간 선택</span>
+                                    )}
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="range"
+                                  defaultMonth={fromDate || new Date()}
+                                  selected={{
+                                    from: fromDate || undefined,
+                                    to: toDate || undefined
+                                  }}
+                                  onSelect={(range) => {
+                                    console.log('📅 달력 선택:', range);
+                                    if (range?.from) {
+                                      form.setValue("availableFrom", range.from, { shouldValidate: true });
+                                      console.log('✅ 시작일 설정:', range.from);
+                                    }
+                                    if (range?.to) {
+                                      form.setValue("availableTo", range.to, { shouldValidate: true });
+                                      console.log('✅ 종료일 설정:', range.to);
+                                    } else if (range?.from && !range?.to) {
+                                      // 시작일만 선택된 경우 종료일 초기화
+                                      form.setValue("availableTo", undefined, { shouldValidate: true });
+                                      console.log('⚠️ 종료일 초기화');
+                                    }
+                                  }}
+                                  disabled={(date) =>
+                                    date < new Date(new Date().setHours(0, 0, 0, 0))
+                                  }
+                                  numberOfMonths={1}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
                   </div>
                   <p className="text-xs text-gray-500">
                     거래가능기간을 설정하지 않으면 상품이 계속 거래 가능한 상태로 유지됩니다.
