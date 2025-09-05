@@ -56,6 +56,16 @@ function Router() {
     if (token && userStr) {
       try {
         const user = JSON.parse(decodeURIComponent(userStr));
+        
+        // 추가 정보가 필요한지 확인
+        if (user.needsAdditionalInfo) {
+          // 추가 정보 입력 페이지로 이동 (로그인은 아직 하지 않음)
+          window.history.replaceState({}, document.title, `/auth/complete-registration?token=${token}&user=${encodeURIComponent(userStr)}`);
+          window.location.href = `/auth/complete-registration?token=${token}&user=${encodeURIComponent(userStr)}`;
+          return;
+        }
+        
+        // 추가 정보가 필요없으면 로그인 진행
         login(token, user);
         
         toast({

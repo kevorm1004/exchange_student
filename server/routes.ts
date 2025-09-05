@@ -148,16 +148,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!user) return res.redirect('/auth/login?error=auth_failed');
     
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-    const userPayload = encodeURIComponent(JSON.stringify({ ...user, password: undefined }));
     
     // Check if user needs to complete registration (school/country info)
     const needsInfo = user.needsAdditionalInfo || !user.school || !user.country || user.school === '' || user.country === '';
+    const userWithFlag = { ...user, password: undefined, needsAdditionalInfo: needsInfo };
+    const userPayload = encodeURIComponent(JSON.stringify(userWithFlag));
     
-    if (needsInfo) {
-      res.redirect(`/auth/complete-registration?token=${token}&user=${userPayload}`);
-    } else {
-      res.redirect(`/?token=${token}&user=${userPayload}`);
-    }
+    // 항상 메인 페이지로 보내고, 클라이언트가 needsAdditionalInfo 플래그를 확인하여 처리
+    res.redirect(`/?token=${token}&user=${userPayload}`);
   };
 
   app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
