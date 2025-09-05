@@ -645,6 +645,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual exchange rate update endpoint for testing
+  app.post('/api/exchange/update', async (req, res) => {
+    try {
+      const { exchangeService } = require('./exchange');
+      const success = await exchangeService.updateRates();
+      if (success) {
+        const rates = exchangeService.getRates();
+        const lastUpdate = exchangeService.getLastUpdate();
+        res.json({ success: true, rates, lastUpdate });
+      } else {
+        res.status(500).json({ success: false, error: 'Failed to update rates' });
+      }
+    } catch (error) {
+      console.error('❌ POST /api/exchange/update 오류:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Favorite & Report Routes
   app.get('/api/favorites', authenticateToken, async (req, res) => res.json(await storage.getUserFavorites(req.user!.id)));
   app.post('/api/favorites', authenticateToken, async (req, res) => res.status(201).json(await storage.addFavorite(req.user!.id, req.body.itemId)));

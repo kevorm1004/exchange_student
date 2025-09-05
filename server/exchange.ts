@@ -69,17 +69,30 @@ class ExchangeService {
     };
   }
 
+  // Force update rates for testing
+  async forceUpdateRates(): Promise<boolean> {
+    this.cachedRates = null; // Clear cache to force API call
+    this.lastUpdate = null;
+    return await this.updateRates();
+  }
+
   async updateRates(): Promise<boolean> {
     try {
-      console.log('Updating exchange rates...');
+      console.log('Updating exchange rates from Korea Eximbank...');
       
-      // Try exchangerate-api.com which may use this API key format
-      const apiKey = process.env.EXCHANGE_API_KEY;
-      const apiUrl = apiKey 
-        ? `https://v6.exchangerate-api.com/v6/${apiKey}/latest/KRW`
-        : 'https://api.exchangerate.host/latest?base=KRW&symbols=USD,EUR,JPY,GBP,CNY,CAD,AUD';
+      // Use Korea Eximbank API
+      const apiKey = process.env.KOREAEXIM_API_KEY;
+      if (!apiKey) {
+        throw new Error('Korea Eximbank API key not found');
+      }
       
-      console.log('Fetching exchange rates with API key...');
+      // Get current date in YYYYMMDD format
+      const today = new Date();
+      const searchDate = today.toISOString().slice(0, 10).replace(/-/g, '');
+      
+      const apiUrl = `https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON?authkey=${apiKey}&searchdate=${searchDate}&data=AP01`;
+      
+      console.log('Fetching exchange rates from Korea Eximbank API...');
       const response = await fetch(apiUrl);
       
       if (!response.ok) {
@@ -88,45 +101,69 @@ class ExchangeService {
 
       const data = await response.json();
       
-      // Check if it's exchangerate-api.com response format
-      if (data.result === 'success' && data.conversion_rates) {
-        // Convert from KRW base rates (already in correct format)
-        const newRates: CurrencyRates = {};
-        const targetCurrencies = ['USD', 'EUR', 'JPY', 'GBP', 'CNY', 'CAD', 'AUD'];
-        
-        targetCurrencies.forEach(currency => {
-          const rate = data.conversion_rates[currency];
-          if (typeof rate === 'number' && rate > 0) {
-            newRates[currency] = Math.round((1 / rate) * 100) / 100; // Inverse for KRW->currency
-          }
-        });
-        
-        // Save to database
-        await db.insert(exchangeRates).values({
-          baseCurrency: 'KRW',
-          rates: JSON.stringify(newRates),
-        });
-
-        // Update cache
-        this.cachedRates = newRates;
-        this.lastUpdate = new Date();
-
-        console.log('Exchange rates updated successfully:', newRates);
-        return true;
+      // Check if data is an array (Korea Eximbank format)
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error('Invalid API response format from Korea Eximbank');
       }
       
-      // Fallback to old format check
-      if (!data.success || !data.rates) {
-        throw new Error('Invalid API response format');
+      // Check for error result
+      if (data[0].result && data[0].result !== 1) {
+        const errorMessages = {
+          2: 'DATA코드 오류',
+          3: '인증코드 오류', 
+          4: '일일제한횟수 마감'
+        };
+        throw new Error(`Korea Eximbank API error: ${errorMessages[data[0].result] || 'Unknown error'}`);
       }
 
-      // Legacy format handling
+      // Convert Korea Eximbank data to our format
       const newRates: CurrencyRates = {};
-      Object.entries(data.rates).forEach(([currency, rate]) => {
-        if (typeof rate === 'number' && rate > 0) {
-          newRates[currency] = Math.round((1 / rate) * 100) / 100;
+      
+      console.log('Processing Korea Eximbank data:', data.slice(0, 3)); // Log first 3 items for debugging
+      
+      data.forEach((item: any) => {
+        if (item.result === 1 && item.cur_unit && item.deal_bas_r) {
+          let currency = '';
+          let rate = parseFloat(item.deal_bas_r.replace(/,/g, '')); // Remove commas
+          
+          // Map currency codes
+          switch (item.cur_unit) {
+            case 'USD':
+              currency = 'USD';
+              break;
+            case 'EUR':
+              currency = 'EUR';
+              break;
+            case 'JPY(100)':
+              currency = 'JPY';
+              rate = rate / 100; // Convert JPY(100) to single JPY
+              break;
+            case 'GBP':
+              currency = 'GBP';
+              break;
+            case 'CNH':
+            case 'CNY':
+              currency = 'CNY';
+              break;
+            case 'CAD':
+              currency = 'CAD';
+              break;
+            case 'AUD':
+              currency = 'AUD';
+              break;
+          }
+          
+          if (currency && rate > 0) {
+            newRates[currency] = Math.round(rate * 100) / 100;
+            console.log(`Mapped ${item.cur_unit} -> ${currency}: ${rate}`);
+          }
         }
       });
+
+      // Validate we have the essential currencies
+      if (!newRates.USD || !newRates.EUR) {
+        throw new Error('Essential currency rates (USD, EUR) not found in API response');
+      }
 
       // Save to database
       await db.insert(exchangeRates).values({
@@ -138,7 +175,7 @@ class ExchangeService {
       this.cachedRates = newRates;
       this.lastUpdate = new Date();
 
-      console.log('Exchange rates updated successfully:', newRates);
+      console.log('Exchange rates updated successfully from Korea Eximbank:', newRates);
       return true;
     } catch (error) {
       console.error('Failed to update exchange rates:', error);
