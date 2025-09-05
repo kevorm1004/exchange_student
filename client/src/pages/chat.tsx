@@ -74,9 +74,9 @@ export default function Chat() {
                   <Card className="p-4 cursor-pointer hover:bg-gray-50 transition-colors border-0 shadow-none border-b border-gray-100 last:border-0">
                     <div className="flex items-center space-x-3">
                       <Avatar className="w-12 h-12">
-                        <AvatarImage src={otherUser.profileImage || undefined} />
+                        <AvatarImage src={otherUser?.profileImage || undefined} />
                         <AvatarFallback className="bg-gray-200 text-gray-600">
-                          {otherUser.fullName[0]}
+                          {otherUser?.fullName?.[0] || '?'}
                         </AvatarFallback>
                       </Avatar>
                       

@@ -667,7 +667,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/chat/rooms', authenticateToken, async (req, res) => {
     try {
       const rooms = await storage.getChatRooms(req.user!.id);
-      res.json(rooms);
+      
+      // Get detailed information for each chat room
+      const detailedRooms = await Promise.all(
+        rooms.map(async (room) => {
+          const [item, buyer, seller] = await Promise.all([
+            storage.getItem(room.itemId),
+            storage.getUser(room.buyerId),
+            storage.getUser(room.sellerId)
+          ]);
+
+          if (!item || !buyer || !seller) {
+            return null; // Skip rooms with missing data
+          }
+
+          return {
+            ...room,
+            item,
+            buyer,
+            seller
+          };
+        })
+      );
+
+      // Filter out null values (rooms with missing data)
+      const validRooms = detailedRooms.filter(room => room !== null);
+      
+      res.json(validRooms);
     } catch (error) {
       console.error('❌ GET /api/chat/rooms 오류:', error);
       res.status(500).json({ error: 'Failed to fetch chat rooms' });
