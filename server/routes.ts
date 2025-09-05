@@ -671,10 +671,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get detailed information for each chat room
       const detailedRooms = await Promise.all(
         rooms.map(async (room) => {
-          const [item, buyer, seller] = await Promise.all([
+          const [item, buyer, seller, unreadCount] = await Promise.all([
             storage.getItem(room.itemId),
             storage.getUser(room.buyerId),
-            storage.getUser(room.sellerId)
+            storage.getUser(room.sellerId),
+            storage.getUnreadMessageCount(room.id, req.user!.id)
           ]);
 
           if (!item || !buyer || !seller) {
@@ -685,7 +686,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...room,
             item,
             buyer,
-            seller
+            seller,
+            unreadCount: unreadCount || 0
           };
         })
       );

@@ -12,6 +12,7 @@ interface ChatRoomWithDetails extends ChatRoom {
   item: Item;
   buyer: UserType;
   seller: UserType;
+  unreadCount: number;
 }
 
 export default function Chat() {
@@ -102,7 +103,13 @@ export default function Chat() {
                       </div>
                       
                       <div className="flex flex-col items-end">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                        {room.unreadCount > 0 && (
+                          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs font-medium">
+                              {room.unreadCount > 99 ? "99+" : room.unreadCount}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </Card>

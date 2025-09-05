@@ -57,6 +57,7 @@ export interface IStorage {
   getChatRoomMessages(roomId: string): Promise<Message[]>;
   getChatMessages(roomId: string): Promise<Message[]>;
   createMessage(insertMessage: InsertMessage): Promise<Message>;
+  getUnreadMessageCount(roomId: string, userId: string): Promise<number>;
   
   // Chat room methods
   getChatRooms(userId: string): Promise<ChatRoom[]>;
@@ -315,6 +316,18 @@ export class DatabaseStorage implements IStorage {
       .values(insertMessage)
       .returning();
     return message;
+  }
+
+  async getUnreadMessageCount(roomId: string, userId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(and(
+        eq(messages.roomId, roomId),
+        eq(messages.isRead, false),
+        ne(messages.senderId, userId) // 자신이 보낸 메시지는 제외
+      ));
+    
+    return result[0]?.count || 0;
   }
 
   async getChatRooms(userId: string): Promise<ChatRoom[]> {
