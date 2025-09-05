@@ -810,7 +810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content,
         senderId: req.user!.id,
         roomId: req.params.id,
-        isRead: false
+        isRead: false // 메시지를 받는 사람 기준으로 읽지 않은 상태
       });
       
       res.status(201).json(message);
