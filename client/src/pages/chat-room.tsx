@@ -379,7 +379,9 @@ export default function ChatRoomPage() {
                         {formatMessageTime(msg.createdAt)}
                       </span>
                       {isMe && (
-                        <span className="text-xs text-gray-400">읽음</span>
+                        <span className="text-xs text-gray-400">
+                          {msg.isRead ? "읽음" : "전송됨"}
+                        </span>
                       )}
                     </div>
                   </div>
