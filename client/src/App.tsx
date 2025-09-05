@@ -68,10 +68,7 @@ function Router() {
         // needsAdditionalInfo가 false이면 로그인 후 메인 페이지로 이동
         login(token, user);
         
-        toast({
-          title: "로그인 성공",
-          description: "소셜 로그인이 완료되었습니다!",
-        });
+        // 성공 팝업 제거 - 소셜 로그인 성공 시 toast 제거
         
         // Clear URL parameters and navigate to home
         window.history.replaceState({}, document.title, window.location.pathname);

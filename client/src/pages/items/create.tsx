@@ -66,8 +66,8 @@ export default function CreateItem() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  // KRW로 환산된 가격 계산
-  const convertedPrice = priceValue ? parseFloat(priceValue) * selectedCurrency.rate * 1350 : 0;
+  // KRW로 환산된 가격 계산 (formatPrice 함수 사용)
+  const convertedPrice = priceValue ? formatPrice(parseFloat(priceValue), selectedCurrency.code) : "";
 
   const form = useForm<InsertItem>({
     resolver: zodResolver(insertItemSchema),
@@ -230,11 +230,14 @@ export default function CreateItem() {
     setDraggedIndex(null);
   };
 
-  // Update price when currency or value changes
+  // Update price when currency or value changes (convert 함수 사용)
   useEffect(() => {
-    if (priceValue) {
-      const usdPrice = parseFloat(priceValue) / selectedCurrency.rate;
+    if (priceValue && selectedCurrency) {
+      // 선택된 통화를 USD로 변환하여 저장
+      const { convert } = useExchangeRates();
+      const usdPrice = convert ? convert(parseFloat(priceValue), selectedCurrency.code, 'USD') : parseFloat(priceValue);
       form.setValue('price', usdPrice.toFixed(2));
+      form.setValue('currency', selectedCurrency.code);
     } else {
       form.setValue('price', '');
     }
