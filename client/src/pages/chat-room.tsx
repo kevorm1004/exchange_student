@@ -75,6 +75,10 @@ export default function ChatRoomPage() {
     onSuccess: () => {
       setMessage("");
       setIsSending(false);
+      // 메시지 목록 캐시 무효화로 즉시 업데이트
+      queryClient.invalidateQueries({
+        queryKey: ["/api/chat/rooms", roomId, "messages"]
+      });
     },
     onError: () => {
       setIsSending(false);
