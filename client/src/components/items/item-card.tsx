@@ -31,21 +31,6 @@ const formatTimeAgo = (date: Date) => {
   return `${Math.floor(diffInHours / 168)}주 전`;
 };
 
-const calculateDistance = (userSchool: string, itemSchool: string) => {
-  // TODO: 실제로는 지리적 거리 계산 API를 사용해야 합니다
-  // 지금은 간단한 더미 데이터로 처리
-  if (userSchool === itemSchool) return "0km";
-  
-  const distances: { [key: string]: string } = {
-    "Seoul National University": "2.5km",
-    "Yonsei University": "3.2km", 
-    "Korea University": "4.1km",
-    "Ewha Womans University": "1.8km",
-    "Hongik University": "5.3km"
-  };
-  
-  return distances[itemSchool] || "7.2km";
-};
 
 interface ItemCardProps {
   item: Item;
@@ -149,7 +134,6 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
     }
   };
 
-  const distance = user ? calculateDistance(user.school, item.school) : "알 수 없음";
 
   // Grid variant for search results
   if (variant === "grid") {
@@ -194,7 +178,7 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
             {/* 위치 정보 */}
             <div className="flex items-center text-xs text-gray-600 mb-2">
               <MapPin className="w-2.5 h-2.5 mr-1 flex-shrink-0" />
-              <span className="text-primary font-medium text-xs">{distance}</span>
+              <span className="text-primary font-medium text-xs">{item.school}</span>
             </div>
             
             {/* 메타 정보 - 하단에 고정 */}
@@ -265,11 +249,9 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
               {/* 제목 */}
               <h3 className="font-semibold text-gray-900 text-sm mb-1 truncate">{item.title}</h3>
               
-              {/* 거리와 대학교 */}
+              {/* 대학교 */}
               <div className="flex items-center text-xs text-gray-600 mb-1">
                 <MapPin className="w-2.5 h-2.5 mr-1 flex-shrink-0" />
-                <span className="text-primary font-medium text-xs">{distance}</span>
-                <span className="mx-1.5">•</span>
                 <span className="truncate text-xs">{item.school}</span>
               </div>
               
