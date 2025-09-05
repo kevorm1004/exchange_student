@@ -806,7 +806,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const message = await storage.createMessage({
         content,
         senderId: req.user!.id,
-        roomId: req.params.id
+        roomId: req.params.id,
+        isRead: false
       });
       
       res.status(201).json(message);
