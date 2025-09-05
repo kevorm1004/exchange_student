@@ -127,17 +127,38 @@ export const exchangeRates = pgTable("exchange_rates", {
 
 // Zod Schemas for validation
 export const insertUserSchema = createInsertSchema(users);
-export const insertItemSchema = createInsertSchema(items).extend({
-  availableFrom: z.union([z.date(), z.string(), z.null()]).transform((val) => {
-    if (val === null || val === undefined) return null;
-    if (typeof val === 'string') return new Date(val);
-    return val;
-  }).optional(),
-  availableTo: z.union([z.date(), z.string(), z.null()]).transform((val) => {
-    if (val === null || val === undefined) return null;
-    if (typeof val === 'string') return new Date(val);
-    return val;
-  }).optional(),
+
+// 상품 등록을 위한 커스텀 스키마 - 날짜 필드 변환 처리
+export const insertItemSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  price: z.string(),
+  condition: z.string(),
+  category: z.string().optional(),
+  images: z.array(z.string()),
+  sellerId: z.string(),
+  school: z.string(),
+  country: z.string(),
+  currency: z.string().optional(),
+  location: z.string(),
+  deliveryMethod: z.string().optional(),
+  customDeliveryMethod: z.string().optional(),
+  availableFrom: z.union([
+    z.date(),
+    z.string().transform((val) => val ? new Date(val) : null),
+    z.null(),
+    z.undefined()
+  ]).optional().nullable(),
+  availableTo: z.union([
+    z.date(),
+    z.string().transform((val) => val ? new Date(val) : null),
+    z.null(),
+    z.undefined()
+  ]).optional().nullable(),
+  status: z.string().optional(),
+  isAvailable: z.boolean().optional(),
+  views: z.number().optional(),
+  likes: z.number().optional()
 });
 export const insertCommunityPostSchema = createInsertSchema(communityPosts);
 export const insertCommentSchema = createInsertSchema(comments);
