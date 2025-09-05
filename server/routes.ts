@@ -711,8 +711,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (room.buyerId !== req.user!.id && room.sellerId !== req.user!.id) {
         return res.status(403).json({ error: 'Access denied' });
       }
+
+      // Get detailed information for the chat room
+      const [item, buyer, seller] = await Promise.all([
+        storage.getItem(room.itemId),
+        storage.getUser(room.buyerId),
+        storage.getUser(room.sellerId)
+      ]);
+
+      if (!item || !buyer || !seller) {
+        return res.status(404).json({ error: 'Chat room data not found' });
+      }
+
+      // Return detailed chat room with item and user information
+      const detailedRoom = {
+        ...room,
+        item,
+        buyer,
+        seller
+      };
       
-      res.json(room);
+      res.json(detailedRoom);
     } catch (error) {
       console.error('❌ GET /api/chat/rooms/:id 오류:', error);
       res.status(500).json({ error: 'Failed to fetch chat room' });
