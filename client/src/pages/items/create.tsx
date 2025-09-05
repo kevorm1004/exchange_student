@@ -230,12 +230,11 @@ export default function CreateItem() {
     setDraggedIndex(null);
   };
 
-  // Update price when currency or value changes (convert 함수 사용)
+  // Update price when currency or value changes
   useEffect(() => {
     if (priceValue && selectedCurrency) {
-      // 선택된 통화를 USD로 변환하여 저장
-      const { convert } = useExchangeRates();
-      const usdPrice = convert ? convert(parseFloat(priceValue), selectedCurrency.code, 'USD') : parseFloat(priceValue);
+      // 선택된 통화를 USD로 변환하여 저장 (기존 로직 사용)
+      const usdPrice = parseFloat(priceValue) / selectedCurrency.rate;
       form.setValue('price', usdPrice.toFixed(2));
       form.setValue('currency', selectedCurrency.code);
     } else {
