@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(newUser);
     localStorage.setItem("token", newToken);
     localStorage.setItem("user", JSON.stringify(newUser));
-    navigate("/");
+    // 자동 페이지 이동 제거 - App.tsx에서 처리
   };
 
   const updateUser = (userData: User) => {

@@ -57,15 +57,15 @@ function Router() {
       try {
         const user = JSON.parse(decodeURIComponent(userStr));
         
-        // 추가 정보가 필요한지 확인
+        // 추가 정보가 필요한지 우선 확인
         if (user.needsAdditionalInfo) {
-          // 추가 정보 입력 페이지로 이동 (로그인은 아직 하지 않음)
-          window.history.replaceState({}, document.title, `/auth/complete-registration?token=${token}&user=${encodeURIComponent(userStr)}`);
+          // 로그인하지 않고 complete-registration 페이지로 이동
+          window.history.replaceState({}, document.title, '/auth/complete-registration');
           window.location.href = `/auth/complete-registration?token=${token}&user=${encodeURIComponent(userStr)}`;
           return;
         }
         
-        // 추가 정보가 필요없으면 로그인 진행
+        // needsAdditionalInfo가 false이면 로그인 후 메인 페이지로 이동
         login(token, user);
         
         toast({
@@ -73,8 +73,10 @@ function Router() {
           description: "소셜 로그인이 완료되었습니다!",
         });
         
-        // Clear URL parameters
+        // Clear URL parameters and navigate to home
         window.history.replaceState({}, document.title, window.location.pathname);
+        window.location.href = '/';
+        
       } catch (error) {
         console.error('OAuth callback error:', error);
         toast({
