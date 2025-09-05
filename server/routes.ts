@@ -575,10 +575,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post('/api/items', authenticateToken, async (req, res) => {
-    const itemData = req.body as Omit<InsertItem, 'sellerId'>;
-    const validatedData = insertItemSchema.parse({ ...itemData, sellerId: req.user!.id });
-    const item = await storage.createItem(validatedData);
-    res.status(201).json(item);
+    try {
+      console.log('📋 POST /api/items 수신:', { user: req.user?.email, bodyKeys: Object.keys(req.body) });
+      
+      const itemData = req.body as Omit<InsertItem, 'sellerId'>;
+      console.log('📋 아이템 데이터:', { title: itemData.title, price: itemData.price, currency: itemData.currency });
+      
+      const validatedData = insertItemSchema.parse({ ...itemData, sellerId: req.user!.id });
+      console.log('✅ insertItemSchema 검증 통과');
+      
+      const item = await storage.createItem(validatedData);
+      console.log('✅ 아이템 생성 성공:', item.id);
+      
+      res.status(201).json(item);
+    } catch (error) {
+      console.error('❌ POST /api/items 오류:', error);
+      res.status(500).json({ error: '상품 등록에 실패했습니다.' });
+    }
   });
 
   app.put('/api/items/:id', authenticateToken, async (req, res) => {

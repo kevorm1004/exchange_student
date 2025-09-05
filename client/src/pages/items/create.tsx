@@ -283,10 +283,13 @@ export default function CreateItem() {
   });
 
   const onSubmit = async (data: InsertItem) => {
-    console.log('Form submitted with data:', data);
-    console.log('Form errors:', form.formState.errors);
+    console.log('📋 onSubmit 함수 호출');
+    console.log('📋 Form submitted with data:', data);
+    console.log('📋 Form valid:', form.formState.isValid);
+    console.log('📋 Form errors:', form.formState.errors);
     
     if (images.length === 0) {
+      console.log('❌ 이미지 없음 - 토스트 표시');
       toast({
         variant: "destructive",
         title: "사진을 업로드해주세요",
@@ -295,6 +298,7 @@ export default function CreateItem() {
       return;
     }
 
+    console.log('📋 이미지 갯수:', images.length);
     setIsLoading(true);
     try {
       // Include images and convert price to USD
