@@ -195,7 +195,16 @@ export class DatabaseStorage implements IStorage {
     
     // 거래 가능 상품만 필터링
     if (filters.onlyAvailable) {
-      conditions.push(eq(items.status, '거래가능'));
+      // 상태가 '거래가능'이고 거래 기간이 만료되지 않은 상품만 표시
+      conditions.push(
+        and(
+          eq(items.status, '거래가능'),
+          or(
+            sql`${items.availableTo} IS NULL`,
+            sql`${items.availableTo} > NOW()`
+          )
+        )
+      );
     }
 
     // Apply conditions if any
