@@ -309,8 +309,8 @@ export default function CreateItem() {
         location: data.location || user?.school || "",
         deliveryMethod: data.deliveryMethod || "",
         customDeliveryMethod: data.deliveryMethod === "기타" ? data.customDeliveryMethod : "",
-        availableFrom: data.availableFrom || null,
-        availableTo: data.availableTo || null,
+        availableFrom: data.availableFrom ? new Date(data.availableFrom) : null,
+        availableTo: data.availableTo ? new Date(data.availableTo) : null,
         currency: selectedCurrency.code,
       };
       console.log('Submitting item data:', submitData);
