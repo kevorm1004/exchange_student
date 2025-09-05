@@ -38,10 +38,7 @@ export default function EmailLogin() {
     try {
       const response = await authApi.login(data);
       login(response.token, response.user);
-      toast({
-        title: "로그인 성공",
-        description: "환영합니다!",
-      });
+      // 성공 팝업 제거 - 이메일 로그인 성공 시 toast 제거
       navigate("/");
     } catch (error: any) {
       toast({

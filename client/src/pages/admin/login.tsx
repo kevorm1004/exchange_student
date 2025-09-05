@@ -66,10 +66,7 @@ export default function AdminLogin() {
         
         console.log("Admin login successful, redirecting to dashboard");
         
-        toast({
-          title: "로그인 성공",
-          description: "관리자 대시보드로 이동합니다.",
-        });
+        // 성공 팝업 제거 - 관리자 로그인 성공 시 toast 제거
 
         // 즉시 리디렉션 (토스트는 자동으로 사라짐)
         console.log("Redirecting to /admin/dashboard now...");

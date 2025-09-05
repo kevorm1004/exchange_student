@@ -67,7 +67,7 @@ export default function CreateItem() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // KRW로 환산된 가격 계산 (formatPrice 함수 사용)
-  const convertedPrice = priceValue ? formatPrice(parseFloat(priceValue), selectedCurrency.code) : "";
+  const convertedPrice = priceValue && selectedCurrency ? formatPrice(parseFloat(priceValue), selectedCurrency.code) : "";
 
   const form = useForm<InsertItem>({
     resolver: zodResolver(insertItemSchema),
@@ -259,10 +259,7 @@ export default function CreateItem() {
         exact: false 
       });
       
-      toast({
-        title: "상품 등록 성공",
-        description: "상품이 성공적으로 등록되었습니다.",
-      });
+      // 성공 팝업 제거 - 상품 등록 성공 시 toast 제거
       navigate("/");
     },
     onError: (error) => {

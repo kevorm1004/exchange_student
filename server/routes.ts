@@ -7,7 +7,7 @@ import session from "express-session";
 import passport from "./passport-config";
 import { storage } from "./storage";
 import { seedDatabase } from "./seed";
-// import './exchange'; // Initialize exchange service - Temporarily disabled
+import './exchange'; // Initialize exchange service
 import {
   registerSchema,
   insertItemSchema,
@@ -605,6 +605,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     console.log(`📋 아이템 수정: ${req.user!.id} -> ${req.params.id}`);
     res.json(await storage.updateItemStatus(req.params.id, req.body.status));
+  });
+
+  // Exchange rates endpoint
+  app.get('/api/exchange', (req, res) => {
+    try {
+      const { exchangeService } = require('./exchange');
+      const rates = exchangeService.getRates();
+      const lastUpdate = exchangeService.getLastUpdate();
+      res.json({ rates, lastUpdate });
+    } catch (error) {
+      console.error('❌ GET /api/exchange 오류:', error);
+      // 폴백 환율 데이터 반환
+      res.json({
+        rates: {
+          USD: 1350,
+          EUR: 1470,
+          JPY: 9.0,
+          GBP: 1710,
+          CNY: 185,
+          CAD: 995,
+          AUD: 860
+        },
+        lastUpdate: new Date().toISOString()
+      });
+    }
   });
 
   // Favorite & Report Routes

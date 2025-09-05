@@ -14,10 +14,7 @@ export const handleOAuthCallback = () => {
       
       login(token, user);
       
-      toast({
-        title: "로그인 성공",
-        description: "소셜 로그인이 완료되었습니다!",
-      });
+      // 성공 팝업 제거 - 소셜 로그인 성공 시 toast 제거
       
       // Clear URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
