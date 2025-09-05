@@ -73,8 +73,14 @@ class ExchangeService {
     try {
       console.log('Updating exchange rates...');
       
-      // Use ExchangeRate.host API (free tier allows 1500 requests/month)
-      const response = await fetch('https://api.exchangerate.host/latest?base=KRW&symbols=USD,EUR,JPY,GBP,CNY,CAD,AUD');
+      // Try exchangerate-api.com which may use this API key format
+      const apiKey = process.env.EXCHANGE_API_KEY;
+      const apiUrl = apiKey 
+        ? `https://v6.exchangerate-api.com/v6/${apiKey}/latest/KRW`
+        : 'https://api.exchangerate.host/latest?base=KRW&symbols=USD,EUR,JPY,GBP,CNY,CAD,AUD';
+      
+      console.log('Fetching exchange rates with API key...');
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
         throw new Error(`API response: ${response.status}`);
@@ -82,15 +88,43 @@ class ExchangeService {
 
       const data = await response.json();
       
+      // Check if it's exchangerate-api.com response format
+      if (data.result === 'success' && data.conversion_rates) {
+        // Convert from KRW base rates (already in correct format)
+        const newRates: CurrencyRates = {};
+        const targetCurrencies = ['USD', 'EUR', 'JPY', 'GBP', 'CNY', 'CAD', 'AUD'];
+        
+        targetCurrencies.forEach(currency => {
+          const rate = data.conversion_rates[currency];
+          if (typeof rate === 'number' && rate > 0) {
+            newRates[currency] = Math.round((1 / rate) * 100) / 100; // Inverse for KRW->currency
+          }
+        });
+        
+        // Save to database
+        await db.insert(exchangeRates).values({
+          baseCurrency: 'KRW',
+          rates: JSON.stringify(newRates),
+        });
+
+        // Update cache
+        this.cachedRates = newRates;
+        this.lastUpdate = new Date();
+
+        console.log('Exchange rates updated successfully:', newRates);
+        return true;
+      }
+      
+      // Fallback to old format check
       if (!data.success || !data.rates) {
         throw new Error('Invalid API response format');
       }
 
-      // Convert to KRW base (since API gives KRW to other currencies, we need inverse)
+      // Legacy format handling
       const newRates: CurrencyRates = {};
       Object.entries(data.rates).forEach(([currency, rate]) => {
         if (typeof rate === 'number' && rate > 0) {
-          newRates[currency] = Math.round((1 / rate) * 100) / 100; // Round to 2 decimal places
+          newRates[currency] = Math.round((1 / rate) * 100) / 100;
         }
       });
 
