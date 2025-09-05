@@ -143,10 +143,7 @@ export default function CreateItem() {
     for (const file of Array.from(files)) {
       if (file.type.startsWith('image/')) {
         try {
-          toast({
-            title: "이미지 처리 중",
-            description: "고화질 이미지를 압축하고 있습니다...",
-          });
+          // 성공 팝업 제거 - 이미지 처리 중 토스트 제거
           
           // Compress image before adding to state
           console.log(`Original file size: ${file.size} bytes`);
@@ -158,10 +155,7 @@ export default function CreateItem() {
           const currentImages = form.getValues('images') || [];
           form.setValue('images', [...currentImages, compressedImage]);
           
-          toast({
-            title: "이미지 추가 완료",
-            description: "이미지가 성공적으로 추가되었습니다.",
-          });
+          // 성공 팝업 제거 - 이미지 추가 완료 토스트 제거
         } catch (error) {
           console.error('Error compressing image:', error);
           toast({
@@ -303,6 +297,7 @@ export default function CreateItem() {
       // Include images and convert price to USD
       const submitData = {
         ...data,
+        sellerId: user.id, // sellerId 필드 추가
         images,
         price: form.getValues('price'),
         school: user?.school || "",

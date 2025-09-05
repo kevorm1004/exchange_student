@@ -94,12 +94,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   app.set('trust proxy', 1);
-  app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-session-secret',
+  
+  // Session store configuration with error handling
+  const sessionConfig = {
+    secret: process.env.SESSION_SECRET || 'dev-session-secret-key-2025',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: app.get('env') === 'production' }
-  }));
+    cookie: { 
+      secure: false, // 개발 환경에서는 false로 설정
+      maxAge: 24 * 60 * 60 * 1000 // 24시간
+    },
+    name: 'exchange-market-session'
+  };
+  
+  app.use(session(sessionConfig));
   app.use(passport.initialize());
   app.use(passport.session());
 
