@@ -127,7 +127,18 @@ export const exchangeRates = pgTable("exchange_rates", {
 
 // Zod Schemas for validation
 export const insertUserSchema = createInsertSchema(users);
-export const insertItemSchema = createInsertSchema(items);
+export const insertItemSchema = createInsertSchema(items).extend({
+  availableFrom: z.union([z.date(), z.string(), z.null()]).transform((val) => {
+    if (val === null || val === undefined) return null;
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }).optional(),
+  availableTo: z.union([z.date(), z.string(), z.null()]).transform((val) => {
+    if (val === null || val === undefined) return null;
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }).optional(),
+});
 export const insertCommunityPostSchema = createInsertSchema(communityPosts);
 export const insertCommentSchema = createInsertSchema(comments);
 
