@@ -688,11 +688,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user is trying to chat with themselves
-      if (item.userId === req.user!.id) {
+      if (item.sellerId === req.user!.id) {
         return res.status(400).json({ error: 'Cannot create chat room with yourself' });
       }
 
-      const chatRoom = await storage.findOrCreateChatRoom(itemId, req.user!.id, item.userId);
+      const chatRoom = await storage.findOrCreateChatRoom(itemId, req.user!.id, item.sellerId);
       res.json(chatRoom);
     } catch (error) {
       console.error('❌ POST /api/chat/rooms 오류:', error);
