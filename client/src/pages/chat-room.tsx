@@ -37,6 +37,10 @@ export default function ChatRoomPage() {
         },
       });
       if (!response.ok) throw new Error("Failed to fetch chat room");
+      
+      // 채팅방 진입 시 읽음 처리가 되므로 채팅방 목록 캐시도 무효화
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/rooms"] });
+      
       return response.json();
     },
     enabled: !!roomId && !!user,

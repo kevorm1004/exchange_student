@@ -740,6 +740,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: 'Access denied' });
       }
 
+      // Mark messages as read when user enters the chat room
+      await storage.markMessagesAsRead(req.params.id, req.user!.id);
+
       // Get detailed information for the chat room
       const [item, buyer, seller] = await Promise.all([
         storage.getItem(room.itemId),

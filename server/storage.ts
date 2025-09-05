@@ -58,6 +58,7 @@ export interface IStorage {
   getChatMessages(roomId: string): Promise<Message[]>;
   createMessage(insertMessage: InsertMessage): Promise<Message>;
   getUnreadMessageCount(roomId: string, userId: string): Promise<number>;
+  markMessagesAsRead(roomId: string, userId: string): Promise<void>;
   
   // Chat room methods
   getChatRooms(userId: string): Promise<ChatRoom[]>;
@@ -328,6 +329,17 @@ export class DatabaseStorage implements IStorage {
       ));
     
     return result[0]?.count || 0;
+  }
+
+  async markMessagesAsRead(roomId: string, userId: string): Promise<void> {
+    // 해당 채팅방에서 자신이 받은(상대방이 보낸) 읽지 않은 메시지들을 모두 읽음 처리
+    await db.update(messages)
+      .set({ isRead: true })
+      .where(and(
+        eq(messages.roomId, roomId),
+        eq(messages.isRead, false),
+        ne(messages.senderId, userId) // 자신이 보낸 메시지는 제외, 상대방이 보낸 메시지만
+      ));
   }
 
   async getChatRooms(userId: string): Promise<ChatRoom[]> {
