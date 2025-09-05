@@ -77,6 +77,7 @@ export default function CreateItem() {
       price: "",
       condition: "",
       images: [],
+      sellerId: user?.id || "", // sellerId 기본값 추가
       school: user?.school || "",
       country: user?.country || "",
       location: user?.school || "",
@@ -295,9 +296,12 @@ export default function CreateItem() {
     setIsLoading(true);
     try {
       // Include images and convert price to USD
+      console.log('📑 폼 데이터 전송 전:', data);
+      console.log('📑 사용자 ID:', user?.id);
+      
       const submitData = {
         ...data,
-        sellerId: user.id, // sellerId 필드 추가
+        sellerId: user?.id || data.sellerId, // sellerId 확실히 설정
         images,
         price: form.getValues('price'),
         school: user?.school || "",
