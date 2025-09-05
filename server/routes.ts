@@ -700,6 +700,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/chat/rooms/:id', authenticateToken, async (req, res) => {
+    try {
+      const room = await storage.getChatRoom(req.params.id);
+      if (!room) {
+        return res.status(404).json({ error: 'Chat room not found' });
+      }
+      
+      // Check if user is participant in this chat room
+      if (room.buyerId !== req.user!.id && room.sellerId !== req.user!.id) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      
+      res.json(room);
+    } catch (error) {
+      console.error('❌ GET /api/chat/rooms/:id 오류:', error);
+      res.status(500).json({ error: 'Failed to fetch chat room' });
+    }
+  });
+
+  app.get('/api/chat/rooms/:id/messages', authenticateToken, async (req, res) => {
+    try {
+      const room = await storage.getChatRoom(req.params.id);
+      if (!room) {
+        return res.status(404).json({ error: 'Chat room not found' });
+      }
+      
+      // Check if user is participant in this chat room
+      if (room.buyerId !== req.user!.id && room.sellerId !== req.user!.id) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      
+      const messages = await storage.getChatRoomMessages(req.params.id);
+      res.json(messages);
+    } catch (error) {
+      console.error('❌ GET /api/chat/rooms/:id/messages 오류:', error);
+      res.status(500).json({ error: 'Failed to fetch messages' });
+    }
+  });
+
+  app.post('/api/chat/rooms/:id/messages', authenticateToken, async (req, res) => {
+    try {
+      const { content } = req.body;
+      if (!content) {
+        return res.status(400).json({ error: 'Message content is required' });
+      }
+
+      const room = await storage.getChatRoom(req.params.id);
+      if (!room) {
+        return res.status(404).json({ error: 'Chat room not found' });
+      }
+      
+      // Check if user is participant in this chat room
+      if (room.buyerId !== req.user!.id && room.sellerId !== req.user!.id) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      const message = await storage.createMessage({
+        content,
+        senderId: req.user!.id,
+        roomId: req.params.id
+      });
+      
+      res.status(201).json(message);
+    } catch (error) {
+      console.error('❌ POST /api/chat/rooms/:id/messages 오류:', error);
+      res.status(500).json({ error: 'Failed to send message' });
+    }
+  });
+
   // Favorite & Report Routes
   app.get('/api/favorites', authenticateToken, async (req, res) => res.json(await storage.getUserFavorites(req.user!.id)));
   app.post('/api/favorites', authenticateToken, async (req, res) => res.status(201).json(await storage.addFavorite(req.user!.id, req.body.itemId)));
