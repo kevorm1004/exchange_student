@@ -29,7 +29,7 @@ import {
   type Report,
   type InsertReport
 } from "@shared/schema";
-import { eq, and, or, desc, like, count, sql, inArray } from "drizzle-orm";
+import { eq, and, or, desc, like, count, sql, inArray, ne } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
