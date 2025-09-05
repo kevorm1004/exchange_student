@@ -5,6 +5,7 @@ import { ArrowLeft, Upload, Camera, Folder, X, Star, Move, CalendarIcon } from "
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -732,76 +733,68 @@ export default function CreateItem() {
                 <div className="space-y-4">
                   <label className="text-sm font-medium">거래가능기간</label>
                   <div className="space-y-2">
-                    <FormField
-                      control={form.control}
-                      name="availableFrom"
-                      render={({ field }) => {
-                        const fromDate = form.watch("availableFrom");
-                        const toDate = form.watch("availableTo");
-                        
-                        return (
-                          <FormItem className="flex flex-col">
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                      "w-full pl-3 text-left font-normal justify-start",
-                                      (!fromDate && !toDate) && "text-muted-foreground"
-                                    )}
-                                  >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {fromDate && toDate ? (
-                                      <span>
-                                        {format(fromDate, "yyyy-MM-dd")} ~ {format(toDate, "yyyy-MM-dd")}
-                                      </span>
-                                    ) : fromDate ? (
-                                      <span>
-                                        {format(fromDate, "yyyy-MM-dd")} ~ 종료일 선택
-                                      </span>
-                                    ) : (
-                                      <span>거래가능기간 선택</span>
-                                    )}
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="range"
-                                  defaultMonth={fromDate || new Date()}
-                                  selected={{
-                                    from: fromDate || undefined,
-                                    to: toDate || undefined
-                                  }}
-                                  onSelect={(range) => {
-                                    console.log('📅 달력 선택:', range);
-                                    if (range?.from) {
-                                      form.setValue("availableFrom", range.from, { shouldValidate: true });
-                                      console.log('✅ 시작일 설정:', range.from);
-                                    }
-                                    if (range?.to) {
-                                      form.setValue("availableTo", range.to, { shouldValidate: true });
-                                      console.log('✅ 종료일 설정:', range.to);
-                                    } else if (range?.from && !range?.to) {
-                                      // 시작일만 선택된 경우 종료일 초기화
-                                      form.setValue("availableTo", undefined, { shouldValidate: true });
-                                      console.log('⚠️ 종료일 초기화');
-                                    }
-                                  }}
-                                  disabled={(date) =>
-                                    date < new Date(new Date().setHours(0, 0, 0, 0))
-                                  }
-                                  numberOfMonths={1}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
-                        );
-                      }}
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal justify-start",
+                            (!form.watch("availableFrom") && !form.watch("availableTo")) && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {(() => {
+                            const fromDate = form.watch("availableFrom");
+                            const toDate = form.watch("availableTo");
+                            
+                            if (fromDate && toDate) {
+                              return `${format(fromDate, "yyyy-MM-dd")} ~ ${format(toDate, "yyyy-MM-dd")}`;
+                            } else if (fromDate) {
+                              return `${format(fromDate, "yyyy-MM-dd")} ~ 종료일 선택`;
+                            } else {
+                              return "거래가능기간 선택";
+                            }
+                          })()}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="range"
+                          defaultMonth={form.watch("availableFrom") || new Date()}
+                          selected={{
+                            from: form.watch("availableFrom") || undefined,
+                            to: form.watch("availableTo") || undefined
+                          } as DateRange}
+                          onSelect={(range: DateRange | undefined) => {
+                            console.log('📅 달력 선택 이벤트:', range);
+                            
+                            if (!range) {
+                              form.setValue("availableFrom", undefined);
+                              form.setValue("availableTo", undefined);
+                              return;
+                            }
+                            
+                            if (range.from) {
+                              form.setValue("availableFrom", range.from);
+                              console.log('✅ 시작일 설정:', range.from);
+                            }
+                            
+                            if (range.to) {
+                              form.setValue("availableTo", range.to);
+                              console.log('✅ 종료일 설정:', range.to);
+                            } else {
+                              form.setValue("availableTo", undefined);
+                              console.log('⚠️ 종료일 초기화');
+                            }
+                          }}
+                          disabled={(date) =>
+                            date < new Date(new Date().setHours(0, 0, 0, 0))
+                          }
+                          numberOfMonths={1}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <p className="text-xs text-gray-500">
                     거래가능기간을 설정하지 않으면 상품이 계속 거래 가능한 상태로 유지됩니다.
