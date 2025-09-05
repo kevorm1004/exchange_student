@@ -663,6 +663,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Chat Routes
+  app.get('/api/chat/rooms', authenticateToken, async (req, res) => {
+    try {
+      const rooms = await storage.getChatRooms(req.user!.id);
+      res.json(rooms);
+    } catch (error) {
+      console.error('❌ GET /api/chat/rooms 오류:', error);
+      res.status(500).json({ error: 'Failed to fetch chat rooms' });
+    }
+  });
+
+  app.post('/api/chat/rooms', authenticateToken, async (req, res) => {
+    try {
+      const { itemId } = req.body;
+      if (!itemId) {
+        return res.status(400).json({ error: 'itemId is required' });
+      }
+
+      // Get item details to find seller
+      const item = await storage.getItem(itemId);
+      if (!item) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+
+      // Check if user is trying to chat with themselves
+      if (item.userId === req.user!.id) {
+        return res.status(400).json({ error: 'Cannot create chat room with yourself' });
+      }
+
+      const chatRoom = await storage.findOrCreateChatRoom(itemId, req.user!.id, item.userId);
+      res.json(chatRoom);
+    } catch (error) {
+      console.error('❌ POST /api/chat/rooms 오류:', error);
+      res.status(500).json({ error: 'Failed to create chat room' });
+    }
+  });
+
   // Favorite & Report Routes
   app.get('/api/favorites', authenticateToken, async (req, res) => res.json(await storage.getUserFavorites(req.user!.id)));
   app.post('/api/favorites', authenticateToken, async (req, res) => res.status(201).json(await storage.addFavorite(req.user!.id, req.body.itemId)));
