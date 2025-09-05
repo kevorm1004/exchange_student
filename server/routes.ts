@@ -621,9 +621,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Exchange rates endpoint
-  app.get('/api/exchange', (req, res) => {
+  app.get('/api/exchange', async (req, res) => {
     try {
-      const { exchangeService } = require('./exchange');
+      const { exchangeService } = await import('./exchange.js');
       const rates = exchangeService.getRates();
       const lastUpdate = exchangeService.getLastUpdate();
       res.json({ rates, lastUpdate });
@@ -648,7 +648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Manual exchange rate update endpoint for testing
   app.post('/api/exchange/update', async (req, res) => {
     try {
-      const { exchangeService } = require('./exchange');
+      const { exchangeService } = await import('./exchange.js');
       const success = await exchangeService.updateRates();
       if (success) {
         const rates = exchangeService.getRates();

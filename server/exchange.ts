@@ -15,8 +15,8 @@ class ExchangeService {
     // Initialize exchange rates on startup
     this.initializeRates();
     
-    // Schedule daily updates at 3:00 AM KST
-    cron.schedule('0 3 * * *', () => {
+    // Schedule daily updates at 12:00 AM (midnight) KST
+    cron.schedule('0 0 * * *', () => {
       this.updateRates();
     }, {
       timezone: 'Asia/Seoul'
@@ -86,9 +86,11 @@ class ExchangeService {
         throw new Error('Korea Eximbank API key not found');
       }
       
-      // Get current date in YYYYMMDD format
+      // Get yesterday's date in YYYYMMDD format (more reliable for exchange rates)
       const today = new Date();
-      const searchDate = today.toISOString().slice(0, 10).replace(/-/g, '');
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      const searchDate = yesterday.toISOString().slice(0, 10).replace(/-/g, '');
       
       const apiUrl = `https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON?authkey=${apiKey}&searchdate=${searchDate}&data=AP01`;
       
