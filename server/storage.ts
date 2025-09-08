@@ -56,6 +56,7 @@ export interface IStorage {
   // Message methods
   getChatRoomMessages(roomId: string): Promise<Message[]>;
   getChatMessages(roomId: string): Promise<Message[]>;
+  getLatestMessage(roomId: string): Promise<Message | null>;
   createMessage(insertMessage: InsertMessage): Promise<Message>;
   getUnreadMessageCount(roomId: string, userId: string): Promise<number>;
   markMessagesAsRead(roomId: string, userId: string): Promise<void>;
@@ -309,6 +310,14 @@ export class DatabaseStorage implements IStorage {
 
   async getChatMessages(roomId: string): Promise<Message[]> {
     return await this.getChatRoomMessages(roomId);
+  }
+
+  async getLatestMessage(roomId: string): Promise<Message | null> {
+    const [latestMessage] = await db.select().from(messages)
+      .where(eq(messages.roomId, roomId))
+      .orderBy(desc(messages.createdAt))
+      .limit(1);
+    return latestMessage || null;
   }
 
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
