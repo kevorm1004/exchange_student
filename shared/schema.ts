@@ -52,6 +52,8 @@ export const chatRooms = pgTable("chat_rooms", {
   itemId: text("item_id").notNull().references(() => items.id),
   buyerId: text("buyer_id").notNull().references(() => users.id),
   sellerId: text("seller_id").notNull().references(() => users.id),
+  hiddenForBuyer: boolean("hidden_for_buyer").default(false).notNull(),
+  hiddenForSeller: boolean("hidden_for_seller").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
