@@ -6,13 +6,14 @@ import { useRequireAuth } from "@/hooks/use-auth";
 import Header from "@/components/layout/header";
 import { Link } from "wouter";
 import moment from "moment-timezone";
-import type { ChatRoom, User as UserType, Item } from "@shared/schema";
+import type { ChatRoom, User as UserType, Item, Message } from "@shared/schema";
 
 interface ChatRoomWithDetails extends ChatRoom {
   item: Item;
   buyer: UserType;
   seller: UserType;
   unreadCount: number;
+  latestMessage?: Message | null;
 }
 
 export default function Chat() {
@@ -74,12 +75,25 @@ export default function Chat() {
                 <Link key={room.id} href={`/chat/${room.id}`}>
                   <Card className="p-4 cursor-pointer hover:bg-gray-50 transition-colors border-0 shadow-none border-b border-gray-100 last:border-0">
                     <div className="flex items-center space-x-3">
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage src={otherUser?.profileImage || undefined} />
-                        <AvatarFallback className="bg-gray-200 text-gray-600">
-                          {otherUser?.fullName?.[0] || '?'}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative">
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src={otherUser?.profileImage || undefined} />
+                          <AvatarFallback className="bg-gray-200 text-gray-600">
+                            {otherUser?.fullName?.[0] || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        {/* 상품 대표 이미지 */}
+                        {room.item.images && room.item.images.length > 0 && (
+                          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white bg-white overflow-hidden">
+                            <img 
+                              src={room.item.images[0]} 
+                              alt={room.item.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                      </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
@@ -87,18 +101,14 @@ export default function Chat() {
                             {otherUser.fullName}
                           </h3>
                           <span className="text-xs text-gray-400">
-                            {formatLastMessageTime(room.createdAt)}
+                            {room.latestMessage ? formatLastMessageTime(room.latestMessage.createdAt) : formatLastMessageTime(room.createdAt)}
                           </span>
                         </div>
                         
                         <div className="flex items-center text-sm text-gray-500">
                           <span className="truncate flex-1">
-                            {room.item.title}
+                            {room.latestMessage ? room.latestMessage.content : "아직 메시지가 없습니다"}
                           </span>
-                          <div className="flex items-center gap-1 ml-2 text-xs text-gray-400">
-                            <Clock className="h-3 w-3" />
-                            <span>{otherUser.country}</span>
-                          </div>
                         </div>
                       </div>
                       
