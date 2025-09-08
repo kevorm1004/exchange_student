@@ -36,7 +36,7 @@ import { useExchangeRates } from "@/hooks/use-exchange";
 import { useFavorites } from "@/hooks/use-favorites";
 import { apiRequest } from "@/lib/queryClient";
 import type { Item } from "@shared/schema";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
 const formatTimeAgo = (date: Date) => {
@@ -58,7 +58,53 @@ export default function ItemDetail() {
   const [reportReason, setReportReason] = useState("");
   const [reportDescription, setReportDescription] = useState("");
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showFullscreen, setShowFullscreen] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
   const { toast } = useToast();
+
+  // Image navigation functions
+  const nextImage = useCallback(() => {
+    if (!item?.images.length) return;
+    setCurrentImageIndex(prev => (prev + 1) % item.images.length);
+  }, [item?.images.length]);
+
+  const prevImage = useCallback(() => {
+    if (!item?.images.length) return;
+    setCurrentImageIndex(prev => prev === 0 ? item.images.length - 1 : prev - 1);
+  }, [item?.images.length]);
+
+  // Touch handlers for swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe && item?.images.length > 1) {
+      nextImage();
+    }
+    if (isRightSwipe && item?.images.length > 1) {
+      prevImage();
+    }
+
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  // Fullscreen handlers
+  const openFullscreen = () => setShowFullscreen(true);
+  const closeFullscreen = () => setShowFullscreen(false);
   
   // Favorites functionality
   const { 
@@ -317,15 +363,21 @@ export default function ItemDetail() {
 
       <main className="pb-20">
         {/* Image Gallery */}
-        <div className="relative bg-black">
+        <div 
+          className="relative bg-black cursor-pointer"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onClick={openFullscreen}
+        >
           <img
-            src={item.images[0] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"}
-            alt={item.title}
+            src={item.images[currentImageIndex] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"}
+            alt={`${item.title} - ${currentImageIndex + 1}`}
             className="w-full h-80 object-cover"
           />
           {item.images.length > 1 && (
             <div className="absolute bottom-4 right-4 bg-black bg-opacity-50 text-white text-sm px-2 py-1 rounded-full">
-              1 / {item.images.length}
+              {currentImageIndex + 1} / {item.images.length}
             </div>
           )}
         </div>
