@@ -1,6 +1,6 @@
 import { useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Heart, MessageCircle, Share, Eye, MapPin, Flag, MoreVertical } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Share, Eye, MapPin, Flag, MoreVertical, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,7 +36,7 @@ import { useExchangeRates } from "@/hooks/use-exchange";
 import { useFavorites } from "@/hooks/use-favorites";
 import { apiRequest } from "@/lib/queryClient";
 import type { Item } from "@shared/schema";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 const formatTimeAgo = (date: Date) => {
@@ -66,14 +66,14 @@ export default function ItemDetail() {
 
   // Image navigation functions
   const nextImage = useCallback(() => {
-    if (!item?.images.length) return;
-    setCurrentImageIndex(prev => (prev + 1) % item.images.length);
-  }, [item?.images.length]);
+    if (!item?.images?.length) return;
+    setCurrentImageIndex(prev => (prev + 1) % (item.images?.length || 1));
+  }, [item?.images?.length]);
 
   const prevImage = useCallback(() => {
-    if (!item?.images.length) return;
-    setCurrentImageIndex(prev => prev === 0 ? item.images.length - 1 : prev - 1);
-  }, [item?.images.length]);
+    if (!item?.images?.length) return;
+    setCurrentImageIndex(prev => prev === 0 ? (item.images?.length || 1) - 1 : prev - 1);
+  }, [item?.images?.length]);
 
   // Touch handlers for swipe
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -91,10 +91,10 @@ export default function ItemDetail() {
     const isLeftSwipe = distance > 50;
     const isRightSwipe = distance < -50;
 
-    if (isLeftSwipe && item?.images.length > 1) {
+    if (isLeftSwipe && (item?.images?.length || 0) > 1) {
       nextImage();
     }
-    if (isRightSwipe && item?.images.length > 1) {
+    if (isRightSwipe && (item?.images?.length || 0) > 1) {
       prevImage();
     }
 
@@ -105,6 +105,11 @@ export default function ItemDetail() {
   // Fullscreen handlers
   const openFullscreen = () => setShowFullscreen(true);
   const closeFullscreen = () => setShowFullscreen(false);
+
+  // Reset image index when item changes
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [item?.id]);
   
   // Favorites functionality
   const { 
@@ -572,6 +577,66 @@ export default function ItemDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Fullscreen Image Modal */}
+      {showFullscreen && (
+        <div className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center">
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Close Button */}
+            <button
+              onClick={closeFullscreen}
+              className="absolute top-4 right-4 z-10 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Image Counter */}
+            {(item?.images?.length || 0) > 1 && (
+              <div className="absolute top-4 left-4 z-10 bg-black bg-opacity-50 text-white text-lg px-3 py-2 rounded-full">
+                {currentImageIndex + 1} / {item?.images?.length}
+              </div>
+            )}
+
+            {/* Navigation Arrows */}
+            {(item?.images?.length || 0) > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    prevImage();
+                  }}
+                  className="absolute left-4 z-10 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+                >
+                  <ChevronLeft className="w-8 h-8" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    nextImage();
+                  }}
+                  className="absolute right-4 z-10 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+                >
+                  <ChevronRight className="w-8 h-8" />
+                </button>
+              </>
+            )}
+
+            {/* Main Image */}
+            <div 
+              className="w-full h-full flex items-center justify-center p-4"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <img
+                src={item?.images?.[currentImageIndex] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"}
+                alt={`${item?.title} - ${currentImageIndex + 1}`}
+                className="max-w-full max-h-full object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
