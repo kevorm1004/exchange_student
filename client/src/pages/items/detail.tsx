@@ -64,6 +64,11 @@ export default function ItemDetail() {
   const touchEndX = useRef<number | null>(null);
   const { toast } = useToast();
 
+  const { data: item, isLoading } = useQuery<Item>({
+    queryKey: ["/api/items", id],
+    enabled: !!id,
+  });
+
   // Image navigation functions
   const nextImage = useCallback(() => {
     if (!item?.images?.length) return;
@@ -119,13 +124,6 @@ export default function ItemDetail() {
     isAddingFavorite, 
     isRemovingFavorite 
   } = useFavorites();
-
-  const { data: item, isLoading } = useQuery<Item>({
-    queryKey: ["/api/items", id],
-    enabled: !!id,
-  });
-
-
 
   // 상품 상태 확인
   const getItemStatus = (item: Item) => {
