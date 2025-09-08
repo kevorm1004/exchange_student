@@ -371,9 +371,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async findOrCreateChatRoom(itemId: string, buyerId: string, sellerId: string): Promise<ChatRoom> {
-    // First, try to find existing chat room between these two users (regardless of item)
+    // First, try to find existing chat room for this specific item between these two users
     const [existingRoom] = await db.select().from(chatRooms)
       .where(and(
+        eq(chatRooms.itemId, itemId),
         eq(chatRooms.buyerId, buyerId),
         eq(chatRooms.sellerId, sellerId)
       ))
@@ -383,7 +384,7 @@ export class DatabaseStorage implements IStorage {
       return existingRoom;
     }
 
-    // Create new chat room
+    // Create new chat room for this specific item
     return await this.createChatRoom({ itemId, buyerId, sellerId });
   }
 
