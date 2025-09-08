@@ -683,6 +683,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return null; // Skip rooms with missing data
           }
 
+          // Debug log for latestMessage
+          console.log(`🔍 채팅방 ${room.id} 최신 메시지:`, latestMessage ? latestMessage.content : 'null');
+
           return {
             ...room,
             item,

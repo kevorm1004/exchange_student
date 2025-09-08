@@ -107,7 +107,7 @@ export default function Chat() {
                         
                         <div className="flex items-center text-sm text-gray-500">
                           <span className="truncate flex-1">
-                            {room.latestMessage ? room.latestMessage.content : "아직 메시지가 없습니다"}
+                            {room.latestMessage && room.latestMessage.content ? room.latestMessage.content : "아직 메시지가 없습니다"}
                           </span>
                         </div>
                       </div>

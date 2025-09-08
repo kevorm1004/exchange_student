@@ -341,14 +341,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markMessagesAsRead(roomId: string, userId: string): Promise<void> {
-    // 해당 채팅방에서 읽지 않은 모든 메시지들을 읽음 처리
-    // 1. 상대방이 보낸 메시지 → 내가 읽음 (읽지 않은 개수 감소)
-    // 2. 내가 보낸 메시지 → 상대방이 읽음 (전송됨 → 읽음으로 표시)
+    // 해당 채팅방에서 상대방이 보낸 메시지만 읽음 처리
+    // 내가 보낸 메시지는 상대방이 채팅방에 들어왔을 때만 읽음으로 처리되어야 함
     await db.update(messages)
       .set({ isRead: true })
       .where(and(
         eq(messages.roomId, roomId),
-        eq(messages.isRead, false)
+        eq(messages.isRead, false),
+        ne(messages.senderId, userId) // 내가 보낸 메시지는 제외
       ));
   }
 
