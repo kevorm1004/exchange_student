@@ -107,6 +107,16 @@ export default function ItemDetail() {
     touchEndX.current = null;
   };
 
+  // Helper function to get high resolution image URL
+  const getHighResImageUrl = (imageUrl: string) => {
+    if (imageUrl.includes('unsplash.com')) {
+      // Remove size parameters for original size or use larger dimensions
+      return imageUrl.split('?')[0] + '?w=1200&h=1200&fit=crop&q=80';
+    }
+    // For other image sources, return as-is (assuming they're already high-res)
+    return imageUrl;
+  };
+
   // Fullscreen handlers
   const openFullscreen = () => setShowFullscreen(true);
   const closeFullscreen = () => setShowFullscreen(false);
@@ -627,7 +637,7 @@ export default function ItemDetail() {
               onTouchEnd={handleTouchEnd}
             >
               <img
-                src={item?.images?.[currentImageIndex] || "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"}
+                src={item?.images?.[currentImageIndex] ? getHighResImageUrl(item.images[currentImageIndex]) : "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=800"}
                 alt={`${item?.title} - ${currentImageIndex + 1}`}
                 className="max-w-full max-h-full object-contain"
               />
