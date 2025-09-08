@@ -1,8 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { MessageCircle, User, Clock } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { MessageCircle, User, Clock, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRequireAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useState, useRef } from "react";
 import Header from "@/components/layout/header";
 import { Link } from "wouter";
 import moment from "moment-timezone";
@@ -18,6 +21,14 @@ interface ChatRoomWithDetails extends ChatRoom {
 
 export default function Chat() {
   const { user, isLoading: authLoading } = useRequireAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // 스와이프 관련 상태
+  const [swipedRoomId, setSwipedRoomId] = useState<string | null>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchCurrentX = useRef<number | null>(null);
+  const [dragOffset, setDragOffset] = useState<number>(0);
 
   const { data: chatRooms = [], isLoading } = useQuery<ChatRoomWithDetails[]>({
     queryKey: ["/api/chat/rooms"],
@@ -32,6 +43,76 @@ export default function Chat() {
     },
     enabled: !!user,
   });
+
+  // 채팅방 삭제 mutation
+  const deleteChatRoomMutation = useMutation({
+    mutationFn: async (roomId: string) => {
+      return apiRequest(`/api/chat/rooms/${roomId}`, { method: 'DELETE' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/rooms"] });
+      toast({
+        title: "채팅방 삭제 완료",
+        description: "채팅방이 삭제되었습니다.",
+      });
+      setSwipedRoomId(null);
+      setDragOffset(0);
+    },
+    onError: () => {
+      toast({
+        title: "삭제 실패",
+        description: "채팅방 삭제 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // 스와이프 관련 핸들러
+  const handleTouchStart = (e: React.TouchEvent, roomId: string) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchCurrentX.current = e.touches[0].clientX;
+    setSwipedRoomId(roomId);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent, roomId: string) => {
+    if (touchStartX.current === null || swipedRoomId !== roomId) return;
+    
+    touchCurrentX.current = e.touches[0].clientX;
+    const diff = touchStartX.current - touchCurrentX.current;
+    
+    // 좌측으로 스와이프할 때만 처리 (diff > 0)
+    if (diff > 0 && diff <= 100) {
+      setDragOffset(diff);
+    }
+  };
+
+  const handleTouchEnd = (roomId: string) => {
+    if (touchStartX.current === null || touchCurrentX.current === null || swipedRoomId !== roomId) {
+      resetSwipe();
+      return;
+    }
+    
+    const diff = touchStartX.current - touchCurrentX.current;
+    
+    // 50px 이상 스와이프했으면 버튼 표시, 아니면 원상복귀
+    if (diff >= 50) {
+      setDragOffset(80); // 버튼이 완전히 보이도록
+    } else {
+      resetSwipe();
+    }
+    
+    touchStartX.current = null;
+    touchCurrentX.current = null;
+  };
+
+  const resetSwipe = () => {
+    setSwipedRoomId(null);
+    setDragOffset(0);
+  };
+
+  const handleDeleteRoom = (roomId: string) => {
+    deleteChatRoomMutation.mutate(roomId);
+  };
 
   if (authLoading || isLoading) {
     return (
@@ -70,11 +151,45 @@ export default function Chat() {
             {chatRooms.map((room) => {
               // 상대방 정보 가져오기
               const otherUser = room.buyerId === user?.id ? room.seller : room.buyer;
+              const isSwipedRoom = swipedRoomId === room.id;
               
               return (
-                <Link key={room.id} href={`/chat/${room.id}`}>
-                  <Card className="p-4 cursor-pointer hover:bg-gray-50 transition-colors border-0 shadow-none border-b border-gray-100 last:border-0">
-                    <div className="flex items-center space-x-3">
+                <div key={room.id} className="relative overflow-hidden">
+                  {/* 삭제 버튼 (뒤에 숨겨져 있음) */}
+                  <div className="absolute right-0 top-0 h-full w-20 bg-red-500 flex items-center justify-center">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDeleteRoom(room.id);
+                      }}
+                      className="w-full h-full flex flex-col items-center justify-center text-white"
+                      disabled={deleteChatRoomMutation.isPending}
+                    >
+                      <Trash2 className="h-5 w-5 mb-1" />
+                      <span className="text-xs">나가기</span>
+                    </button>
+                  </div>
+                  
+                  {/* 메인 채팅방 아이템 */}
+                  <div
+                    className="relative z-10 bg-white"
+                    style={{
+                      transform: `translateX(-${isSwipedRoom ? dragOffset : 0}px)`,
+                      transition: touchStartX.current === null ? 'transform 0.3s ease' : 'none'
+                    }}
+                    onTouchStart={(e) => handleTouchStart(e, room.id)}
+                    onTouchMove={(e) => handleTouchMove(e, room.id)}
+                    onTouchEnd={() => handleTouchEnd(room.id)}
+                    onClick={() => {
+                      if (isSwipedRoom && dragOffset > 0) {
+                        resetSwipe();
+                      }
+                    }}
+                  >
+                    <Link href={`/chat/${room.id}`}>
+                      <Card className="p-4 cursor-pointer hover:bg-gray-50 transition-colors border-0 shadow-none border-b border-gray-100 last:border-0">
+                        <div className="flex items-center space-x-3">
                       <div className="relative">
                         <Avatar className="w-12 h-12">
                           <AvatarImage src={otherUser?.profileImage || undefined} />
@@ -122,8 +237,10 @@ export default function Chat() {
                         )}
                       </div>
                     </div>
-                  </Card>
-                </Link>
+                      </Card>
+                    </Link>
+                  </div>
+                </div>
               );
             })}
           </div>

@@ -683,9 +683,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return null; // Skip rooms with missing data
           }
 
-          // Debug log for latestMessage
-          console.log(`🔍 채팅방 ${room.id} 최신 메시지:`, latestMessage ? latestMessage.content : 'null');
-
           return {
             ...room,
             item,
@@ -822,6 +819,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ POST /api/chat/rooms/:id/messages 오류:', error);
       res.status(500).json({ error: 'Failed to send message' });
+    }
+  });
+
+  // Delete chat room
+  app.delete('/api/chat/rooms/:id', authenticateToken, async (req, res) => {
+    try {
+      const success = await storage.deleteChatRoom(req.params.id, req.user!.id);
+      if (success) {
+        res.json({ message: '채팅방이 삭제되었습니다' });
+      } else {
+        res.status(403).json({ error: 'Access denied or chat room not found' });
+      }
+    } catch (error) {
+      console.error('❌ DELETE /api/chat/rooms/:id 오류:', error);
+      res.status(500).json({ error: 'Failed to delete chat room' });
     }
   });
 
