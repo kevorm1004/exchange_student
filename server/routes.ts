@@ -727,6 +727,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
+          console.log(`🔍 채팅방 ${room.id.substring(0, 8)}... - unreadCount: ${unreadCount}`);
+          
           return {
             ...room,
             item,
@@ -740,6 +742,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Filter out null values (rooms with missing data)
       const validRooms = detailedRooms.filter(room => room !== null);
+      
+      console.log(`📤 채팅방 응답 데이터:`, validRooms.map(r => ({
+        roomId: r.id.substring(0, 8) + '...',
+        unreadCount: r.unreadCount
+      })));
       
       res.json(validRooms);
     } catch (error) {
