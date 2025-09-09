@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Mail, ArrowLeft } from "lucide-react";
-import logoImage from "@assets/logo_1756706278060.png";
+import logoImage from "@assets/exchange-market-logo.jpg";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
