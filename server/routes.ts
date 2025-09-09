@@ -665,6 +665,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Chat Routes
   app.get('/api/chat/rooms', authenticateToken, async (req, res) => {
+    // 캐시 무효화
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     try {
       const rooms = await storage.getChatRooms(req.user!.id);
       
