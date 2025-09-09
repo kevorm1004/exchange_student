@@ -202,7 +202,7 @@ export default function Chat() {
                     }}
                   >
                     <Link href={`/chat/${room.id}`}>
-                      <Card className="p-4 cursor-pointer hover:bg-gray-50 transition-colors border-0 shadow-none">
+                      <div className="p-4 cursor-pointer hover:bg-gray-50 transition-colors">
                         <div className="flex items-center space-x-3">
                       <div className="relative">
                         <Avatar className="w-12 h-12">
@@ -251,7 +251,7 @@ export default function Chat() {
                         </div>
                       </div>
                     </div>
-                      </Card>
+                      </div>
                     </Link>
                   </div>
                 </div>
