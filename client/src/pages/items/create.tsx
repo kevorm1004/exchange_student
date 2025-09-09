@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { insertItemSchema, type InsertItem } from "@shared/schema";
-import { COUNTRIES } from "@/lib/countries";
+import { COUNTRIES, CURRENCIES } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import { useExchangeRates } from "@/hooks/use-exchange";
 
@@ -41,21 +41,10 @@ const deliveryMethods = [
   "기타",
 ];
 
-const currencies = [
-  { code: "USD", symbol: "$", name: "미국 달러", rate: 1 },
-  { code: "EUR", symbol: "€", name: "유로", rate: 0.92 },
-  { code: "JPY", symbol: "¥", name: "일본 엔", rate: 149.5 },
-  { code: "GBP", symbol: "£", name: "영국 파운드", rate: 0.79 },
-  { code: "CNY", symbol: "¥", name: "중국 위안", rate: 7.24 },
-];
-
-// USD to KRW rate (example: 1 USD = 1350 KRW)
-const USD_TO_KRW = 1350;
-
 export default function CreateItem() {
   const [isLoading, setIsLoading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
-  const [selectedCurrency, setSelectedCurrency] = useState(currencies[0]);
+  const [selectedCurrency, setSelectedCurrency] = useState(CURRENCIES[0]); // KRW가 기본값
   const [priceValue, setPriceValue] = useState("");
   const [selectedDeliveryMethod, setSelectedDeliveryMethod] = useState("");
   const [customDeliveryMethod, setCustomDeliveryMethod] = useState("");
@@ -546,7 +535,7 @@ export default function CreateItem() {
                     <Select
                       value={selectedCurrency.code}
                       onValueChange={(value) => {
-                        const currency = currencies.find(c => c.code === value);
+                        const currency = CURRENCIES.find(c => c.code === value);
                         if (currency) setSelectedCurrency(currency);
                       }}
                     >
@@ -556,7 +545,7 @@ export default function CreateItem() {
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        {currencies.map((currency) => (
+                        {CURRENCIES.map((currency) => (
                           <SelectItem key={currency.code} value={currency.code}>
                             <div className="flex items-center gap-2">
                               <span>{currency.symbol}</span>
@@ -579,23 +568,27 @@ export default function CreateItem() {
                     />
                   </div>
                   
-                  {/* KRW Conversion Display */}
-                  <div className="flex gap-2">
-                    <div className="w-32 flex items-center justify-center bg-gray-100 rounded-md px-3 py-2">
-                      <span className="text-sm font-medium text-gray-600">₩ KRW</span>
-                    </div>
-                    <Input
-                      placeholder="0"
-                      type="text"
-                      value={priceValue ? formatPrice(parseFloat(priceValue), selectedCurrency.code) : ""}
-                      readOnly
-                      className="flex-1 bg-gray-50 text-gray-600"
-                    />
-                  </div>
-                  
-                  <p className="text-xs text-gray-500">
-                    한국 원화로 자동 환산됩니다
-                  </p>
+                  {/* KRW Conversion Display - KRW가 아닌 경우에만 표시 */}
+                  {selectedCurrency.code !== "KRW" && (
+                    <>
+                      <div className="flex gap-2">
+                        <div className="w-32 flex items-center justify-center bg-gray-100 rounded-md px-3 py-2">
+                          <span className="text-sm font-medium text-gray-600">₩ KRW</span>
+                        </div>
+                        <Input
+                          placeholder="0"
+                          type="text"
+                          value={priceValue ? formatPrice(parseFloat(priceValue), selectedCurrency.code) : ""}
+                          readOnly
+                          className="flex-1 bg-gray-50 text-gray-600"
+                        />
+                      </div>
+                      
+                      <p className="text-xs text-gray-500">
+                        한국 원화로 자동 환산됩니다
+                      </p>
+                    </>
+                  )}
                 </div>
 
 

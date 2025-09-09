@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { FILTER_COUNTRIES } from "@/lib/countries";
 
 interface FilterBarProps {
   filter: string;
@@ -11,19 +12,6 @@ interface FilterBarProps {
   onlyAvailable?: boolean;
   onToggleAvailable?: (available: boolean) => void;
 }
-
-const COUNTRIES = [
-  { value: "all", label: "전체 국가" },
-  { value: "korea", label: "한국" },
-  { value: "usa", label: "미국" },
-  { value: "japan", label: "일본" },
-  { value: "china", label: "중국" },
-  { value: "canada", label: "캐나다" },
-  { value: "australia", label: "호주" },
-  { value: "uk", label: "영국" },
-  { value: "germany", label: "독일" },
-  { value: "france", label: "프랑스" }
-];
 
 export default function FilterBar({ filter, onFilterChange, selectedCountry, onCountryChange, onlyAvailable = false, onToggleAvailable }: FilterBarProps) {
   return (
@@ -92,7 +80,7 @@ export default function FilterBar({ filter, onFilterChange, selectedCountry, onC
               <SelectValue placeholder="국가를 선택해주세요" />
             </SelectTrigger>
             <SelectContent>
-              {COUNTRIES.map((country) => (
+              {FILTER_COUNTRIES.map((country) => (
                 <SelectItem key={country.value} value={country.value}>
                   {country.label}
                 </SelectItem>

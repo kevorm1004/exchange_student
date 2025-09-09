@@ -44,3 +44,37 @@ export const COUNTRIES = [
 ] as const;
 
 export type Country = typeof COUNTRIES[number];
+
+// 필터링에 사용할 주요 국가들 (홈페이지용)
+export const FILTER_COUNTRIES = [
+  { value: "all", label: "전체 국가" },
+  { value: "대한민국", label: "대한민국" },
+  { value: "미국", label: "미국" },
+  { value: "일본", label: "일본" },
+  { value: "중국", label: "중국" },
+  { value: "영국", label: "영국" },
+  { value: "독일", label: "독일" },
+  { value: "프랑스", label: "프랑스" },
+  { value: "캐나다", label: "캐나다" },
+  { value: "호주", label: "호주" },
+  { value: "싱가포르", label: "싱가포르" },
+  { value: "홍콩", label: "홍콩" }
+];
+
+// 환율 지원 통화 목록 (상품 등록용) 
+export const CURRENCIES = [
+  { code: "KRW", symbol: "₩", name: "대한민국 원" },
+  { code: "USD", symbol: "$", name: "미국 달러" },
+  { code: "EUR", symbol: "€", name: "유로" },
+  { code: "JPY", symbol: "¥", name: "일본 엔" },
+  { code: "GBP", symbol: "£", name: "영국 파운드" },
+  { code: "CNY", symbol: "¥", name: "중국 위안" },
+  { code: "CAD", symbol: "C$", name: "캐나다 달러" },
+  { code: "AUD", symbol: "A$", name: "호주 달러" },
+  { code: "SGD", symbol: "S$", name: "싱가포르 달러" },
+  { code: "HKD", symbol: "HK$", name: "홍콩 달러" },
+  { code: "CHF", symbol: "Fr", name: "스위스 프랑" },
+  { code: "SEK", symbol: "kr", name: "스웨덴 크로나" },
+  { code: "NOK", symbol: "kr", name: "노르웨이 크로네" },
+  { code: "DKK", symbol: "kr", name: "덴마크 크로네" }
+];
