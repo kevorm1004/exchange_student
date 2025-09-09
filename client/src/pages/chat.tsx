@@ -33,15 +33,23 @@ export default function Chat() {
   const { data: chatRooms = [], isLoading } = useQuery<ChatRoomWithDetails[]>({
     queryKey: ["/api/chat/rooms"],
     queryFn: async () => {
-      const response = await fetch("/api/chat/rooms", {
+      // 캐시 우회를 위한 타임스탬프 추가
+      const timestamp = Date.now();
+      const response = await fetch(`/api/chat/rooms?_t=${timestamp}`, {
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
         },
       });
       if (!response.ok) throw new Error("Failed to fetch chat rooms");
       const data = await response.json();
       
-      // API 응답 데이터 반환
+      console.log('📥 채팅방 데이터 수신:', data.map((room: any) => ({
+        roomId: room.id?.substring(0, 8) + '...',
+        unreadCount: room.unreadCount
+      })));
       
       return data;
     },
