@@ -683,11 +683,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return null; // Skip rooms with missing data
           }
 
+          // Check if the other party has hidden this chat room
+          const currentUserId = req.user!.id;
+          const isCurrentUserBuyer = room.buyerId === currentUserId;
+          const otherUserHasHidden = isCurrentUserBuyer ? room.hiddenForSeller : room.hiddenForBuyer;
+          
+          // If the other party has hidden the chat room, show anonymous profile for them
+          let displayBuyer = buyer;
+          let displaySeller = seller;
+          
+          if (otherUserHasHidden) {
+            const anonymousUser = {
+              id: isCurrentUserBuyer ? seller.id : buyer.id,
+              fullName: "알 수 없음",
+              profileImage: null,
+              username: "anonymous",
+              email: "",
+              school: "",
+              country: "",
+              preferredCurrency: "KRW",
+              role: "user",
+              status: "active",
+              provider: null,
+              providerId: null,
+              lastLoginAt: null,
+              createdAt: new Date(),
+              password: ""
+            };
+            
+            if (isCurrentUserBuyer) {
+              displaySeller = anonymousUser;
+            } else {
+              displayBuyer = anonymousUser;
+            }
+          }
+
           return {
             ...room,
             item,
-            buyer,
-            seller,
+            buyer: displayBuyer,
+            seller: displaySeller,
             unreadCount: unreadCount || 0,
             latestMessage
           };
@@ -756,12 +791,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Chat room data not found' });
       }
 
+      // Check if the other party has hidden this chat room
+      const currentUserId = req.user!.id;
+      const isCurrentUserBuyer = room.buyerId === currentUserId;
+      const otherUserHasHidden = isCurrentUserBuyer ? room.hiddenForSeller : room.hiddenForBuyer;
+      
+      // If the other party has hidden the chat room, show anonymous profile for them
+      let displayBuyer = buyer;
+      let displaySeller = seller;
+      
+      if (otherUserHasHidden) {
+        const anonymousUser = {
+          id: isCurrentUserBuyer ? seller.id : buyer.id,
+          fullName: "알 수 없음",
+          profileImage: null,
+          username: "anonymous",
+          email: "",
+          school: "",
+          country: "",
+          preferredCurrency: "KRW",
+          role: "user",
+          status: "active",
+          provider: null,
+          providerId: null,
+          lastLoginAt: null,
+          createdAt: new Date(),
+          password: ""
+        };
+        
+        if (isCurrentUserBuyer) {
+          displaySeller = anonymousUser;
+        } else {
+          displayBuyer = anonymousUser;
+        }
+      }
+
       // Return detailed chat room with item and user information
       const detailedRoom = {
         ...room,
         item,
-        buyer,
-        seller
+        buyer: displayBuyer,
+        seller: displaySeller
       };
       
       res.json(detailedRoom);

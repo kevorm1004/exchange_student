@@ -169,6 +169,19 @@ export const insertCommentSchema = createInsertSchema(comments);
 export const selectUserSchema = createSelectSchema(users);
 export const selectItemSchema = createSelectSchema(items);
 export const selectFavoriteSchema = createSelectSchema(favorites);
+export const selectChatRoomSchema = createSelectSchema(chatRooms);
+export const selectMessageSchema = createSelectSchema(messages);
+export const selectCommunityPostSchema = createSelectSchema(communityPosts);
+export const selectCommentSchema = createSelectSchema(comments);
+export const selectNotificationSchema = createSelectSchema(notifications);
+export const selectReportSchema = createSelectSchema(reports);
+
+// Insert Schemas for additional types
+export const insertChatRoomSchema = createInsertSchema(chatRooms);
+export const insertMessageSchema = createInsertSchema(messages);
+export const insertFavoriteSchema = createInsertSchema(favorites);
+export const insertNotificationSchema = createInsertSchema(notifications);
+export const insertReportSchema = createInsertSchema(reports);
 
 // Types inferred from Zod schemas
 export type User = z.infer<typeof selectUserSchema>;
@@ -176,9 +189,19 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Item = z.infer<typeof selectItemSchema>;
 export type InsertItem = z.infer<typeof insertItemSchema>;
 export type Favorite = z.infer<typeof selectFavoriteSchema> & { item?: Item };
+export type ChatRoom = z.infer<typeof selectChatRoomSchema>;
+export type InsertChatRoom = z.infer<typeof insertChatRoomSchema>;
+export type Message = z.infer<typeof selectMessageSchema>;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type CommunityPost = z.infer<typeof selectCommunityPostSchema>;
 export type InsertCommunityPost = z.infer<typeof insertCommunityPostSchema>;
+export type Comment = z.infer<typeof selectCommentSchema>;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
-// ... other types can be added here as needed
+export type Notification = z.infer<typeof selectNotificationSchema>;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Report = z.infer<typeof selectReportSchema>;
+export type InsertReport = z.infer<typeof insertReportSchema>;
+export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
 
 // Auth schemas
 export const loginSchema = z.object({
