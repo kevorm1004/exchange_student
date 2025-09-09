@@ -329,31 +329,41 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUnreadMessageCount(roomId: string, userId: string): Promise<number> {
-    console.log(`🚀 getUnreadMessageCount 함수 호출! roomId: ${roomId.substring(0, 8)}..., userId: ${userId.substring(0, 8)}...`);
+    console.log(`🟢 === getUnreadMessageCount 시작 ===`);
+    console.log(`🟢 roomId: ${roomId}`);
+    console.log(`🟢 userId: ${userId}`);
     
     try {
-      // 해당 채팅방에서 상대방이 보낸 안읽은 메시지만 카운트
-      const unreadMessages = await db.select()
+      // 1단계: 해당 채팅방의 모든 메시지 조회
+      const allMessages = await db.select()
         .from(messages)
-        .where(and(
-          eq(messages.roomId, roomId),
-          eq(messages.isRead, false),
-          ne(messages.senderId, userId)
-        ));
+        .where(eq(messages.roomId, roomId))
+        .orderBy(desc(messages.createdAt));
       
-      const count = unreadMessages.length;
+      console.log(`🟢 총 메시지 개수: ${allMessages.length}개`);
       
-      console.log(`✅ 안읽은 메시지 개수: ${count}개`);
-      console.log(`📋 메시지 목록:`, unreadMessages.map(msg => ({
-        id: msg.id.substring(0, 8) + '...',
-        senderId: msg.senderId.substring(0, 8) + '...',
-        content: msg.content.substring(0, 30),
-        isRead: msg.isRead
+      // 2단계: 안읽은 메시지만 필터링
+      const unreadMessages = allMessages.filter(msg => !msg.isRead);
+      console.log(`🟢 안읽은 메시지 개수: ${unreadMessages.length}개`);
+      
+      // 3단계: 상대방이 보낸 메시지만 필터링 (내가 보낸 건 제외)
+      const unreadFromOthers = unreadMessages.filter(msg => msg.senderId !== userId);
+      console.log(`🟢 상대방이 보낸 안읽은 메시지 개수: ${unreadFromOthers.length}개`);
+      
+      // 디버깅용 상세 정보
+      console.log(`🟢 상대방 안읽은 메시지 상세:`, unreadFromOthers.map(msg => ({
+        id: msg.id.substring(0, 8),
+        senderId: msg.senderId.substring(0, 8),
+        content: msg.content.substring(0, 50),
+        isRead: msg.isRead,
+        createdAt: msg.createdAt
       })));
       
-      return count;
+      console.log(`🟢 === 최종 결과: ${unreadFromOthers.length}개 ===`);
+      
+      return unreadFromOthers.length;
     } catch (error) {
-      console.error('❌ getUnreadMessageCount 에러:', error);
+      console.error('🔴 getUnreadMessageCount 에러:', error);
       return 0;
     }
   }
