@@ -681,11 +681,19 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
 
-    // Delete all messages in the room first
-    await db.delete(messages).where(eq(messages.roomId, roomId));
+    // Soft delete: hide the room for the user who requested deletion
+    const updateData: { hiddenForBuyer?: boolean; hiddenForSeller?: boolean } = {};
     
-    // Then delete the room
-    const result = await db.delete(chatRooms).where(eq(chatRooms.id, roomId));
+    if (room.buyerId === userId) {
+      updateData.hiddenForBuyer = true;
+    } else if (room.sellerId === userId) {
+      updateData.hiddenForSeller = true;
+    }
+    
+    const result = await db.update(chatRooms)
+      .set(updateData)
+      .where(eq(chatRooms.id, roomId));
+    
     return result.rowCount > 0;
   }
 
