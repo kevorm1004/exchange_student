@@ -330,6 +330,8 @@ export class DatabaseStorage implements IStorage {
 
   async getUnreadMessageCount(roomId: string, userId: string): Promise<number> {
     try {
+      console.log(`🔍 getUnreadMessageCount 호출 - roomId: ${roomId.substring(0, 8)}..., userId: ${userId.substring(0, 8)}...`);
+      
       const result = await db.select()
         .from(messages)
         .where(and(
@@ -337,6 +339,13 @@ export class DatabaseStorage implements IStorage {
           eq(messages.isRead, false),
           ne(messages.senderId, userId)
         ));
+      
+      console.log(`📊 결과: ${result.length}개의 안읽은 메시지`, result.map(r => ({
+        id: r.id.substring(0, 8),
+        content: r.content.substring(0, 20),
+        senderId: r.senderId.substring(0, 8),
+        isRead: r.isRead
+      })));
       
       return result.length;
     } catch (error) {
