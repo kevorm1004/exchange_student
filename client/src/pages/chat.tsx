@@ -202,7 +202,7 @@ export default function Chat() {
                     }}
                   >
                     <Link href={`/chat/${room.id}`}>
-                      <Card className="p-4 cursor-pointer hover:bg-gray-50 transition-colors border-0 shadow-none border-b border-gray-100 last:border-0">
+                      <Card className="p-4 cursor-pointer hover:bg-gray-50 transition-colors border-0 shadow-none">
                         <div className="flex items-center space-x-3">
                       <div className="relative">
                         <Avatar className="w-12 h-12">
@@ -246,7 +246,7 @@ export default function Chat() {
                         {console.log(`🔍 UI 렌더링 - 채팅방 ${room.id.substring(0, 8)}... unreadCount: ${room.unreadCount} (타입: ${typeof room.unreadCount})`)}
                         
                         {/* 임시로 항상 1개씩 표시해서 테스트 */}
-                        <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center shadow-sm">
+                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-sm">
                           <span className="text-white text-xs font-medium">1</span>
                         </div>
                       </div>
