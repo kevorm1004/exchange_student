@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import passport from "./passport-config";
 import { storage } from "./storage";
 import { seedDatabase } from "./seed";
@@ -95,13 +96,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.set('trust proxy', 1);
   
-  // Session store configuration with error handling
+  // Session store configuration with persistent store for production
+  const PgSession = connectPgSimple(session);
+  const sessionStore = process.env.NODE_ENV === 'production' 
+    ? new PgSession({
+        conString: process.env.DATABASE_URL,
+        tableName: 'session',
+        createTableIfMissing: true
+      })
+    : undefined; // Use MemoryStore for development
+  
   const sessionConfig = {
+    store: sessionStore,
     secret: process.env.SESSION_SECRET || 'dev-session-secret-key-2025',
     resave: false,
     saveUninitialized: false,
     cookie: { 
-      secure: false, // 개발 환경에서는 false로 설정
+      secure: process.env.NODE_ENV === 'production', // Secure cookies in production
       maxAge: 24 * 60 * 60 * 1000 // 24시간
     },
     name: 'exchange-market-session'
