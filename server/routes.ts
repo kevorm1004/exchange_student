@@ -671,14 +671,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get detailed information for each chat room
       const detailedRooms = await Promise.all(
         rooms.map(async (room) => {
-          const [item, buyer, seller, unreadCount, latestMessage] = await Promise.all([
+          const [item, buyer, seller, latestMessage] = await Promise.all([
             storage.getItem(room.itemId),
             storage.getUser(room.buyerId),
             storage.getUser(room.sellerId),
-            storage.getUnreadMessageCount(room.id, req.user!.id),
             storage.getLatestMessage(room.id)
           ]);
 
+          // 채팅방별로 안읽은 메시지 개수 계산 (올바른 방식)
+          const unreadCount = await storage.getUnreadMessageCount(room.id, req.user!.id);
+          
           // 디버깅: unreadCount 로그
           console.log(`📨 채팅방 ${room.id.substring(0, 8)}... unreadCount: ${unreadCount} (사용자: ${req.user!.email})`);
         
