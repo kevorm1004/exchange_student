@@ -83,7 +83,7 @@ export interface IStorage {
   getUserFavorites(userId: string): Promise<Favorite[]>;
   addFavorite(userId: string, itemId: string): Promise<Favorite>;
   removeFavorite(userId: string, itemId: string): Promise<boolean>;
-  isFavorited(userId: string, itemId: string): Promise<boolean>;
+  isFavorite(userId: string, itemId: string): Promise<boolean>;
   
   // Report methods
   createReport(insertReport: InsertReport & { reporterId: string }): Promise<Report>;
@@ -512,36 +512,6 @@ export class DatabaseStorage implements IStorage {
     return newComment;
   }
 
-  async getUserFavorites(userId: string): Promise<Favorite[]> {
-    return await db.select().from(favorites)
-      .where(eq(favorites.userId, userId));
-  }
-
-  async addFavorite(userId: string, itemId: string): Promise<Favorite> {
-    const [newFavorite] = await db
-      .insert(favorites)
-      .values({ userId, itemId })
-      .returning();
-    return newFavorite;
-  }
-
-  async removeFavorite(userId: string, itemId: string): Promise<boolean> {
-    const result = await db.delete(favorites)
-      .where(and(
-        eq(favorites.userId, userId),
-        eq(favorites.itemId, itemId)
-      ));
-    return result.rowCount > 0;
-  }
-
-  async isFavorite(userId: string, itemId: string): Promise<boolean> {
-    const [favorite] = await db.select().from(favorites)
-      .where(and(
-        eq(favorites.userId, userId),
-        eq(favorites.itemId, itemId)
-      ));
-    return !!favorite;
-  }
 
   // Admin methods
   async getAdminStats() {
@@ -662,7 +632,7 @@ export class DatabaseStorage implements IStorage {
 
   async toggleItemLike(itemId: string, userId: string): Promise<boolean> {
     // Check if already liked
-    const existingFavorite = await this.isFavorited(userId, itemId);
+    const existingFavorite = await this.isFavorite(userId, itemId);
     
     if (existingFavorite) {
       await this.removeFavorite(userId, itemId);
@@ -692,35 +662,6 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(reports.createdAt));
   }
 
-  async getUserStats(userId: string): Promise<{
-    itemsPosted: number;
-    itemsSold: number;
-    itemsPurchased: number;
-  }> {
-    const [itemsPosted] = await db.select({ count: sql`count(*)` }).from(items)
-      .where(eq(items.sellerId, userId));
-    
-    const [itemsSold] = await db.select({ count: sql`count(*)` }).from(items)
-      .where(and(
-        eq(items.sellerId, userId),
-        eq(items.status, "거래완료")
-      ));
-
-    // For purchased items, we need to look at chat rooms where user was buyer
-    const [itemsPurchased] = await db.select({ count: sql`count(distinct ${chatRooms.itemId})` })
-      .from(chatRooms)
-      .leftJoin(items, eq(chatRooms.itemId, items.id))
-      .where(and(
-        eq(chatRooms.buyerId, userId),
-        eq(items.status, "거래완료")
-      ));
-
-    return {
-      itemsPosted: Number(itemsPosted.count) || 0,
-      itemsSold: Number(itemsSold.count) || 0,
-      itemsPurchased: Number(itemsPurchased.count) || 0,
-    };
-  }
 
   async deleteChatRoom(roomId: string, userId: string): Promise<boolean> {
     // First check if user is participant in this room
@@ -789,7 +730,7 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount > 0;
   }
 
-  async isFavorited(userId: string, itemId: string): Promise<boolean> {
+  async isFavorite(userId: string, itemId: string): Promise<boolean> {
     const [result] = await db.select()
       .from(favorites)
       .where(and(
