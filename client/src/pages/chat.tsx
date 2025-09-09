@@ -31,24 +31,17 @@ export default function Chat() {
   const [dragOffset, setDragOffset] = useState<number>(0);
 
   const { data: chatRooms = [], isLoading } = useQuery<ChatRoomWithDetails[]>({
-    queryKey: ["/api/chat/rooms", Date.now()], // 캐시 완전 우회
+    queryKey: ["/api/chat/rooms"],
     queryFn: async () => {
-      const timestamp = Date.now();
-      const response = await fetch(`/api/chat/rooms?_bypass=${timestamp}`, {
-        method: 'GET',
+      const response = await fetch("/api/chat/rooms", {
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          "Pragma": "no-cache",
-          "Expires": "0",
-          "X-Requested-With": "XMLHttpRequest"
         },
-        cache: 'no-store'
       });
       if (!response.ok) throw new Error("Failed to fetch chat rooms");
       const data = await response.json();
       
-      console.log('🚨 채팅방 데이터 수신 완료!', data.map((room: any) => ({
+      console.log('📥 채팅방 데이터:', data.map((room: any) => ({
         roomId: room.id?.substring(0, 8) + '...',
         unreadCount: room.unreadCount
       })));
@@ -56,8 +49,7 @@ export default function Chat() {
       return data;
     },
     enabled: !!user,
-    staleTime: 0, // 항상 새로 가져오기
-    cacheTime: 0  // 캐시하지 않기
+    refetchInterval: 30000, // 30초마다 자동 새로고침
   });
 
   // 채팅방 삭제 mutation
