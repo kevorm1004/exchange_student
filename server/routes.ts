@@ -679,6 +679,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             storage.getLatestMessage(room.id)
           ]);
 
+          // 디버깅: unreadCount 로그
+          console.log(`📨 채팅방 ${room.id.substring(0, 8)}... unreadCount: ${unreadCount} (사용자: ${req.user!.email})`);
+        
+
           if (!item || !buyer || !seller) {
             return null; // Skip rooms with missing data
           }
