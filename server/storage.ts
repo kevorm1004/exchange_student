@@ -329,15 +329,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUnreadMessageCount(roomId: string, userId: string): Promise<number> {
-    const result = await db.select({ count: sql<number>`count(*)` })
-      .from(messages)
-      .where(and(
-        eq(messages.roomId, roomId),
-        eq(messages.isRead, false),
-        ne(messages.senderId, userId) // 자신이 보낸 메시지는 제외
-      ));
-    
-    return result[0]?.count || 0;
+    try {
+      // 더 안정적인 count 쿼리 사용
+      const result = await db.select({ count: count() })
+        .from(messages)
+        .where(and(
+          eq(messages.roomId, roomId),
+          eq(messages.isRead, false),
+          ne(messages.senderId, userId) // 자신이 보낸 메시지는 제외
+        ));
+      
+      const countValue = Number(result[0]?.count) || 0;
+      console.log(`📨 getUnreadMessageCount(roomId: ${roomId.substring(0, 8)}..., userId: ${userId.substring(0, 8)}...) = ${countValue}`);
+      
+      return countValue;
+    } catch (error) {
+      console.error(`❌ getUnreadMessageCount 오류:`, error);
+      return 0;
+    }
   }
 
   async markMessagesAsRead(roomId: string, userId: string): Promise<void> {
