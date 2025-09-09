@@ -242,16 +242,13 @@ export default function Chat() {
                       </div>
                       
                       <div className="flex flex-col items-end">
-                        {/* 디버깅: unreadCount 값 확인 */}
+                        {/* 임시 테스트: 전체 안읽은 메시지가 있으면 각 채팅방에 1개씩 표시 */}
                         {console.log(`🔍 UI 렌더링 - 채팅방 ${room.id.substring(0, 8)}... unreadCount: ${room.unreadCount} (타입: ${typeof room.unreadCount})`)}
                         
-                        {Number(room.unreadCount) > 0 && (
-                          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-sm">
-                            <span className="text-white text-xs font-medium">
-                              {Number(room.unreadCount) > 99 ? "99+" : room.unreadCount}
-                            </span>
-                          </div>
-                        )}
+                        {/* 임시로 항상 1개씩 표시해서 테스트 */}
+                        <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center shadow-sm">
+                          <span className="text-white text-xs font-medium">1</span>
+                        </div>
                       </div>
                     </div>
                       </Card>
