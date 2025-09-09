@@ -202,7 +202,7 @@ export default function Chat() {
                     }}
                   >
                     <Link href={`/chat/${room.id}`}>
-                      <div className="p-4 cursor-pointer hover:bg-gray-50 transition-colors">
+                      <div className="p-4 cursor-pointer hover:bg-gray-50 transition-colors border border-white">
                         <div className="flex items-center space-x-3">
                       <div className="relative">
                         <Avatar className="w-12 h-12">
