@@ -1,8 +1,7 @@
-import { LogOut } from "lucide-react";
+import { LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import logoImage from "@assets/exchange-market-logo.jpg";
 
 export default function AdminHeader() {
   const [, navigate] = useLocation();
@@ -21,13 +20,9 @@ export default function AdminHeader() {
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <img 
-            src={logoImage} 
-            alt="교환마켓 로고" 
-            className="h-10 w-auto"
-          />
+          <Shield className="h-8 w-8 text-blue-600" />
           <div>
-            <h1 className="text-xl font-bold text-gray-900">교환마켓 Admin</h1>
+            <h1 className="text-xl font-bold text-gray-900">ExchangeMart Admin</h1>
             <p className="text-sm text-gray-600">관리자 대시보드</p>
           </div>
         </div>

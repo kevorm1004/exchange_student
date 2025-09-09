@@ -2,7 +2,6 @@ import { Search, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { useUnreadNotificationCount } from "@/hooks/use-notifications";
-import logoImage from "@assets/exchange-market-logo.jpg";
 
 interface HeaderProps {
   title: string;
@@ -30,13 +29,8 @@ export default function Header({
   return (
     <header className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-50 h-16">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <img 
-            src={logoImage} 
-            alt="교환마켓 로고" 
-            className="h-8 w-auto"
-          />
-          <h1 className="text-lg font-bold text-gray-900">{title}</h1>
+        <div className="flex items-center">
+          <h1 className="text-xl font-bold text-gray-900">{title}</h1>
         </div>
         <div className="flex items-center space-x-4">
           {showSearch && (
