@@ -41,17 +41,7 @@ export default function Chat() {
       if (!response.ok) throw new Error("Failed to fetch chat rooms");
       const data = await response.json();
       
-      // 디버깅: API 응답 확인
-      console.log('🔍 /api/chat/rooms 응답 데이터:', data);
-      data.forEach((room: any, index: number) => {
-        console.log(`🔍 채팅방 ${index + 1}:`, {
-          id: room.id.substring(0, 8) + '...',
-          unreadCount: room.unreadCount,
-          buyer: room.buyer?.email,
-          seller: room.seller?.email,
-          itemTitle: room.item?.title
-        });
-      });
+      // API 응답 데이터 반환
       
       return data;
     },
@@ -242,13 +232,13 @@ export default function Chat() {
                       </div>
                       
                       <div className="flex flex-col items-end">
-                        {/* 임시 테스트: 전체 안읽은 메시지가 있으면 각 채팅방에 1개씩 표시 */}
-                        {console.log(`🔍 UI 렌더링 - 채팅방 ${room.id.substring(0, 8)}... unreadCount: ${room.unreadCount} (타입: ${typeof room.unreadCount})`)}
-                        
-                        {/* 임시로 항상 1개씩 표시해서 테스트 */}
-                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-sm">
-                          <span className="text-white text-xs font-medium">1</span>
-                        </div>
+                        {Number(room.unreadCount) > 0 && (
+                          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-sm">
+                            <span className="text-white text-xs font-medium">
+                              {Number(room.unreadCount) > 99 ? "99+" : room.unreadCount}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                       </div>

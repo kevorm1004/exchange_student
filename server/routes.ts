@@ -681,8 +681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // 채팅방별로 안읽은 메시지 개수 계산 (올바른 방식)
           const unreadCount = await storage.getUnreadMessageCount(room.id, req.user!.id);
           
-          // 디버깅: unreadCount 로그
-          console.log(`📨 채팅방 ${room.id.substring(0, 8)}... unreadCount: ${unreadCount} (사용자: ${req.user!.email})`);
+          // 안읽은 메시지 개수 계산 완료
         
 
           if (!item || !buyer || !seller) {

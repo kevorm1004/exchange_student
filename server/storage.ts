@@ -329,8 +329,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUnreadMessageCount(roomId: string, userId: string): Promise<number> {
-    console.log(`🔍 getUnreadMessageCount 호출됨 - roomId: ${roomId.substring(0, 8)}..., userId: ${userId.substring(0, 8)}...`);
-    
     try {
       const result = await db.select()
         .from(messages)
@@ -340,12 +338,9 @@ export class DatabaseStorage implements IStorage {
           ne(messages.senderId, userId)
         ));
       
-      const countValue = result.length;
-      console.log(`📨 getUnreadMessageCount 결과: ${countValue}개 (전체 결과: ${JSON.stringify(result.map(r => ({ id: r.id, content: r.content, senderId: r.senderId })))})`);
-      
-      return countValue;
+      return result.length;
     } catch (error) {
-      console.error(`❌ getUnreadMessageCount 오류:`, error);
+      console.error('getUnreadMessageCount 오류:', error);
       return 0;
     }
   }
