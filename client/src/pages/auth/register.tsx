@@ -600,6 +600,49 @@ export default function Register() {
                       />
                     </FormControl>
                     <FormMessage />
+                    
+                    {/* 학교명 입력 안내 문구 */}
+                    <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="text-sm text-blue-800">
+                        <div className="flex items-center gap-2 font-medium mb-2">
+                          <span>📌</span>
+                          <span>학교명 입력 규칙</span>
+                        </div>
+                        
+                        <div className="space-y-1 mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-red-600">✖️</span>
+                            <span>줄임말 (X)</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-red-600">✖️</span>
+                            <span>영문명 (X)</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-green-600">✅</span>
+                            <span>전체 한글 이름 (O)</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-red-600">🚫</span>
+                            <span>띄어쓰기 불가</span>
+                          </div>
+                        </div>
+                        
+                        <div className="border-t border-blue-200 pt-3">
+                          <div className="flex items-center gap-2 font-medium mb-2">
+                            <span>📝</span>
+                            <span>입력 예시</span>
+                          </div>
+                          <div className="text-xs space-y-1 text-blue-700">
+                            <div>• 리버풀존무어스대학교</div>
+                            <div>• 뉴사우스웨일즈대학교</div>
+                            <div>• 캘리포니아대학교버클리캠퍼스</div>
+                            <div>• 싱가포르국립대학교</div>
+                            <div>• 도쿄대학교</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </FormItem>
                 )}
               />
