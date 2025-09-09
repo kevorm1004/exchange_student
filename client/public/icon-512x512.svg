@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Large organic shape background -->
+  <path d="M128 85C85 85 64 117 64 160C64 181 53 203 53 256C53 309 53 331 64 352C64 395 85 427 128 427H192C213 427 235 416 256 416C277 416 299 427 320 427H384C427 427 448 395 448 352C459 331 459 309 459 256C459 203 459 181 448 160C448 117 427 85 384 85H320C299 85 277 96 256 96C235 96 213 85 192 85H128Z" fill="#5b64f5"/>
+  <text x="256" y="220" font-family="system-ui, -apple-system, sans-serif" font-size="85" font-weight="900" text-anchor="middle" fill="white">교환</text>
+  <text x="256" y="330" font-family="system-ui, -apple-system, sans-serif" font-size="85" font-weight="900" text-anchor="middle" fill="white">마켓</text>
+</svg>

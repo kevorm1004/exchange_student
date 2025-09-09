@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="32" height="32" fill="#5b64f5" rx="6"/>
+  <text x="16" y="14" font-family="system-ui, -apple-system, sans-serif" font-size="6" font-weight="900" text-anchor="middle" fill="white">교환</text>
+  <text x="16" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="6" font-weight="900" text-anchor="middle" fill="white">마켓</text>
+</svg>

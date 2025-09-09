@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="384" height="384" viewBox="0 0 384 384" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M96 64C64 64 48 88 48 120C48 136 40 152 40 192C40 232 40 248 48 264C48 296 64 320 96 320H144C160 320 176 312 192 312C208 312 224 320 240 320H288C320 320 336 296 336 264C344 248 344 232 344 192C344 152 344 136 336 120C336 88 320 64 288 64H240C224 64 208 72 192 72C176 72 160 64 144 64H96Z" fill="#5b64f5"/>
+  <text x="192" y="165" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="900" text-anchor="middle" fill="white">교환</text>
+  <text x="192" y="248" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="900" text-anchor="middle" fill="white">마켓</text>
+</svg>

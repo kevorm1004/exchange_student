@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Rounded rectangle background with organic shape -->
+  <rect width="180" height="180" fill="#5b64f5" rx="36"/>
+  <text x="90" y="75" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" text-anchor="middle" fill="white">교환</text>
+  <text x="90" y="115" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" text-anchor="middle" fill="white">마켓</text>
+</svg>
