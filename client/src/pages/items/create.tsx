@@ -218,9 +218,8 @@ export default function CreateItem() {
   // Update price when currency or value changes
   useEffect(() => {
     if (priceValue && selectedCurrency) {
-      // 선택된 통화를 USD로 변환하여 저장 (기존 로직 사용)
-      const usdPrice = parseFloat(priceValue) / selectedCurrency.rate;
-      form.setValue('price', usdPrice.toFixed(2));
+      // 입력된 가격을 그대로 저장 (환율 변환은 표시할 때만)
+      form.setValue('price', priceValue);
       form.setValue('currency', selectedCurrency.code);
     } else {
       form.setValue('price', '');
@@ -238,13 +237,24 @@ export default function CreateItem() {
       return res.json();
     },
     onSuccess: () => {
-      // Invalidate all items queries with all possible filter combinations
+      // 모든 상품 관련 쿼리 무효화
       queryClient.invalidateQueries({ 
         queryKey: ["/api/items"], 
         exact: false 
       });
       
-      // 성공 팝업 제거 - 상품 등록 성공 시 toast 제거
+      // 사용자 통계도 무효화 (새 상품 등록으로 통계 변경됨)
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/users/stats"]
+      });
+      
+      // 성공 토스트 표시
+      toast({
+        title: "상품 등록 완료",
+        description: "상품이 성공적으로 등록되었습니다.",
+      });
+      
+      // 홈페이지로 이동
       navigate("/");
     },
     onError: (error) => {
@@ -293,7 +303,7 @@ export default function CreateItem() {
         ...data,
         sellerId: user?.id || data.sellerId, // sellerId 확실히 설정
         images,
-        price: form.getValues('price'),
+        price: priceValue, // 직접 priceValue 사용
         school: user?.school || "",
         country: user?.country || "",
         location: data.location || user?.school || "",
