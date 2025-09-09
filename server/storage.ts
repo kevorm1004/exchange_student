@@ -329,37 +329,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUnreadMessageCount(roomId: string, userId: string): Promise<number> {
+    console.log(`🚨 getUnreadMessageCount 호출됨! roomId: ${roomId.substring(0, 8)}, userId: ${userId.substring(0, 8)}`);
+    
     try {
-      console.log(`🚀 getUnreadMessageCount 시작 - roomId: ${roomId.substring(0, 8)}, userId: ${userId.substring(0, 8)}`);
+      // 간단하고 확실한 방법으로 직접 계산
+      const unreadMessages = await db.select({
+        id: messages.id,
+        senderId: messages.senderId,
+        isRead: messages.isRead,
+        content: messages.content
+      })
+      .from(messages)
+      .where(and(
+        eq(messages.roomId, roomId),
+        eq(messages.isRead, false),
+        ne(messages.senderId, userId)
+      ));
       
-      // 직접 SQL 쿼리로 테스트
-      const directResult = await db.execute(sql`
-        SELECT COUNT(*) as count
-        FROM messages 
-        WHERE room_id = ${roomId}
-          AND is_read = false 
-          AND sender_id != ${userId}
-      `);
+      console.log(`🎯 안읽은 메시지 조회 결과:`, {
+        roomId: roomId.substring(0, 8),
+        userId: userId.substring(0, 8),
+        count: unreadMessages.length,
+        messages: unreadMessages.map(m => ({
+          id: m.id.substring(0, 8),
+          senderId: m.senderId.substring(0, 8),
+          content: m.content.substring(0, 20),
+          isRead: m.isRead
+        }))
+      });
       
-      console.log(`🎯 직접 SQL 결과:`, directResult);
-      
-      // 기존 Drizzle ORM 방식
-      const result = await db.select()
-        .from(messages)
-        .where(and(
-          eq(messages.roomId, roomId),
-          eq(messages.isRead, false),
-          ne(messages.senderId, userId)
-        ));
-      
-      console.log(`📊 Drizzle ORM 결과:`, result.length, result.map(r => ({
-        id: r.id.substring(0, 8),
-        content: r.content.substring(0, 20),
-        senderId: r.senderId.substring(0, 8),
-        isRead: r.isRead
-      })));
-      
-      return result.length;
+      return unreadMessages.length;
     } catch (error) {
       console.error('❌ getUnreadMessageCount 오류:', error);
       return 0;
