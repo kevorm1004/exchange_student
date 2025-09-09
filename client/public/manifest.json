@@ -12,33 +12,21 @@
   "categories": ["shopping", "social"],
   "icons": [
     {
-      "src": "/apple-touch-icon.svg",
+      "src": "/apple-touch-icon.jpg",
       "sizes": "180x180",
-      "type": "image/svg+xml",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-152x152.svg",
-      "sizes": "152x152",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-192x192.svg",
+      "src": "/icon-192x192.jpg",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-384x384.svg",
-      "sizes": "384x384",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512x512.svg",
+      "src": "/icon-512x512.jpg",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     }
   ]
