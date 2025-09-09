@@ -329,38 +329,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUnreadMessageCount(roomId: string, userId: string): Promise<number> {
-    console.log(`🚨 getUnreadMessageCount 호출됨! roomId: ${roomId.substring(0, 8)}, userId: ${userId.substring(0, 8)}`);
+    console.log(`🚀 getUnreadMessageCount 함수 호출! roomId: ${roomId.substring(0, 8)}..., userId: ${userId.substring(0, 8)}...`);
     
     try {
-      // 간단하고 확실한 방법으로 직접 계산
-      const unreadMessages = await db.select({
-        id: messages.id,
-        senderId: messages.senderId,
-        isRead: messages.isRead,
-        content: messages.content
-      })
-      .from(messages)
-      .where(and(
-        eq(messages.roomId, roomId),
-        eq(messages.isRead, false),
-        ne(messages.senderId, userId)
-      ));
+      // 해당 채팅방에서 상대방이 보낸 안읽은 메시지만 카운트
+      const unreadMessages = await db.select()
+        .from(messages)
+        .where(and(
+          eq(messages.roomId, roomId),
+          eq(messages.isRead, false),
+          ne(messages.senderId, userId)
+        ));
       
-      console.log(`🎯 안읽은 메시지 조회 결과:`, {
-        roomId: roomId.substring(0, 8),
-        userId: userId.substring(0, 8),
-        count: unreadMessages.length,
-        messages: unreadMessages.map(m => ({
-          id: m.id.substring(0, 8),
-          senderId: m.senderId.substring(0, 8),
-          content: m.content.substring(0, 20),
-          isRead: m.isRead
-        }))
-      });
+      const count = unreadMessages.length;
       
-      return unreadMessages.length;
+      console.log(`✅ 안읽은 메시지 개수: ${count}개`);
+      console.log(`📋 메시지 목록:`, unreadMessages.map(msg => ({
+        id: msg.id.substring(0, 8) + '...',
+        senderId: msg.senderId.substring(0, 8) + '...',
+        content: msg.content.substring(0, 30),
+        isRead: msg.isRead
+      })));
+      
+      return count;
     } catch (error) {
-      console.error('❌ getUnreadMessageCount 오류:', error);
+      console.error('❌ getUnreadMessageCount 에러:', error);
       return 0;
     }
   }

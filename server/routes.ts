@@ -727,7 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          console.log(`🔍 채팅방 ${room.id.substring(0, 8)}... - unreadCount: ${unreadCount}`);
+          console.log(`🔍 채팅방 ${room.id.substring(0, 8)}... - unreadCount: ${unreadCount} (사용자: ${req.user!.id.substring(0, 8)}...)`);
           
           return {
             ...room,
