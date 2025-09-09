@@ -682,31 +682,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             storage.getLatestMessage(room.id)
           ]);
 
-          // 채팅방별로 안읽은 메시지 개수 계산 (직접 구현)
-          console.log(`🚀🚀🚀 채팅방 ${room.id.substring(0, 8)} 안읽은 메시지 계산 시작 🚀🚀🚀`);
-          
-          let unreadCount = 0;
-          try {
-            // 직접 DB 쿼리로 안읽은 메시지 계산
-            const { db } = await import('./db.js');
-            const { messages } = await import('@shared/schema.js');
-            const { eq, and, ne } = await import('drizzle-orm');
-            
-            const unreadMessages = await db.select()
-              .from(messages)
-              .where(and(
-                eq(messages.roomId, room.id),
-                eq(messages.isRead, false),
-                ne(messages.senderId, req.user!.id)
-              ));
-            
-            unreadCount = unreadMessages.length;
-            console.log(`🚀 직접 계산 결과: ${unreadCount}개의 안읽은 메시지`);
-            
-          } catch (error) {
-            console.error('🚀 직접 계산 오류:', error);
-            unreadCount = 0;
-          }
+          // 채팅방별로 안읽은 메시지 개수 계산 (실제 DB 기반)
+          const unreadCount = await storage.calculateUnreadMessagesForRoom(room.id, req.user!.id);
           
           // 안읽은 메시지 개수 계산 완료
         
@@ -750,17 +727,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          // 하드코딩으로 test5 사용자에게 6개 안읽은 메시지 표시
-          const finalUnreadCount = req.user!.id === '82091fd8-6f1d-4737-8667-568e9a880bd2' ? 6 : unreadCount || 0;
-          
-          console.log(`✅ 채팅방 ${room.id.substring(0, 8)}... - FINAL unreadCount: ${finalUnreadCount} (사용자: ${req.user!.id.substring(0, 8)}...)`);
+          console.log(`✅ 채팅방 ${room.id.substring(0, 8)}... - 실제 unreadCount: ${unreadCount} (사용자: ${req.user!.id.substring(0, 8)}...)`);
           
           return {
             ...room,
             item,
             buyer: displayBuyer,
             seller: displaySeller,
-            unreadCount: finalUnreadCount,
+            unreadCount: unreadCount || 0,
             latestMessage
           };
         })
