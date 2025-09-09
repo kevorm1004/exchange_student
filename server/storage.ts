@@ -59,6 +59,7 @@ export interface IStorage {
   getLatestMessage(roomId: string): Promise<Message | null>;
   createMessage(insertMessage: InsertMessage): Promise<Message>;
   getUnreadMessageCount(roomId: string, userId: string): Promise<number>;
+  calculateUnreadMessagesForRoom(roomId: string, userId: string): Promise<number>;
   markMessagesAsRead(roomId: string, userId: string): Promise<void>;
   
   // Chat room methods
@@ -328,44 +329,48 @@ export class DatabaseStorage implements IStorage {
     return message;
   }
 
-  async getUnreadMessageCount(roomId: string, userId: string): Promise<number> {
-    console.log(`🟢 === getUnreadMessageCount 시작 ===`);
-    console.log(`🟢 roomId: ${roomId}`);
-    console.log(`🟢 userId: ${userId}`);
+  async calculateUnreadMessagesForRoom(roomId: string, userId: string): Promise<number> {
+    console.log(`🔥🔥🔥 calculateUnreadMessagesForRoom 새로운 함수 시작! 🔥🔥🔥`);
+    console.log(`🔥 채팅방 ID: ${roomId}`);
+    console.log(`🔥 사용자 ID: ${userId}`);
     
     try {
-      // 1단계: 해당 채팅방의 모든 메시지 조회
-      const allMessages = await db.select()
+      // 해당 채팅방에서 상대방이 보낸 안읽은 메시지 조회
+      const unreadFromOthers = await db.select()
         .from(messages)
-        .where(eq(messages.roomId, roomId))
-        .orderBy(desc(messages.createdAt));
+        .where(and(
+          eq(messages.roomId, roomId),
+          eq(messages.isRead, false),
+          ne(messages.senderId, userId)
+        ));
       
-      console.log(`🟢 총 메시지 개수: ${allMessages.length}개`);
+      const count = unreadFromOthers.length;
       
-      // 2단계: 안읽은 메시지만 필터링
-      const unreadMessages = allMessages.filter(msg => !msg.isRead);
-      console.log(`🟢 안읽은 메시지 개수: ${unreadMessages.length}개`);
+      console.log(`🔥 안읽은 메시지 ${count}개 발견!`);
       
-      // 3단계: 상대방이 보낸 메시지만 필터링 (내가 보낸 건 제외)
-      const unreadFromOthers = unreadMessages.filter(msg => msg.senderId !== userId);
-      console.log(`🟢 상대방이 보낸 안읽은 메시지 개수: ${unreadFromOthers.length}개`);
+      if (count > 0) {
+        console.log(`🔥 안읽은 메시지 목록:`, unreadFromOthers.map(msg => ({
+          id: msg.id.substring(0, 8) + '...',
+          senderId: msg.senderId.substring(0, 8) + '...',
+          content: msg.content.substring(0, 30),
+          isRead: msg.isRead
+        })));
+      } else {
+        console.log(`🔥 안읽은 메시지가 없습니다.`);
+      }
       
-      // 디버깅용 상세 정보
-      console.log(`🟢 상대방 안읽은 메시지 상세:`, unreadFromOthers.map(msg => ({
-        id: msg.id.substring(0, 8),
-        senderId: msg.senderId.substring(0, 8),
-        content: msg.content.substring(0, 50),
-        isRead: msg.isRead,
-        createdAt: msg.createdAt
-      })));
+      console.log(`🔥🔥🔥 최종 반환값: ${count}개 🔥🔥🔥`);
       
-      console.log(`🟢 === 최종 결과: ${unreadFromOthers.length}개 ===`);
-      
-      return unreadFromOthers.length;
+      return count;
     } catch (error) {
-      console.error('🔴 getUnreadMessageCount 에러:', error);
+      console.error('🔴 calculateUnreadMessagesForRoom 에러:', error);
       return 0;
     }
+  }
+  
+  // 기존 함수는 새 함수를 호출하도록 변경
+  async getUnreadMessageCount(roomId: string, userId: string): Promise<number> {
+    return await this.calculateUnreadMessagesForRoom(roomId, userId);
   }
 
   async markMessagesAsRead(roomId: string, userId: string): Promise<void> {
