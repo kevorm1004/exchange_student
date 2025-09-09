@@ -329,18 +329,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUnreadMessageCount(roomId: string, userId: string): Promise<number> {
+    console.log(`🔍 getUnreadMessageCount 호출됨 - roomId: ${roomId.substring(0, 8)}..., userId: ${userId.substring(0, 8)}...`);
+    
     try {
-      // 더 안정적인 count 쿼리 사용
-      const result = await db.select({ count: count() })
+      const result = await db.select()
         .from(messages)
         .where(and(
           eq(messages.roomId, roomId),
           eq(messages.isRead, false),
-          ne(messages.senderId, userId) // 자신이 보낸 메시지는 제외
+          ne(messages.senderId, userId)
         ));
       
-      const countValue = Number(result[0]?.count) || 0;
-      console.log(`📨 getUnreadMessageCount(roomId: ${roomId.substring(0, 8)}..., userId: ${userId.substring(0, 8)}...) = ${countValue}`);
+      const countValue = result.length;
+      console.log(`📨 getUnreadMessageCount 결과: ${countValue}개 (전체 결과: ${JSON.stringify(result.map(r => ({ id: r.id, content: r.content, senderId: r.senderId })))})`);
       
       return countValue;
     } catch (error) {
