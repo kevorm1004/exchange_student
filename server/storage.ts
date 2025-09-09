@@ -354,10 +354,25 @@ export class DatabaseStorage implements IStorage {
 
   async getChatRooms(userId: string): Promise<ChatRoom[]> {
     return await db.select().from(chatRooms)
-      .where(or(
-        eq(chatRooms.buyerId, userId),
-        eq(chatRooms.sellerId, userId)
-      ))
+      .where(
+        and(
+          or(
+            eq(chatRooms.buyerId, userId),
+            eq(chatRooms.sellerId, userId)
+          ),
+          // 해당 사용자에게 숨겨지지 않은 채팅방만 조회
+          or(
+            and(
+              eq(chatRooms.buyerId, userId),
+              eq(chatRooms.hiddenForBuyer, false)
+            ),
+            and(
+              eq(chatRooms.sellerId, userId), 
+              eq(chatRooms.hiddenForSeller, false)
+            )
+          )
+        )
+      )
       .orderBy(desc(chatRooms.createdAt));
   }
 
