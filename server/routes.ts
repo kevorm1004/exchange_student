@@ -136,28 +136,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws',
+    maxPayload: 16 * 1024, // 16KB max payload
+    perMessageDeflate: false, // 압축 비활성화로 성능 향상
+    backlog: 511, // 대기열 크기 증가
+    maxConnections: 1000 // 최대 동시 연결 수
+  });
+  
   const clients = new Map<string, WebSocket>();
+  const rooms = new Map<string, Set<string>>(); // roomId -> Set of userIds
+  
+  // 연결 수 모니터링
+  setInterval(() => {
+    console.log(`WebSocket: ${clients.size} active connections, ${rooms.size} active rooms`);
+  }, 30000);
 
   wss.on('connection', (ws: WebSocket) => {
+    let userId: string | null = null;
+    let currentRoomId: string | null = null;
+    
+    // 타임아웃 설정
+    const timeout = setTimeout(() => {
+      ws.close(1000, 'Authentication timeout');
+    }, 30000);
+    
     ws.on('message', (data: Buffer) => {
       try {
         const message = JSON.parse(data.toString());
+        
         if (message.type === 'auth' && message.token) {
           const decoded = jwt.verify(message.token, JWT_SECRET) as any;
-          clients.set(decoded.id, ws);
-        } else if (message.type === 'join_room') {
-          (ws as any).roomId = message.roomId;
+          userId = decoded.id;
+          clients.set(userId, ws);
+          clearTimeout(timeout);
+          ws.send(JSON.stringify({ type: 'auth_success', userId }));
+          
+        } else if (message.type === 'join_room' && userId) {
+          if (currentRoomId) {
+            // 이전 방에서 나가기
+            const room = rooms.get(currentRoomId);
+            if (room) {
+              room.delete(userId);
+              if (room.size === 0) {
+                rooms.delete(currentRoomId);
+              }
+            }
+          }
+          
+          currentRoomId = message.roomId;
+          if (!rooms.has(currentRoomId)) {
+            rooms.set(currentRoomId, new Set());
+          }
+          rooms.get(currentRoomId)!.add(userId);
+          
+        } else if (message.type === 'leave_room' && userId && currentRoomId) {
+          const room = rooms.get(currentRoomId);
+          if (room) {
+            room.delete(userId);
+            if (room.size === 0) {
+              rooms.delete(currentRoomId);
+            }
+          }
+          currentRoomId = null;
         }
-      } catch (e) { console.error('WS message error:', e); }
+      } catch (e) { 
+        console.error('WS message error:', e);
+        ws.close(1003, 'Invalid message format');
+      }
     });
+    
     ws.on('close', () => {
-      for (const [userId, client] of clients.entries()) {
-        if (client === ws) {
-          clients.delete(userId);
-          break;
+      clearTimeout(timeout);
+      if (userId) {
+        clients.delete(userId);
+        
+        if (currentRoomId) {
+          const room = rooms.get(currentRoomId);
+          if (room) {
+            room.delete(userId);
+            if (room.size === 0) {
+              rooms.delete(currentRoomId);
+            }
+          }
         }
       }
+    });
+    
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      clearTimeout(timeout);
     });
   });
 
