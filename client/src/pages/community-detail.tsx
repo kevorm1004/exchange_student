@@ -52,10 +52,16 @@ export default function CommunityDetail() {
         headers,
         credentials: "include",
       });
-      if (!response.ok) throw new Error("Failed to fetch comments");
+      if (!response.ok) {
+        if (response.status === 401) {
+          // 로그인이 필요한 경우
+          return [];
+        }
+        throw new Error("Failed to fetch comments");
+      }
       return response.json();
     },
-    enabled: !!postId && !!user,
+    enabled: !!postId, // 글이 있으면 댓글도 시도해보되, 실패하면 빈 배열
   });
 
   const createCommentMutation = useMutation({
@@ -322,9 +328,16 @@ export default function CommunityDetail() {
             </div>
           ) : (
             <div className="mt-6 text-center py-4 bg-gray-50 rounded-lg">
-              <p className="text-gray-600 mb-2">댓글을 작성하려면 로그인이 필요합니다</p>
+              <p className="text-gray-600 mb-2">댓글을 보거나 작성하려면 로그인이 필요합니다</p>
               <Button 
-                onClick={() => navigate("/auth/login")}
+                onClick={() => {
+                  toast({
+                    title: "로그인이 필요합니다",
+                    description: "댓글 기능을 사용하려면 로그인해주세요",
+                    variant: "destructive"
+                  });
+                  navigate("/auth/login");
+                }}
                 className="bg-blue-500 hover:bg-blue-600 text-white"
                 size="sm"
               >
