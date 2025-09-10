@@ -188,10 +188,6 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
                   <Eye className="w-3 h-3 mr-1" />
                   {item.views}
                 </span>
-                <span className="flex items-center">
-                  <Heart className="w-3 h-3 mr-1" />
-                  {item.likes}
-                </span>
                 <span>{formatTimeAgo(new Date(item.createdAt || new Date()))}</span>
               </div>
             </div>
@@ -264,10 +260,6 @@ export default function ItemCard({ item, isFavorite = false, onToggleFavorite, v
                   <span className="flex items-center">
                     <Eye className="w-3 h-3 mr-1" />
                     {item.views}
-                  </span>
-                  <span className="flex items-center">
-                    <Heart className="w-3 h-3 mr-1" />
-                    {item.likes}
                   </span>
                   <span>{formatTimeAgo(new Date(item.createdAt))}</span>
                 </div>
