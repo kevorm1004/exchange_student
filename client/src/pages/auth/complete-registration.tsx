@@ -12,26 +12,59 @@ import { useAuth } from "@/hooks/use-auth";
 import { COUNTRIES } from "@/lib/countries";
 import { z } from "zod";
 
-const completeRegistrationSchema = z.object({
-  school: z.string().min(1, "학교를 입력해주세요"),
-  country: z.string().min(1, "국가를 선택해주세요"),
+// 대학교 입력 단계별 스키마
+const schoolSchema = z.object({
+  school: z.string().optional(),
 });
 
-type CompleteRegistrationData = z.infer<typeof completeRegistrationSchema>;
+// 국가 선택 단계별 스키마  
+const countrySchema = z.object({
+  country: z.string().optional(),
+});
+
+type RegisterStep = 'school' | 'country';
+
+interface FormData {
+  school?: string;
+  country?: string;
+}
 
 export default function CompleteRegistration() {
+  const [currentStep, setCurrentStep] = useState<RegisterStep>('school');
+  const [formData, setFormData] = useState<Partial<FormData>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { login, user } = useAuth();
 
-  const form = useForm<CompleteRegistrationData>({
-    resolver: zodResolver(completeRegistrationSchema),
-    defaultValues: {
-      school: "",
-      country: "",
-    },
+  const stepOrder: RegisterStep[] = ['school', 'country'];
+  const currentStepIndex = stepOrder.indexOf(currentStep);
+  const isLastStep = currentStepIndex === stepOrder.length - 1;
+
+  // 각 단계별 폼 설정
+  const schoolForm = useForm({
+    resolver: zodResolver(schoolSchema),
+    defaultValues: { school: formData.school || "" },
+    mode: "onChange"
   });
+
+  const countryForm = useForm({
+    resolver: zodResolver(countrySchema),
+    defaultValues: { country: formData.country || "" },
+    mode: "onChange"
+  });
+
+  // 단계별 폼 초기화
+  useEffect(() => {
+    switch (currentStep) {
+      case 'school':
+        schoolForm.reset({ school: formData.school || "" });
+        break;
+      case 'country':
+        countryForm.reset({ country: formData.country || "" });
+        break;
+    }
+  }, [currentStep]);
 
   // Handle OAuth callback parameters
   useEffect(() => {
@@ -56,7 +89,45 @@ export default function CompleteRegistration() {
     }
   }, [login, navigate, user]);
 
-  const onSubmit = async (data: CompleteRegistrationData) => {
+  const handleNext = async (data: any) => {
+    // 현재 단계 데이터만 저장
+    const newData = { ...formData };
+    
+    switch (currentStep) {
+      case 'school':
+        newData.school = data.school;
+        break;
+      case 'country':
+        newData.country = data.country;
+        break;
+    }
+    
+    setFormData(newData);
+    
+    if (isLastStep) {
+      await handleSubmit(newData);
+    } else {
+      setCurrentStep(stepOrder[currentStepIndex + 1]);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStepIndex > 0) {
+      setCurrentStep(stepOrder[currentStepIndex - 1]);
+    } else {
+      navigate('/auth/login');
+    }
+  };
+
+  const handleSkip = () => {
+    if (!isLastStep) {
+      setCurrentStep(stepOrder[currentStepIndex + 1]);
+    } else {
+      handleSubmit(formData);
+    }
+  };
+
+  const handleSubmit = async (finalFormData?: Partial<FormData>) => {
     if (!user) {
       toast({
         title: "오류",
@@ -66,6 +137,7 @@ export default function CompleteRegistration() {
       return;
     }
 
+    const submitData = finalFormData || formData;
     setIsLoading(true);
     try {
       const response = await fetch('/api/auth/complete-oauth-registration', {
@@ -74,7 +146,10 @@ export default function CompleteRegistration() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          school: submitData.school || "",
+          country: submitData.country || "",
+        }),
       });
 
       if (!response.ok) {
@@ -99,6 +174,100 @@ export default function CompleteRegistration() {
     }
   };
 
+  const getStepTitle = () => {
+    switch (currentStep) {
+      case 'school': return '학교 입력';
+      case 'country': return '국가 선택';
+      default: return '';
+    }
+  };
+
+  const getStepLabel = () => {
+    switch (currentStep) {
+      case 'school': return '학교/대학교';
+      case 'country': return '거주 국가';
+      default: return '';
+    }
+  };
+
+  const getStepPlaceholder = () => {
+    switch (currentStep) {
+      case 'school': return '예: 서울대학교, Seoul National University';
+      case 'country': return '국가를 선택하세요';
+      default: return '';
+    }
+  };
+
+  const getCurrentForm = () => {
+    switch (currentStep) {
+      case 'school':
+        return (
+          <Form {...schoolForm}>
+            <form onSubmit={schoolForm.handleSubmit(handleNext)} className="space-y-8">
+              <FormField
+                control={schoolForm.control}
+                name="school"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={getStepPlaceholder()}
+                        {...field}
+                        className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-xs text-gray-500">
+                      현재 다니고 있는 학교나 대학교를 입력해주세요 (선택사항)
+                    </p>
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+        );
+
+      case 'country':
+        return (
+          <Form {...countryForm}>
+            <form onSubmit={countryForm.handleSubmit(handleNext)} className="space-y-8">
+              <FormField
+                control={countryForm.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm text-blue-500 font-medium">{getStepLabel()}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0">
+                          <SelectValue placeholder={getStepPlaceholder()} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country} value={country}>
+                            {country}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    <p className="text-xs text-gray-500">
+                      현재 거주하고 있는 국가를 선택해주세요 (선택사항)
+                    </p>
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -114,13 +283,26 @@ export default function CompleteRegistration() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/auth/login')}
+          onClick={handleBack}
           className="flex items-center gap-2 text-gray-700 hover:text-gray-900"
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-sm font-medium text-gray-700">회원가입 완료</h1>
+        <h1 className="text-sm font-medium text-gray-700">{getStepTitle()}</h1>
         <div className="w-8"></div>
+      </div>
+
+      {/* 진행률 표시 */}
+      <div className="px-6 py-4">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-xs text-gray-500">{currentStepIndex + 1}/{stepOrder.length}</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-1">
+          <div 
+            className="bg-blue-500 h-1 rounded-full transition-all duration-300" 
+            style={{ width: `${((currentStepIndex + 1) / stepOrder.length) * 100}%` }}
+          ></div>
+        </div>
       </div>
 
       {/* 메인 컨텐츠 */}
@@ -134,74 +316,43 @@ export default function CompleteRegistration() {
           </p>
         </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* 학교 입력 */}
-            <FormField
-              control={form.control}
-              name="school"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm text-blue-500 font-medium">
-                    학교/대학교
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="예: 서울대학교, Seoul National University"
-                      {...field}
-                      className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        {getCurrentForm()}
 
-            {/* 국가 선택 */}
-            <FormField
-              control={form.control}
-              name="country"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm text-blue-500 font-medium">
-                    거주 국가
-                  </FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="border-2 border-blue-200 rounded-xl p-4 text-base focus:border-blue-500 focus:ring-0">
-                        <SelectValue placeholder="국가를 선택하세요" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {COUNTRIES.map((country) => (
-                        <SelectItem key={country} value={country}>
-                          {country}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        {/* 버튼 영역 */}
+        <div className="mt-8 space-y-3">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            onClick={() => {
+              const currentForm = currentStep === 'school' ? schoolForm : countryForm;
+              currentForm.handleSubmit(handleNext)();
+            }}
+            className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white text-base font-medium rounded-xl flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              "처리 중..."
+            ) : isLastStep ? (
+              <>
+                회원가입 완료
+                <ChevronRight className="w-5 h-5" />
+              </>
+            ) : (
+              <>
+                다음
+                <ChevronRight className="w-5 h-5" />
+              </>
+            )}
+          </Button>
 
-            {/* 완료 버튼 */}
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white text-base font-medium rounded-xl flex items-center justify-center gap-2 mt-8"
-            >
-              {isLoading ? (
-                "완료 중..."
-              ) : (
-                <>
-                  회원가입 완료
-                  <ChevronRight className="w-5 h-5" />
-                </>
-              )}
-            </Button>
-          </form>
-        </Form>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleSkip}
+            className="w-full h-12 text-gray-600 hover:text-gray-900 text-base"
+          >
+            건너뛰기
+          </Button>
+        </div>
       </div>
     </div>
   );
