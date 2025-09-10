@@ -29,7 +29,7 @@ app.use((req, res, next) => {
     'https://changmarket.com'
   ];
   
-  if (origin && allowedOrigins.includes(origin)) {
+  if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   
