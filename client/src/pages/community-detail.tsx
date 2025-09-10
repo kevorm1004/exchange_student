@@ -135,7 +135,7 @@ export default function CommunityDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="bg-white">
       {/* Header */}
       <header className="bg-white border-b px-4 py-3 sticky top-0 z-10">
         <div className="flex items-center justify-between">
@@ -160,7 +160,7 @@ export default function CommunityDetail() {
       </header>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 pb-20">
         {/* Post Header */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
