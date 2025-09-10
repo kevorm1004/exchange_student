@@ -55,7 +55,7 @@ export default function Chat() {
   // 채팅방 삭제 mutation
   const deleteChatRoomMutation = useMutation({
     mutationFn: async (roomId: string) => {
-      return apiRequest(`/api/chat/rooms/${roomId}`, { method: 'DELETE' });
+      return apiRequest('DELETE', `/api/chat/rooms/${roomId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/chat/rooms"] });
