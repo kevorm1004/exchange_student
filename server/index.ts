@@ -4,9 +4,17 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
+// Node.js 프로세스 최적화
+process.env.UV_THREADPOOL_SIZE = '16'; // 스레드 풀 크기 증가
+process.env.NODE_OPTIONS = '--max-old-space-size=1024 --optimize-for-size';
+
 // 동시 접속 최적화 설정
 app.set('x-powered-by', false);
 app.set('trust proxy', 1);
+
+// 요청 크기 제한
+app.use(express.raw({ limit: '1mb' }));
+app.use(express.text({ limit: '1mb' }));
 
 // Increase size limits for image uploads
 app.use(express.json({ limit: '50mb' }));
