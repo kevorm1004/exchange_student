@@ -11,9 +11,10 @@ interface FilterBarProps {
   onCountryChange: (country: string) => void;
   onlyAvailable?: boolean;
   onToggleAvailable?: (available: boolean) => void;
+  user?: any; // 로그인한 사용자 정보
 }
 
-export default function FilterBar({ filter, onFilterChange, selectedCountry, onCountryChange, onlyAvailable = false, onToggleAvailable }: FilterBarProps) {
+export default function FilterBar({ filter, onFilterChange, selectedCountry, onCountryChange, onlyAvailable = false, onToggleAvailable, user }: FilterBarProps) {
   return (
     <div className="bg-white border-b border-gray-200 px-4 py-3 space-y-3">
       {/* 상품 필터 */}
@@ -30,17 +31,20 @@ export default function FilterBar({ filter, onFilterChange, selectedCountry, onC
         >
           전체
         </Button>
-        <Button
-          variant={filter === "school" ? "default" : "outline"}
-          size="sm"
-          onClick={() => onFilterChange("school")}
-          className={cn(
-            "text-sm",
-            filter === "school" ? "marketplace-button-primary" : ""
-          )}
-        >
-          우리 학교
-        </Button>
+        {/* 로그인한 사용자만 "우리 학교" 필터 표시 */}
+        {user && (
+          <Button
+            variant={filter === "school" ? "default" : "outline"}
+            size="sm"
+            onClick={() => onFilterChange("school")}
+            className={cn(
+              "text-sm",
+              filter === "school" ? "marketplace-button-primary" : ""
+            )}
+          >
+            우리 학교
+          </Button>
+        )}
         <Button
           variant={filter === "country" ? "default" : "outline"}
           size="sm"

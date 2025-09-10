@@ -144,6 +144,7 @@ export default function Home() {
         onCountryChange={setSelectedCountry}
         onlyAvailable={onlyAvailable}
         onToggleAvailable={setOnlyAvailable}
+        user={user}
       />
       
       <main className="pb-20 pt-4">

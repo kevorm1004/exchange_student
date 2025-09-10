@@ -122,7 +122,7 @@ export default function Community() {
           >
             전체
           </button>
-          {["미국", "일본", "영국", "스페인"].map((country) => (
+          {COUNTRIES.slice(0, 10).map((country) => (
             <button
               key={country}
               onClick={() => setSelectedCountry(country)}
