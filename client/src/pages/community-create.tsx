@@ -16,7 +16,14 @@ import { insertCommunityPostSchema, type InsertCommunityPost } from "@shared/sch
 import { COUNTRIES } from "@/lib/countries";
 import { z } from "zod";
 
-const createPostSchema = insertCommunityPostSchema.extend({
+const createPostSchema = insertCommunityPostSchema.omit({
+  id: true,
+  authorId: true,
+  likes: true,
+  views: true,
+  commentsCount: true,
+  createdAt: true,
+}).extend({
   images: z.array(z.string()).max(2, "최대 2장까지만 업로드할 수 있습니다").optional(),
   semester: z.string().optional(),
   openChatLink: z.string().optional(),
@@ -157,7 +164,7 @@ export default function CommunityCreate() {
     console.log("Authentication token exists:", !!localStorage.getItem('token'));
     
     // 필수 필드 검증
-    if (!data.title.trim()) {
+    if (!data.title?.trim()) {
       console.log("Title validation failed");
       toast({
         title: "제목을 입력해주세요",
@@ -167,7 +174,7 @@ export default function CommunityCreate() {
       return;
     }
     
-    if (!data.content.trim()) {
+    if (!data.content?.trim()) {
       console.log("Content validation failed");
       toast({
         title: "내용을 입력해주세요", 
@@ -177,19 +184,36 @@ export default function CommunityCreate() {
       return;
     }
 
-    // Additional validation for 모임방
-    if (data.category === "모임방") {
-      if (!data.semester) {
-        console.log("Semester validation failed");
-        toast({
-          title: "학기를 선택해주세요",
-          description: "모임방 글에는 학기 선택이 필수입니다.",
-          variant: "destructive"
-        });
-        return;
-      }
+    if (!data.category) {
+      console.log("Category validation failed");
+      toast({
+        title: "카테고리를 선택해주세요",
+        description: "카테고리는 필수 항목입니다.",
+        variant: "destructive"
+      });
+      return;
     }
-    
+
+    if (!data.country?.trim()) {
+      console.log("Country validation failed");
+      toast({
+        title: "국가를 선택해주세요",
+        description: "국가는 필수 항목입니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!data.school?.trim()) {
+      console.log("School validation failed");
+      toast({
+        title: "학교를 입력해주세요",
+        description: "학교는 필수 항목입니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // 모임방 전용 필수 필드 검증
     if (data.category === "모임방") {
       if (!data.semester?.trim()) {
@@ -441,6 +465,25 @@ export default function CommunityCreate() {
             )}
 
 
+
+            {/* School Input */}
+            <FormField
+              control={form.control}
+              name="school"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>학교 *</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="학교명을 입력하세요"
+                      {...field} 
+                      className="text-base"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* Country Selection */}
             <FormField
