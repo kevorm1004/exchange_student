@@ -38,6 +38,10 @@ const serverLoginSchema = z.object({
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
+// 사용자 캐시를 위한 메모리 저장소
+const userCache = new Map<string, { user: User; expires: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5분 캐시
+
 const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -51,7 +55,24 @@ const authenticateToken = async (req: Request, res: Response, next: NextFunction
       return res.status(403).json({ error: 'Invalid token format' });
     }
     
-    const user = await storage.getUser(decoded.id);
+    let user: User | undefined;
+    
+    // 캐시에서 사용자 정보 확인
+    const cached = userCache.get(decoded.id);
+    if (cached && cached.expires > Date.now()) {
+      user = cached.user;
+    } else {
+      // 캐시 미스 또는 만료 시에만 DB 조회
+      user = await storage.getUser(decoded.id);
+      if (user) {
+        userCache.set(decoded.id, {
+          user,
+          expires: Date.now() + CACHE_DURATION
+        });
+      }
+      // 만료된 캐시 정리
+      userCache.delete(decoded.id);
+    }
     
     // 사용자가 존재하지 않으면 (삭제된 경우) 401 에러로 처리
     if (!user) {
@@ -63,13 +84,23 @@ const authenticateToken = async (req: Request, res: Response, next: NextFunction
     
     // 사용자 정보를 req.user에 설정
     req.user = user;
-    console.log(`🔐 인증된 사용자: ${user.id} (${user.email})`);
+    // 로그 줄이기 - 매 요청마다 로그 출력 안함
     next();
   } catch (error) {
     console.error('토큰 검증 실패:', error);
     return res.status(403).json({ error: 'Invalid token' });
   }
 };
+
+// 캐시 정리를 위한 주기적 작업 (10분마다)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of userCache.entries()) {
+    if (value.expires <= now) {
+      userCache.delete(key);
+    }
+  }
+}, 10 * 60 * 1000);
 
 // 사용자 소유권 검증 헬퍼 함수
 const verifyResourceOwnership = (resourceOwnerId: string, currentUserId: string): boolean => {
