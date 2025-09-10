@@ -127,23 +127,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.set('trust proxy', 1);
   
-  // Session store configuration with persistent store for production
-  const PgSession = connectPgSimple(session);
-  const sessionStore = process.env.NODE_ENV === 'production' 
-    ? new PgSession({
-        conString: process.env.DATABASE_URL,
-        tableName: 'session',
-        createTableIfMissing: true
-      })
-    : undefined; // Use MemoryStore for development
-  
+  // 세션 스토어 최적화 - 메모리 스토어 사용으로 동시 접속 성능 향상
   const sessionConfig = {
-    store: sessionStore,
     secret: process.env.SESSION_SECRET || 'dev-session-secret-key-2025',
     resave: false,
     saveUninitialized: false,
+    rolling: true, // 세션 연장
     cookie: { 
-      secure: process.env.NODE_ENV === 'production', // Secure cookies in production
+      secure: false, // 개발환경에서는 false
+      httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000 // 24시간
     },
     name: 'exchange-market-session'
@@ -1096,11 +1088,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(201).json(comment);
   });
 
+  // 캐시된 응답을 위한 메모리 저장소
+  const responseCache = new Map<string, { data: any; expires: number }>();
+  const RESPONSE_CACHE_DURATION = 30 * 1000; // 30초 캐시
+
   // Message Routes
   app.get('/api/messages/unread-count', authenticateToken, async (req, res) => {
     try {
+      const cacheKey = `messages-unread-${req.user!.id}`;
+      const cached = responseCache.get(cacheKey);
+      
+      if (cached && cached.expires > Date.now()) {
+        return res.json(cached.data);
+      }
+      
       const count = await storage.getUnreadMessageCount(req.user!.id);
-      res.json({ count });
+      const result = { count };
+      
+      responseCache.set(cacheKey, {
+        data: result,
+        expires: Date.now() + RESPONSE_CACHE_DURATION
+      });
+      
+      res.json(result);
     } catch (error) {
       console.log('Database error in /api/messages/unread-count:', (error as Error).message);
       res.json({ count: 0 }); // Return 0 if database is not available
@@ -1110,8 +1120,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notification Routes - 사용자별 알림 관리
   app.get('/api/notifications/unread-count', authenticateToken, async (req, res) => {
     try {
+      const cacheKey = `notifications-unread-${req.user!.id}`;
+      const cached = responseCache.get(cacheKey);
+      
+      if (cached && cached.expires > Date.now()) {
+        return res.json(cached.data);
+      }
+      
       const count = await storage.getUnreadNotificationCount(req.user!.id);
-      res.json({ count });
+      const result = { count };
+      
+      responseCache.set(cacheKey, {
+        data: result,
+        expires: Date.now() + RESPONSE_CACHE_DURATION
+      });
+      
+      res.json(result);
     } catch (error) {
       console.log('Database error in /api/notifications/unread-count:', (error as Error).message);
       res.json({ count: 0 }); // Return 0 if database is not available

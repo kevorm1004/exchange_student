@@ -26,18 +26,14 @@ pool.on('error', (err, client) => {
   console.error('Database pool error:', err);
 });
 
-pool.on('connect', (client) => {
-  console.log('Database connected - Pool size:', pool.totalCount);
+// 로그 줄이기 - 연결 정보 로그 제거
+pool.on('error', (err) => {
+  console.error('Database pool critical error:', err);
 });
 
-pool.on('acquire', (client) => {
-  console.log('Database connection acquired - Active:', pool.totalCount, 'Waiting:', pool.waitingCount);
-});
-
-pool.on('release', (err, client) => {
-  if (err) {
-    console.error('Database connection release error:', err);
-  }
-});
+// 주기적 연결 상태 체크만 유지 (5분마다)
+setInterval(() => {
+  console.log(`DB Pool: Total: ${pool.totalCount}, Idle: ${pool.idleCount}, Waiting: ${pool.waitingCount}`);
+}, 5 * 60 * 1000);
 
 export const db = drizzle(pool, { schema });
