@@ -51,7 +51,7 @@ export default function Community() {
   };
 
   const handleCreatePost = () => {
-    navigate("/community/create");
+    navigate(`/community/create?category=${activeTab}`);
   };
 
   if (isLoading) {
