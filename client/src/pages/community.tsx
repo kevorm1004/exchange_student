@@ -10,7 +10,11 @@ import type { CommunityPost } from "@shared/schema";
 import { COUNTRIES } from "@/lib/countries";
 
 export default function Community() {
-  const [activeTab, setActiveTab] = useState<"이야기방" | "모임방">("이야기방");
+  // URL 파라미터에서 초기 탭 설정
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabFromUrl = urlParams.get('tab') as "이야기방" | "모임방" | null;
+  
+  const [activeTab, setActiveTab] = useState<"이야기방" | "모임방">(tabFromUrl || "이야기방");
   const [selectedCountry, setSelectedCountry] = useState("전체");
   const { user } = useAuth();
   const [, navigate] = useLocation();

@@ -143,7 +143,7 @@ export default function CommunityDetail() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/community")}
+              onClick={() => navigate(`/community?tab=${post.category}`)}
               className="p-2"
             >
               <ArrowLeft className="w-5 h-5" />
