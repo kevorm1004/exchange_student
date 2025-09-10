@@ -37,7 +37,7 @@ export default function Community() {
       if (!response.ok) throw new Error("Failed to fetch posts");
       return response.json();
     },
-    enabled: !!user, // 로그인한 사용자만 쿼리 실행
+    // 모든 사용자가 커뮤니티 글을 볼 수 있도록 함
   });
 
   const formatTimeAgo = (date: Date) => {

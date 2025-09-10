@@ -36,7 +36,7 @@ export default function CommunityDetail() {
       if (!response.ok) throw new Error("Failed to fetch post");
       return response.json();
     },
-    enabled: !!postId && !!user,
+    enabled: !!postId, // 모든 사용자가 글을 볼 수 있도록 함
   });
 
   const { data: comments = [], isLoading: commentsLoading } = useQuery<Comment[]>({

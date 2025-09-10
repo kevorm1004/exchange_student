@@ -956,17 +956,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(201).json({ message: '신고가 접수되었습니다', report });
   });
 
-  // Community Routes - 인증 필수
-  app.get('/api/community/posts', authenticateToken, async (req, res) => {
+  // Community Routes - 글 조회는 인증 없이 가능
+  app.get('/api/community/posts', async (req, res) => {
     const { category, country } = req.query;
-    // 로그인한 사용자만 커뮤니티 글 조회 가능
+    // 모든 사용자가 커뮤니티 글 조회 가능
     res.json(await storage.getCommunityPostsByQuery({ category: category as string, country: country as string }));
   });
 
-  app.get('/api/community/posts/:id', authenticateToken, async (req, res) => {
+  app.get('/api/community/posts/:id', async (req, res) => {
     const post = await storage.getCommunityPost(req.params.id);
     if (!post) return res.status(404).json({ error: 'Post not found' });
-    // 로그인한 사용자만 게시글 조회 및 조회수 증가
+    // 모든 사용자가 게시글 조회 가능하고 조회수 증가
     await storage.incrementCommunityPostViews(req.params.id);
     res.json(post);
   });
