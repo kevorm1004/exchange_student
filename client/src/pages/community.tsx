@@ -24,10 +24,20 @@ export default function Community() {
         params.append("country", selectedCountry);
       }
       
-      const response = await fetch(`/api/community/posts?${params}`);
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`/api/community/posts?${params}`, {
+        headers,
+        credentials: "include",
+      });
       if (!response.ok) throw new Error("Failed to fetch posts");
       return response.json();
     },
+    enabled: !!user, // 로그인한 사용자만 쿼리 실행
   });
 
   const formatTimeAgo = (date: Date) => {
