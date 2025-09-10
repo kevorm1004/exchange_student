@@ -1,19 +1,101 @@
+import { useState } from "react";
 import { useLocation, useRoute } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Heart, MessageCircle, Users, ExternalLink } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Heart, MessageCircle, Users, ExternalLink, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
+import type { Comment } from "@shared/schema";
 
 export default function CommunityDetail() {
   const [, params] = useRoute("/community/post/:id");
   const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const postId = params?.id;
+  const [commentText, setCommentText] = useState("");
 
   const { data: post, isLoading } = useQuery({
     queryKey: ["/api/community/posts", postId],
-    enabled: !!postId,
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`/api/community/posts/${postId}`, {
+        headers,
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch post");
+      return response.json();
+    },
+    enabled: !!postId && !!user,
   });
+
+  const { data: comments = [], isLoading: commentsLoading } = useQuery<Comment[]>({
+    queryKey: ["/api/community/posts", postId, "comments"],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`/api/community/posts/${postId}/comments`, {
+        headers,
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch comments");
+      return response.json();
+    },
+    enabled: !!postId && !!user,
+  });
+
+  const createCommentMutation = useMutation({
+    mutationFn: async (content: string) => {
+      return apiRequest('POST', `/api/community/posts/${postId}/comments`, { content });
+    },
+    onSuccess: () => {
+      setCommentText("");
+      queryClient.invalidateQueries({ queryKey: ["/api/community/posts", postId, "comments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/community/posts", postId] });
+      toast({
+        title: "댓글 작성 완료",
+        description: "댓글이 성공적으로 작성되었습니다."
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "댓글 작성 실패", 
+        description: error.message || "댓글을 작성하는데 실패했습니다.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleSubmitComment = () => {
+    if (!user) {
+      navigate("/auth/login");
+      return;
+    }
+    
+    if (!commentText.trim()) {
+      toast({
+        title: "댓글 내용을 입력해주세요",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    createCommentMutation.mutate(commentText.trim());
+  };
 
   if (isLoading) {
     return (
@@ -152,11 +234,104 @@ export default function CommunityDetail() {
           </div>
           <div className="flex items-center space-x-1 text-gray-500">
             <MessageCircle className="w-5 h-5" />
-            <span className="text-sm">{post.commentsCount || 0}</span>
+            <span className="text-sm">{comments.length}</span>
           </div>
           <div className="text-sm text-gray-500">
             조회 {post.views || 0}
           </div>
+        </div>
+
+        {/* Comments Section */}
+        <div className="mt-6 border-t border-gray-200 pt-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            댓글 {comments.length}개
+          </h3>
+          
+          {/* Comment List */}
+          {commentsLoading ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400 mx-auto"></div>
+            </div>
+          ) : comments.length > 0 ? (
+            <div className="space-y-4 mb-6">
+              {comments.map((comment) => (
+                <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-gray-600">
+                          {comment.authorId?.charAt(0)?.toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                      <span className="font-medium text-gray-900">
+                        익명
+                      </span>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: ko })}
+                    </span>
+                  </div>
+                  <p className="text-gray-800 leading-relaxed">
+                    {comment.content}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <MessageCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+              <p>아직 댓글이 없습니다</p>
+              <p className="text-sm">첫 번째 댓글을 작성해보세요!</p>
+            </div>
+          )}
+
+          {/* Comment Form */}
+          {user ? (
+            <div className="mt-6">
+              <div className="flex space-x-3">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-sm font-medium text-blue-600">
+                    {user.fullName?.charAt(0)?.toUpperCase() || user.username?.charAt(0)?.toUpperCase() || 'M'}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <Textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="댓글을 작성해주세요..."
+                    className="min-h-[80px] resize-none border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    disabled={createCommentMutation.isPending}
+                  />
+                  <div className="flex justify-end mt-2">
+                    <Button
+                      onClick={handleSubmitComment}
+                      disabled={!commentText.trim() || createCommentMutation.isPending}
+                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                      size="sm"
+                    >
+                      {createCommentMutation.isPending ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      ) : (
+                        <Send className="w-4 h-4 mr-1" />
+                      )}
+                      댓글 작성
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-6 text-center py-4 bg-gray-50 rounded-lg">
+              <p className="text-gray-600 mb-2">댓글을 작성하려면 로그인이 필요합니다</p>
+              <Button 
+                onClick={() => navigate("/auth/login")}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+                size="sm"
+              >
+                로그인하기
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
