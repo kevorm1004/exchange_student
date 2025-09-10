@@ -39,6 +39,10 @@ export default function CommunityCreate() {
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
+  // URL 파라미터에서 카테고리 읽기
+  const urlParams = new URLSearchParams(window.location.search);
+  const categoryFromUrl = urlParams.get('category') as "이야기방" | "모임방" | null;
+
   // Generate semester options based on current date
   const generateSemesterOptions = () => {
     const now = new Date();
@@ -80,7 +84,7 @@ export default function CommunityCreate() {
     defaultValues: {
       title: "",
       content: "",
-      category: "이야기방",
+      category: categoryFromUrl || "이야기방", // URL 파라미터에서 온 카테고리 사용
       country: user?.country || "",
       school: user?.school || "",
       images: [],
